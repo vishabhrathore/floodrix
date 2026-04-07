@@ -56,11 +56,10 @@ export const AppSidebar = () => {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenuItem>
+        <SidebarMenuItem className="list-none flex items-center justify-center p-2">
           <SidebarMenuButton asChild className="gap-x-4 h-10 px-4">
             <Link href="/" prefetch>
-              <Image src="/logos/logo.svg" alt="Nodebase" width={30} height={30} />
-              <span className="font-semibold text-sm">Nodebase</span>
+              <Image src="/logo.png" alt="Logo" width={120} height={120} className="w-120 h-120 object-contain" />
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

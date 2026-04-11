@@ -408,6 +408,43 @@ function ResultDisplayInner({
 
 export const ResultDisplay = memo(ResultDisplayInner);
 
+export function CodePreview({
+    code,
+    maxLines = 3,
+}: {
+    code: string;
+    maxLines?: number;
+}) {
+    const lines = code.split("\n").filter(Boolean);
+    const visible = lines.slice(0, maxLines);
+    const remaining = lines.length - maxLines;
+
+    return (
+        <div
+            style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                lineHeight: 1.6,
+                backgroundColor: "#1e293b",
+                color: "#e2e8f0",
+                borderRadius: 6,
+                padding: "6px 8px",
+                overflow: "hidden",
+            }}
+        >
+            {visible.map((line, i) => (
+                <div key={i} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span style={{ color: "#475569", marginRight: 8, userSelect: "none" }}>{i + 1}</span>
+                    {line}
+                </div>
+            ))}
+            {remaining > 0 && (
+                <div style={{ color: "#64748b", marginTop: 2 }}>... +{remaining} lines</div>
+            )}
+        </div>
+    );
+}
+
 // ─── EmptyState ──────────────────────────────────────────────────────────
 // Shown when a node needs configuration before it can do anything.
 //

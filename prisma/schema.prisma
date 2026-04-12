@@ -1,40 +1,39 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto]
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  workflows     Workflow[]
-  credentials   Credential[]
+  id                   String               @id
+  name                 String
+  email                String               @unique
+  emailVerified        Boolean              @default(false)
+  image                String?
+  globalRole           GlobalRole           @default(USER)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @default(now()) @updatedAt
+  credentials          Credential[]
+  workflows            Workflow[]
+  accounts             Account[]
+  calcActors           CalcActor[]
+  organizationMembers  OrganizationMember[]
+  foundedOrganizations Organization[]       @relation("OrgFounder")
+  sessions             Session[]
 
-  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String
+  token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?
@@ -42,7 +41,6 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
   @@map("session")
 }
 
@@ -51,7 +49,6 @@ model Account {
   accountId             String
   providerId            String
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -61,7 +58,9 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([providerId, accountId])
   @@map("account")
 }
 
@@ -76,38 +75,962 @@ model Verification {
   @@map("verification")
 }
 
+model Organization {
+  id            String                @id @default(cuid())
+  name          String
+  founderId     String
+  isPersonal    Boolean               @default(false)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  calcActors    CalcActor[]
+  calcWorkflows CalcWorkflow[]
+  formulaItems  FormulaRegistryItem[]
+  nodeTemplates NodeTemplate[]
+  billing       OrgBilling[]
+  usage         OrgUsage[]
+  members       OrganizationMember[]
+  founder       User                  @relation("OrgFounder", fields: [founderId], references: [id], onDelete: Cascade)
+  tableItems    TableRegistryItem[]
+  workspaces    Workspace[]
+
+  @@index([founderId])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrgRole      @default(MEMBER)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("organization_members")
+}
+
+model CalcActor {
+  id                String                   @id @default(cuid())
+  userId            String?
+  organizationId    String
+  displayName       String
+  createdAt         DateTime                 @default(now())
+  auditLogs         AuditLog[]
+  batchJobs         BatchJob[]
+  organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user              User?                    @relation(fields: [userId], references: [id])
+  collaborations    CalcCollaborator[]
+  drafts            CalcDraft[]
+  calcRatings       CalcRating[]
+  calcSessions      CalcSession[]
+  calcVersions      CalcVersion[]
+  createdFormulas   FormulaRegistryItem[]    @relation("FormulaCreator")
+  formulaVersions   FormulaRegistryVersion[] @relation("FormulaChanger")
+  reviews           LibrarySubmission[]      @relation("ReviewedBy")
+  submissions       LibrarySubmission[]      @relation("SubmittedBy")
+  createdTables     TableRegistryItem[]      @relation("TableCreator")
+  tableVersions     TableRegistryVersion[]   @relation("TableChanger")
+  uploadedDatasets  UploadedDataset[]
+  workspaceSessions WorkspaceSession[]
+
+  @@unique([userId, organizationId])
+  @@map("calc_actors")
+}
+
+model BillingPlan {
+  id                 String       @id @default(cuid())
+  name               String
+  maxRunsPerMonth    Int
+  maxRunsPerWorkflow Int?
+  priceMonthly       Int?
+  priceOneTime       Int?
+  currency           String       @default("USD")
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  orgBillings        OrgBilling[]
+
+  @@map("billing_plans")
+}
+
+model OrgBilling {
+  id             String        @id @default(cuid())
+  organizationId String
+  planId         String
+  billingType    BillingType
+  remainingRuns  Int?
+  status         BillingStatus @default(ACTIVE)
+  startedAt      DateTime      @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan           BillingPlan   @relation(fields: [planId], references: [id])
+
+  @@index([organizationId, status])
+  @@map("org_billing")
+}
+
+model OrgUsage {
+  id             String       @id @default(cuid())
+  organizationId String
+  periodStart    DateTime
+  periodEnd      DateTime
+  totalRuns      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, periodStart])
+  @@map("org_usage")
+}
+
+model Workflow {
+  id          String         @id @default(cuid())
+  userId      String
+  name        String
+  status      WorkflowStatus @default(DRAFT)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  connections Connection[]
+  executions  Execution[]
+  nodes       Node[]
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model Credential {
-  id String @id @default(cuid())
-  name String
-  value String
-  type CredentialType
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String         @id @default(cuid())
+  name      String
+  value     String
+  type      CredentialType
+  userId    String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes     Node[]
+}
 
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Node {
+  id                String       @id @default(cuid())
+  workflowId        String
+  name              String
+  type              NodeType
+  position          Json
+  data              Json         @default("{}")
+  credentialId      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  outputConnections Connection[] @relation("FromNode")
+  inputConnections  Connection[] @relation("ToNode")
+  credential        Credential?  @relation(fields: [credentialId], references: [id])
+  workflow          Workflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
 
-  Node Node[]
+model Connection {
+  id         String   @id @default(cuid())
+  workflowId String
+  fromNodeId String
+  toNodeId   String
+  fromOutput String   @default("main")
+  toInput    String   @default("main")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  fromNode   Node     @relation("FromNode", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode     Node     @relation("ToNode", fields: [toNodeId], references: [id], onDelete: Cascade)
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([fromNodeId, toNodeId, fromOutput, toInput])
+}
+
+model Execution {
+  id             String          @id @default(cuid())
+  workflowId     String
+  status         ExecutionStatus @default(RUNNING)
+  error          String?
+  errorStack     String?
+  startedAt      DateTime        @default(now())
+  completedAt    DateTime?
+  inngestEventId String          @unique
+  output         Json?
+  workflow       Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model CalcWorkflow {
+  id               String                 @id @default(cuid())
+  organizationId   String
+  name             String
+  slug             String
+  description      String?
+  category         String?
+  tags             Json                   @default("[]")
+  metadata         Json                   @default("{}")
+  status           WorkflowStatus         @default(DRAFT)
+  visibility       Visibility             @default(PRIVATE)
+  currentVersionId String?                @unique
+  publicSlug       String?                @unique
+  libraryStatus    LibraryStatus          @default(NONE)
+  maxRunsPerUser   Int?
+  windowSizeMin    Int?
+  maxRunsTotal     Int?
+  deletedAt        DateTime?
+  publishedAt      DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  auditLogs        AuditLog[]
+  batchJobs        BatchJob[]
+  collaborators    CalcCollaborator[]
+  drafts           CalcDraft[]
+  edges            CalcEdge[]
+  nodes            CalcNode[]
+  ratingAggregate  CalcRatingAggregate?
+  ratings          CalcRating[]
+  sessions         CalcSession[]
+  variables        CalcVariable[]
+  versions         CalcVersion[]          @relation("AllVersions")
+  currentVersion   CalcVersion?           @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  formulaUsages    FormulaRegistryUsage[]
+  tableUsages      TableRegistryUsage[]
+  uploadedData     UploadedDataset[]
+  workspaceLinks   WorkspaceNode[]        @relation("LinkedWorkflow")
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([libraryStatus])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, visibility])
+  @@map("calc_workflows")
+}
+
+model CalcVersion {
+  id                 String              @id @default(cuid())
+  calcWorkflowId     String
+  version            Int
+  snapshot           Json
+  changelog          String?
+  publishedBy        String
+  publishedAt        DateTime            @default(now())
+  ratings            CalcRating[]
+  sessions           CalcSession[]
+  calcWorkflow       CalcWorkflow        @relation("AllVersions", fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  publisher          CalcActor           @relation(fields: [publishedBy], references: [id])
+  currentForWorkflow CalcWorkflow?       @relation("CurrentVersion")
+  submissions        LibrarySubmission[]
+
+  @@unique([calcWorkflowId, version])
+  @@map("calc_versions")
+}
+
+model CalcDraft {
+  id             String       @id @default(cuid())
+  calcWorkflowId String
+  actorId        String
+  canvasState    Json         @default("{}")
+  savedAt        DateTime     @default(now()) @updatedAt
+  actor          CalcActor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  calcWorkflow   CalcWorkflow @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+
+  @@unique([calcWorkflowId, actorId])
+  @@map("calc_drafts")
+}
+
+model CalcNode {
+  id                String                 @id @default(cuid())
+  calcWorkflowId    String
+  type              CalcNodeType
+  label             String
+  description       String?
+  positionX         Float                  @default(0)
+  positionY         Float                  @default(0)
+  config            Json                   @default("{}")
+  style             Json                   @default("{}")
+  sortOrder         Int                    @default(0)
+  deletedAt         DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  outgoingEdges     CalcEdge[]             @relation("SourceNode")
+  incomingEdges     CalcEdge[]             @relation("TargetNode")
+  nodeExecutions    CalcNodeExecution[]
+  calcWorkflow      CalcWorkflow           @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  producedVariables CalcVariable[]         @relation("SourceNode")
+  formulaUsages     FormulaRegistryUsage[]
+  tableUsages       TableRegistryUsage[]
+
+  @@index([calcWorkflowId])
+  @@index([calcWorkflowId, deletedAt])
+  @@map("calc_nodes")
+}
+
+model CalcEdge {
+  id             String       @id @default(cuid())
+  calcWorkflowId String
+  sourceNodeId   String
+  targetNodeId   String
+  sourceHandle   String       @default("output")
+  targetHandle   String       @default("input")
+  condition      Json?
+  label          String?
+  style          Json         @default("{}")
+  sortOrder      Int          @default(0)
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  calcWorkflow   CalcWorkflow @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  sourceNode     CalcNode     @relation("SourceNode", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode     CalcNode     @relation("TargetNode", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceNodeId, targetNodeId, sourceHandle, targetHandle])
+  @@index([calcWorkflowId])
+  @@index([calcWorkflowId, deletedAt])
+  @@map("calc_edges")
+}
+
+model CalcVariable {
+  id             String              @id @default(cuid())
+  calcWorkflowId String
+  contextKey     String
+  displayLabel   String
+  notation       String
+  dataType       VariableDataType    @default(NUMBER)
+  unit           String?
+  defaultValue   Json?
+  constraints    Json?
+  sourceNodeId   String?
+  sourceType     VariableSourceType?
+  scope          VariableScope       @default(GLOBAL)
+  scopeGroupId   String?
+  description    String?
+  sortOrder      Int                 @default(0)
+  deletedAt      DateTime?
+  calcWorkflow   CalcWorkflow        @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  sourceNode     CalcNode?           @relation("SourceNode", fields: [sourceNodeId], references: [id])
+
+  @@unique([calcWorkflowId, contextKey])
+  @@index([calcWorkflowId])
+  @@index([calcWorkflowId, deletedAt])
+  @@map("calc_variables")
+}
+
+model CalcCollaborator {
+  id             String                 @id @default(cuid())
+  calcWorkflowId String
+  actorId        String
+  permission     CollaboratorPermission @default(VIEW)
+  createdAt      DateTime               @default(now())
+  actor          CalcActor              @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  calcWorkflow   CalcWorkflow           @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+
+  @@unique([calcWorkflowId, actorId])
+  @@map("calc_collaborators")
+}
+
+model FormulaRegistryItem {
+  id                 String                   @id @default(cuid())
+  organizationId     String
+  slug               String
+  name               String
+  description        String?
+  category           String
+  subCategory        String?
+  tags               Json                     @default("[]")
+  expressionNotation String
+  displayExpression  String
+  inputVariables     Json
+  outputVariable     Json
+  intermediateSteps  Json                     @default("[]")
+  reference          String?
+  sourceStandard     String?
+  yearIntroduced     Int?
+  region             String?
+  applicability      String?
+  limitations        String?
+  currentVersion     Int                      @default(1)
+  isPublished        Boolean                  @default(false)
+  isSystem           Boolean                  @default(false)
+  visibility         Visibility               @default(PRIVATE)
+  createdBy          String?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  deletedAt          DateTime?
+  creator            CalcActor?               @relation("FormulaCreator", fields: [createdBy], references: [id])
+  organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  registryUsages     FormulaRegistryUsage[]
+  versions           FormulaRegistryVersion[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([isPublished, visibility])
+  @@index([organizationId, deletedAt])
+  @@map("formula_registry")
+}
+
+model FormulaRegistryVersion {
+  id                String              @id @default(cuid())
+  formulaRegistryId String
+  version           Int
+  snapshot          Json
+  changelog         String?
+  changedBy         String?
+  createdAt         DateTime            @default(now())
+  changer           CalcActor?          @relation("FormulaChanger", fields: [changedBy], references: [id])
+  formulaRegistry   FormulaRegistryItem @relation(fields: [formulaRegistryId], references: [id], onDelete: Cascade)
+
+  @@unique([formulaRegistryId, version])
+  @@map("formula_registry_versions")
+}
+
+model TableRegistryItem {
+  id                  String                 @id @default(cuid())
+  organizationId      String
+  slug                String
+  name                String
+  description         String?
+  category            String
+  subCategory         String?
+  tags                Json                   @default("[]")
+  tableType           TableType
+  inputKeys           Json
+  outputKey           Json
+  columns             Json
+  data                Json
+  interpolationConfig Json?
+  fallbackMode        String                 @default("error")
+  fallbackValue       Json?
+  allowOverride       Boolean                @default(false)
+  showInOutput        Boolean                @default(true)
+  reference           String?
+  sourceStandard      String?
+  sourcePage          String?
+  sourceImage         String?
+  currentVersion      Int                    @default(1)
+  isPublished         Boolean                @default(false)
+  isSystem            Boolean                @default(false)
+  visibility          Visibility             @default(PRIVATE)
+  createdBy           String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  deletedAt           DateTime?
+  creator             CalcActor?             @relation("TableCreator", fields: [createdBy], references: [id])
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  registryUsages      TableRegistryUsage[]
+  versions            TableRegistryVersion[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([isPublished, visibility])
+  @@index([organizationId, deletedAt])
+  @@map("table_registry")
+}
+
+model TableRegistryVersion {
+  id              String            @id @default(cuid())
+  tableRegistryId String
+  version         Int
+  snapshot        Json
+  changelog       String?
+  changedBy       String?
+  createdAt       DateTime          @default(now())
+  changer         CalcActor?        @relation("TableChanger", fields: [changedBy], references: [id])
+  tableRegistry   TableRegistryItem @relation(fields: [tableRegistryId], references: [id], onDelete: Cascade)
+
+  @@unique([tableRegistryId, version])
+  @@map("table_registry_versions")
+}
+
+model FormulaRegistryUsage {
+  id                String              @id @default(cuid())
+  formulaRegistryId String
+  calcWorkflowId    String
+  calcNodeId        String
+  pinnedVersion     Int?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now()) @updatedAt
+  calcNode          CalcNode            @relation(fields: [calcNodeId], references: [id], onDelete: Cascade)
+  calcWorkflow      CalcWorkflow        @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  formulaRegistry   FormulaRegistryItem @relation(fields: [formulaRegistryId], references: [id], onDelete: Cascade)
+
+  @@unique([calcNodeId, formulaRegistryId])
+  @@map("formula_registry_usages")
+}
+
+model TableRegistryUsage {
+  id              String            @id @default(cuid())
+  tableRegistryId String
+  calcWorkflowId  String
+  calcNodeId      String
+  pinnedVersion   Int?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  calcNode        CalcNode          @relation(fields: [calcNodeId], references: [id], onDelete: Cascade)
+  calcWorkflow    CalcWorkflow      @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  tableRegistry   TableRegistryItem @relation(fields: [tableRegistryId], references: [id], onDelete: Cascade)
+
+  @@unique([calcNodeId, tableRegistryId])
+  @@map("table_registry_usages")
+}
+
+model Workspace {
+  id             String             @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  icon           String?
+  color          String?
+  visibility     Visibility         @default(PRIVATE)
+  isTemplate     Boolean            @default(false)
+  metadata       Json               @default("{}")
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  nodes          WorkspaceNode[]
+  sessions       WorkspaceSession[]
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("workspaces")
+}
+
+model WorkspaceNode {
+  id               String                @id @default(cuid())
+  workspaceId      String
+  parentId         String?
+  nodeType         WorkspaceNodeType
+  name             String
+  description      String?
+  icon             String?
+  color            String?
+  linkedWorkflowId String?
+  linkedVersion    Int?
+  externalUrl      String?
+  noteContent      String?
+  sortOrder        Int                   @default(0)
+  isExpanded       Boolean               @default(true)
+  isLocked         Boolean               @default(false)
+  canvasX          Float?
+  canvasY          Float?
+  metadata         Json                  @default("{}")
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  linkedWorkflow   CalcWorkflow?         @relation("LinkedWorkflow", fields: [linkedWorkflowId], references: [id])
+  parent           WorkspaceNode?        @relation("WorkspaceTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children         WorkspaceNode[]       @relation("WorkspaceTree")
+  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessionRuns      WorkspaceSessionRun[]
+
+  @@index([workspaceId, parentId])
+  @@index([linkedWorkflowId])
+  @@map("workspace_nodes")
+}
+
+model CalcSession {
+  id             String                @id @default(cuid())
+  calcWorkflowId String
+  versionId      String?
+  versionNum     Int                   @default(1)
+  actorId        String
+  status         SessionStatus         @default(PENDING)
+  variables      Json                  @default("{}")
+  currentNodeId  String?
+  pausedAt       DateTime?
+  pauseReason    String?
+  executionOrder Json                  @default("[]")
+  currentIndex   Int                   @default(0)
+  inputSnapshot  Json?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  duration       Int?
+  error          Json?
+  runMode        RunMode               @default(SINGLE)
+  metadata       Json                  @default("{}")
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  nodeExecutions CalcNodeExecution[]
+  actor          CalcActor             @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  calcWorkflow   CalcWorkflow          @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  version        CalcVersion?          @relation(fields: [versionId], references: [id])
+  workspaceRuns  WorkspaceSessionRun[]
+
+  @@index([calcWorkflowId, status])
+  @@index([calcWorkflowId, actorId])
+  @@index([actorId, calcWorkflowId, status])
+  @@map("calc_sessions")
+}
+
+model CalcNodeExecution {
+  id          String              @id @default(cuid())
+  sessionId   String
+  calcNodeId  String?
+  status      NodeExecutionStatus @default(PENDING)
+  stepNumber  Int
+  inputVars   Json?
+  outputVars  Json?
+  result      Json?
+  error       String?
+  errorType   String?
+  userInput   Json?
+  userInputAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @updatedAt
+  node        CalcNode?           @relation(fields: [calcNodeId], references: [id])
+  session     CalcSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("calc_node_executions")
+}
+
+model WorkspaceSession {
+  id              String                @id @default(cuid())
+  workspaceId     String
+  actorId         String
+  sharedVariables Json                  @default("{}")
+  status          SessionStatus         @default(PENDING)
+  startedAt       DateTime              @default(now())
+  completedAt     DateTime?
+  runs            WorkspaceSessionRun[]
+  actor           CalcActor             @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  workspace       Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_sessions")
+}
+
+model WorkspaceSessionRun {
+  id                 String           @id @default(cuid())
+  workspaceSessionId String
+  workspaceNodeId    String
+  calcSessionId      String
+  sortOrder          Int
+  status             SessionStatus    @default(PENDING)
+  createdAt          DateTime         @default(now())
+  calcSession        CalcSession      @relation(fields: [calcSessionId], references: [id], onDelete: Cascade)
+  workspaceNode      WorkspaceNode    @relation(fields: [workspaceNodeId], references: [id], onDelete: Cascade)
+  workspaceSession   WorkspaceSession @relation(fields: [workspaceSessionId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceSessionId])
+  @@map("workspace_session_runs")
+}
+
+model LibrarySubmission {
+  id            String           @id @default(cuid())
+  calcVersionId String
+  submitterId   String
+  reviewerId    String?
+  status        SubmissionStatus @default(PENDING)
+  adminFeedback String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  calcVersion   CalcVersion      @relation(fields: [calcVersionId], references: [id])
+  reviewer      CalcActor?       @relation("ReviewedBy", fields: [reviewerId], references: [id])
+  submitter     CalcActor        @relation("SubmittedBy", fields: [submitterId], references: [id])
+
+  @@index([status])
+  @@index([submitterId])
+  @@map("library_submissions")
+}
+
+model CalcRating {
+  id             String       @id @default(cuid())
+  actorId        String
+  calcWorkflowId String
+  versionId      String?
+  score          Int          @db.SmallInt
+  review         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  actor          CalcActor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  calcWorkflow   CalcWorkflow @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  version        CalcVersion? @relation(fields: [versionId], references: [id])
+
+  @@unique([calcWorkflowId, actorId])
+  @@index([calcWorkflowId])
+  @@map("calc_ratings")
+}
+
+model CalcRatingAggregate {
+  id             String       @id @default(cuid())
+  calcWorkflowId String       @unique
+  averageRating  Float        @default(0.0)
+  ratingCount    Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+  calcWorkflow   CalcWorkflow @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+
+  @@map("calc_rating_aggregates")
+}
+
+model BatchJob {
+  id             String              @id @default(cuid())
+  calcWorkflowId String
+  actorId        String
+  fileName       String
+  fileUrl        String?
+  totalRows      Int
+  columns        Json
+  columnMapping  Json
+  status         BatchStatus         @default(PENDING)
+  processedRows  Int                 @default(0)
+  successRows    Int                 @default(0)
+  errorRows      Int                 @default(0)
+  errorSummary   String?
+  resultFileUrl  String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  actor          CalcActor           @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  calcWorkflow   CalcWorkflow        @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)
+  rowExecutions  BatchRowExecution[]
+
+  @@index([calcWorkflowId])
+  @@index([actorId, status])
+  @@map("batch_jobs")
+}
+
+model BatchRowExecution {
+  id         String         @id @default(cuid())
+  batchJobId String
+  rowNumber  Int
+  inputData  Json
+  status     BatchRowStatus @default(PENDING)
+  outputData Json?
+  variables  Json?
+  error      String?
+  durationMs Int?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @default(now()) @updatedAt
+  batchJob   BatchJob       @relation(fields: [batchJobId], references: [id], onDelete: Cascade)
+
+  @@index([batchJobId, status])
+  @@map("batch_row_executions")
+}
+
+model UploadedDataset {
+  id            String        @id @default(cuid())
+  actorId       String
+  workflowId    String?
+  fileName      String
+  fileType      String
+  fileSize      Int
+  storageUrl    String
+  rowCount      Int
+  columns       Json
+  columnMapping Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+  actor         CalcActor     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  workflow      CalcWorkflow? @relation(fields: [workflowId], references: [id])
+
+  @@index([actorId])
+  @@index([workflowId])
+  @@map("uploaded_datasets")
+}
+
+model NodeTemplate {
+  id             String       @id @default(cuid())
+  organizationId String
+  type           CalcNodeType
+  label          String
+  description    String?
+  config         Json
+  style          Json         @default("{}")
+  category       String?
+  tags           Json         @default("[]")
+  visibility     Visibility   @default(PRIVATE)
+  isSystem       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([type])
+  @@index([organizationId])
+  @@map("node_templates")
+}
+
+model AuditLog {
+  id             String            @id @default(cuid())
+  actorId        String?
+  resourceType   AuditResourceType
+  resourceId     String
+  calcWorkflowId String?
+  action         AuditAction
+  changes        Json?
+  beforeSnapshot Json?
+  afterSnapshot  Json?
+  ipAddress      String?
+  userAgent      String?
+  sessionId      String?
+  batchId        String?
+  expiresAt      DateTime?
+  createdAt      DateTime          @default(now())
+  actor          CalcActor?        @relation(fields: [actorId], references: [id])
+  calcWorkflow   CalcWorkflow?     @relation(fields: [calcWorkflowId], references: [id])
+
+  @@index([resourceId])
+  @@index([calcWorkflowId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum GlobalRole {
+  USER
+  SUPER_ADMIN
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum WorkflowStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DEPRECATED
+}
+
+enum LibraryStatus {
+  NONE
+  PENDING
+  LISTED
+  UNLISTED
+}
+
+enum CollaboratorPermission {
+  VIEW
+  EDIT
+  ADMIN
+}
+
+enum SessionStatus {
+  PENDING
+  RUNNING
+  PAUSED
+  COMPLETED
+  ERRORED
+  CANCELLED
+  TIMED_OUT
+}
+
+enum RunMode {
+  SINGLE
+  BATCH
+  API
+}
+
+enum NodeExecutionStatus {
+  PENDING
+  WAITING
+  RUNNING
+  COMPLETED
+  SKIPPED
+  ERRORED
+}
+
+enum CalcNodeType {
+  INPUT
+  FORMULA
+  LOOKUP_TABLE
+  GRAPH_INTERPOLATION
+  DECISION
+  DISPLAY
+  COMMENT
+  MULTI_FORMULA
+  LOOP
+  SUBWORKFLOW
+  UNIT_CONVERSION
+  VALIDATION
+  API_CALL
+  CHART
+  TABLE_BUILDER
+  PDF_REPORT
+  GROUP
+  PARALLEL
+  CUSTOM_CODE
+  REFERENCE_IMAGE
+}
+
+enum VariableDataType {
+  NUMBER
+  STRING
+  BOOLEAN
+  ARRAY
+  OBJECT
+}
+
+enum VariableSourceType {
+  USER_INPUT
+  FORMULA_OUTPUT
+  LOOKUP_RESULT
+  INTERPOLATION_RESULT
+  DECISION_SET
+  COMPUTED
+  EXTERNAL
+}
+
+enum VariableScope {
+  GLOBAL
+  GROUP_SCOPED
+  NODE_LOCAL
+}
+
+enum TableType {
+  RANGE_LOOKUP
+  EXACT_LOOKUP
+  MULTI_KEY_LOOKUP
+  INTERPOLATION_1D
+  INTERPOLATION_2D
+  CLASSIFICATION
+}
+
+enum WorkspaceNodeType {
+  ROOT
+  FOLDER
+  WORKFLOW_LINK
+  SEPARATOR
+  EXTERNAL_LINK
+  NOTE
+}
+
+enum BatchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum BatchRowStatus {
+  PENDING
+  SUCCESS
+  ERROR
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExecutionStatus {
+  RUNNING
+  SUCCESS
+  FAILED
 }
 
 enum CredentialType {
   OPENAI
   ANTHROPIC
   GEMINI
-}
-
-model Workflow {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  nodes Node[]
-  connections Connection[]
-  executions Execution[]
-
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum NodeType {
@@ -123,65 +1046,71 @@ enum NodeType {
   SLACK
 }
 
-model Node {
-  id String @id @default(cuid())
-  workflowId String
-  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-
-  name String
-  type NodeType
-  position Json
-  data Json @default("{}")
-
-  credentialId String?
-  credential Credential? @relation(fields: [credentialId], references: [id])
-
-  outputConnections Connection[] @relation("FromNode")
-  inputConnections Connection[] @relation("ToNode")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum BillingType {
+  SUBSCRIPTION
+  ONE_TIME
 }
 
-model Connection {
-  id String @id @default(cuid())
-  workflowId String
-  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-
-  fromNodeId String
-  fromNode Node @relation("FromNode", fields: [fromNodeId], references: [id], onDelete: Cascade)
-  toNodeId String
-  toNode Node @relation("ToNode", fields: [toNodeId], references: [id], onDelete: Cascade)
-
-  fromOutput String @default("main")
-  toInput String @default("main")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([fromNodeId, toNodeId, fromOutput, toInput])
+enum BillingStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
 }
 
-enum ExecutionStatus {
-  RUNNING
-  SUCCESS
-  FAILED
+enum AuditResourceType {
+  WORKFLOW
+  NODE
+  EDGE
+  VARIABLE
+  FORMULA_REGISTRY
+  TABLE_REGISTRY
+  WORKSPACE
+  WORKSPACE_NODE
+  BATCH_JOB
+  UPLOADED_DATASET
 }
 
-model Execution {
-  id String @id @default(cuid())
-
-  workflowId String
-  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-
-  status ExecutionStatus @default(RUNNING)
-  error String? @db.Text
-  errorStack String? @db.Text
-
-  startedAt DateTime @default(now())
-  completedAt DateTime?
-
-  inngestEventId String @unique
-
-  output Json?
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  PUBLISHED
+  ARCHIVED
+  RESTORED
+  DUPLICATED
+  IMPORTED
+  EXPORTED
+  NODE_ADDED
+  NODE_REMOVED
+  NODE_MOVED
+  NODE_CONFIG_CHANGED
+  NODE_TYPE_CHANGED
+  EDGE_CREATED
+  EDGE_DELETED
+  EDGE_RECONNECTED
+  VARIABLE_ADDED
+  VARIABLE_REMOVED
+  VARIABLE_RENAMED
+  VARIABLE_REBOUND
+  REGISTRY_ITEM_CREATED
+  REGISTRY_ITEM_UPDATED
+  REGISTRY_VERSION_PUBLISHED
+  REGISTRY_LINKED
+  REGISTRY_UNLINKED
+  REGISTRY_VERSION_PINNED
+  WORKFLOW_RUN_STARTED
+  WORKFLOW_RUN_COMPLETED
+  WORKFLOW_RUN_ERRORED
+  WORKFLOW_RUN_CANCELLED
+  WORKFLOW_PAUSED
+  WORKFLOW_RESUMED
+  USER_INPUT_SUBMITTED
+  FOLDER_CREATED
+  FOLDER_MOVED
+  FOLDER_DELETED
+  WORKFLOW_LINKED
+  WORKFLOW_UNLINKED
+  COLLABORATOR_ADDED
+  COLLABORATOR_REMOVED
+  PERMISSION_CHANGED
 }

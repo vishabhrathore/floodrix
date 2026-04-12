@@ -1,0 +1,1407 @@
+.
+├── structure.txt
+├── postcss.config.mjs
+├── tsconfig.json
+├── src
+│   ├── config
+│   │   ├── calc-node-components.ts
+│   │   ├── node-components.ts
+│   │   ├── constants.ts
+│   ├── features
+│   │   ├── executions
+│   │   │   ├── components
+│   │   │   │   ├── gemini
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── executions.tsx
+│   │   │   │   ├── slack
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── base-execution-node.tsx
+│   │   │   │   ├── anthropic
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── execution.tsx
+│   │   │   │   ├── discord
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── http-request
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── openai
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── lib
+│   │   │   │   ├── executor-registry.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-node-status.ts
+│   │   │   │   ├── use-executions-params.ts
+│   │   │   │   ├── use-executions.ts
+│   │   │   ├── types.ts
+│   │   ├── subscriptions
+│   │   │   ├── hooks
+│   │   │   │   ├── use-subscription.ts
+│   │   ├── workflows
+│   │   │   ├── components
+│   │   │   │   ├── workflows.tsx
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-workflows-params.ts
+│   │   │   │   ├── use-workflows.ts
+│   │   ├── triggers
+│   │   │   ├── components
+│   │   │   │   ├── manual-trigger
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── stripe-trigger
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── base-trigger-node.tsx
+│   │   │   │   ├── google-form-trigger
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   │   ├── utils.ts
+│   │   ├── credentials
+│   │   │   ├── components
+│   │   │   │   ├── credential.tsx
+│   │   │   │   ├── credentials.tsx
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-credentials-params.ts
+│   │   │   │   ├── use-credentials.ts
+│   │   ├── workspace-canvas
+│   │   │   ├── store
+│   │   │   │   ├── workspace-canvas-store.ts
+│   │   │   ├── components
+│   │   │   │   ├── dialogs
+│   │   │   │   │   ├── create-folder-dialog.tsx
+│   │   │   │   │   ├── folder-context-menu.tsx
+│   │   │   │   │   ├── attach-workflow-dialog.tsx
+│   │   │   │   ├── workspace-canvas.tsx
+│   │   │   │   ├── workspace-tree-panel.tsx
+│   │   │   │   ├── workspace-toolbar.tsx
+│   │   │   ├── nodes
+│   │   │   │   ├── workspace-nodes.tsx
+│   │   │   ├── mock-data.ts
+│   │   │   ├── page.tsx
+│   │   ├── workflow-canvas
+│   │   │   ├── store
+│   │   │   │   ├── workflow-canvas-store.ts
+│   │   │   ├── components
+│   │   │   │   ├── workflow-sidebar.tsx
+│   │   │   │   ├── workflow-toolbar.tsx
+│   │   │   │   ├── demo-canvas.tsx
+│   │   │   │   ├── edges
+│   │   │   │   │   ├── default-edge.tsx
+│   │   │   │   │   ├── conditional-edge.tsx
+│   │   │   │   ├── workflow-canvas.tsx
+│   │   │   │   ├── workflow-inspector.tsx
+│   │   │   │   ├── workflow-minimap.tsx
+│   │   │   ├── nodes
+│   │   │   │   ├── core-nodes.tsx
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── node-palette.tsx
+│   │   │   │   ├── extended-nodes.tsx
+│   │   ├── editor
+│   │   │   ├── store
+│   │   │   │   ├── atoms.ts
+│   │   │   ├── components
+│   │   │   │   ├── editor.tsx
+│   │   │   │   ├── editor-header.tsx
+│   │   │   │   ├── add-node-button.tsx
+│   │   │   │   ├── execute-workflow-button.tsx
+│   │   ├── auth
+│   │   │   ├── components
+│   │   │   │   ├── auth-layout.tsx
+│   │   │   │   ├── register-form.tsx
+│   │   │   │   ├── login-form.tsx
+│   ├── components
+│   │   ├── initial-node.tsx
+│   │   ├── upgrade-modal.tsx
+│   │   ├── app-sidebar.tsx
+│   │   ├── entity-components.tsx
+│   │   ├── react-flow
+│   │   │   ├── base-handle.tsx
+│   │   │   ├── node-status-indicator.tsx
+│   │   │   ├── placeholder-node.tsx
+│   │   │   ├── calculator
+│   │   │   │   ├── calc-node-fields.tsx
+│   │   │   │   ├── calc-base-handle.tsx
+│   │   │   │   ├── calc-base-node.tsx
+│   │   │   ├── base-node.tsx
+│   │   ├── app-header.tsx
+│   │   ├── node-selector.tsx
+│   │   ├── ui
+│   │   │   ├── spinner.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── input-group.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── sonner.tsx
+│   │   │   ├── kbd.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── toggle-group.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── breadcrumb.tsx
+│   │   │   ├── aspect-ratio.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   ├── empty.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── pagination.tsx
+│   │   │   ├── button-group.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── accordion.tsx
+│   │   │   ├── item.tsx
+│   │   │   ├── toggle.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── navigation-menu.tsx
+│   │   │   ├── field.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── hover-card.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── resizable.tsx
+│   │   │   ├── drawer.tsx
+│   │   │   ├── context-menu.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── input-otp.tsx
+│   │   ├── admin
+│   │   │   ├── admin-sidebar.tsx
+│   │   ├── workflow-node.tsx
+│   ├── theme
+│   │   ├── calc-theme.ts
+│   ├── inngest
+│   │   ├── functions.ts
+│   │   ├── channels
+│   │   │   ├── anthropic.ts
+│   │   │   ├── manual-trigger.ts
+│   │   │   ├── stripe-trigger.ts
+│   │   │   ├── gemini.ts
+│   │   │   ├── slack.ts
+│   │   │   ├── discord.ts
+│   │   │   ├── google-form-trigger.ts
+│   │   │   ├── http-request.ts
+│   │   │   ├── openai.ts
+│   │   ├── client.ts
+│   │   ├── utils.ts
+│   ├── generated
+│   │   ├── prisma
+│   │   │   ├── libquery_engine-debian-openssl-3.0.x.so.node
+│   │   │   ├── runtime
+│   │   │   │   ├── index-browser.js
+│   │   │   │   ├── index-browser.d.ts
+│   │   │   │   ├── react-native.js
+│   │   │   │   ├── library.d.ts
+│   │   │   │   ├── wasm-compiler-edge.js
+│   │   │   │   ├── edge.js
+│   │   │   │   ├── library.js
+│   │   │   │   ├── edge-esm.js
+│   │   │   │   ├── wasm-engine-edge.js
+│   │   │   ├── index-browser.js
+│   │   │   ├── query_engine_bg.js
+│   │   │   ├── schema.prisma
+│   │   │   ├── query_engine_bg.wasm
+│   │   │   ├── wasm.js
+│   │   │   ├── client.js
+│   │   │   ├── default.d.ts
+│   │   │   ├── wasm.d.ts
+│   │   │   ├── client.d.ts
+│   │   │   ├── edge.js
+│   │   │   ├── wasm-edge-light-loader.mjs
+│   │   │   ├── index.js
+│   │   │   ├── package.json
+│   │   │   ├── index.d.ts
+│   │   │   ├── edge.d.ts
+│   │   │   ├── default.js
+│   │   │   ├── wasm-worker-loader.mjs
+│   ├── app
+│   │   ├── api
+│   │   │   ├── webhooks
+│   │   │   │   ├── google-form
+│   │   │   │   │   ├── route.ts
+│   │   │   │   ├── stripe
+│   │   │   │   │   ├── route.ts
+│   │   │   ├── inngest
+│   │   │   │   ├── route.ts
+│   │   │   ├── sentry-example-api
+│   │   │   │   ├── route.ts
+│   │   │   ├── trpc
+│   │   │   │   ├── [trpc]
+│   │   │   │   │   ├── route.ts
+│   │   │   ├── auth
+│   │   │   │   ├── [...all]
+│   │   │   │   │   ├── route.ts
+│   │   ├── globals.css
+│   │   ├── global-error.tsx
+│   │   ├── layout.tsx
+│   │   ├── test
+│   │   │   ├── page.tsx
+│   │   ├── (dashboard)
+│   │   │   ├── layout.tsx
+│   │   │   ├── (editor)
+│   │   │   │   ├── workflows
+│   │   │   │   │   ├── [workflowId]
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   ├── (rest)
+│   │   │   │   ├── layout.tsx
+│   │   │   │   ├── executions
+│   │   │   │   │   ├── [executionId]
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── workflows
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── credentials
+│   │   │   │   │   ├── new
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── [credentialId]
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── page.tsx
+│   │   ├── (auth)
+│   │   │   ├── layout.tsx
+│   │   │   ├── signup
+│   │   │   │   ├── page.tsx
+│   │   │   ├── login
+│   │   │   │   ├── page.tsx
+│   │   ├── admin
+│   │   │   ├── layout.tsx
+│   │   │   ├── organizations
+│   │   │   │   ├── page.tsx
+│   │   │   ├── workflows
+│   │   │   │   ├── automation
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── workspaces
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── calc
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── users
+│   │   │   │   ├── page.tsx
+│   │   │   ├── library
+│   │   │   │   ├── tables
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── review-queue
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── formulas
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── system
+│   │   │   │   ├── audit-log
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── jobs
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── billing
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── page.tsx
+│   │   ├── demo-workflow
+│   │   │   ├── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── sentry-example-page
+│   │   │   ├── page.tsx
+│   ├── instrumentation-client.ts
+│   ├── lib
+│   │   ├── db.ts
+│   │   ├── encryption.ts
+│   │   ├── polar.ts
+│   │   ├── auth-utils.ts
+│   │   ├── auth.ts
+│   │   ├── utils.ts
+│   │   ├── auth-client.ts
+│   ├── trpc
+│   │   ├── client.tsx
+│   │   ├── server.tsx
+│   │   ├── init.ts
+│   │   ├── query-client.ts
+│   │   ├── routers
+│   │   │   ├── _app.ts
+│   ├── hooks
+│   │   ├── use-entity-search.tsx
+│   │   ├── use-mobile.ts
+│   │   ├── use-upgrade-modal.tsx
+│   ├── instrumentation.ts
+├── mprocs.yaml
+├── sentry.edge.config.ts
+├── next.config.ts
+├── mprocs.log
+├── .env.sample
+├── .next
+│   ├── trace
+│   ├── webpack-loaders.js.map
+│   ├── app-build-manifest.json
+│   ├── postcss.js
+│   ├── server
+│   │   ├── interception-route-rewrite-manifest.js
+│   │   ├── instrumentation.js
+│   │   ├── middleware-manifest.json
+│   │   ├── pages
+│   │   │   ├── _app
+│   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   ├── build-manifest.json
+│   │   │   │   ├── client-build-manifest.json
+│   │   │   │   ├── pages-manifest.json
+│   │   │   │   ├── next-font-manifest.json
+│   │   │   ├── _app.js
+│   │   │   ├── _document.js.map
+│   │   │   ├── _app.js.map
+│   │   │   ├── _error
+│   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   ├── build-manifest.json
+│   │   │   │   ├── client-build-manifest.json
+│   │   │   │   ├── pages-manifest.json
+│   │   │   │   ├── next-font-manifest.json
+│   │   │   ├── _document.js
+│   │   │   ├── _document
+│   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   ├── pages-manifest.json
+│   │   │   │   ├── next-font-manifest.json
+│   │   │   ├── _error.js.map
+│   │   │   ├── _error.js
+│   │   ├── app-paths-manifest.json
+│   │   ├── server-reference-manifest.json
+│   │   ├── next-font-manifest.js
+│   │   ├── app
+│   │   │   ├── api
+│   │   │   │   ├── inngest
+│   │   │   │   │   ├── route.js.map
+│   │   │   │   │   ├── route
+│   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   ├── route_client-reference-manifest.js
+│   │   │   │   │   ├── route.js
+│   │   │   │   ├── trpc
+│   │   │   │   │   ├── [trpc]
+│   │   │   │   │   │   ├── route.js.map
+│   │   │   │   │   │   ├── route
+│   │   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   ├── route_client-reference-manifest.js
+│   │   │   │   │   │   ├── route.js
+│   │   │   │   ├── auth
+│   │   │   │   │   ├── [...all]
+│   │   │   │   │   │   ├── route.js.map
+│   │   │   │   │   │   ├── route
+│   │   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   ├── route_client-reference-manifest.js
+│   │   │   │   │   │   ├── route.js
+│   │   │   ├── test
+│   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   ├── page
+│   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   ├── page.js
+│   │   │   │   ├── page.js.map
+│   │   │   ├── (dashboard)
+│   │   │   │   ├── (editor)
+│   │   │   │   │   ├── workflows
+│   │   │   │   │   │   ├── [workflowId]
+│   │   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   │   ├── page
+│   │   │   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   │   │   │   ├── page.js
+│   │   │   │   │   │   │   ├── page.js.map
+│   │   │   │   ├── (rest)
+│   │   │   │   │   ├── executions
+│   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   ├── page
+│   │   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   │   │   ├── page.js
+│   │   │   │   │   │   ├── page.js.map
+│   │   │   │   │   ├── workflows
+│   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   ├── page
+│   │   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   │   │   ├── page.js
+│   │   │   │   │   │   ├── page.js.map
+│   │   │   │   │   ├── credentials
+│   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   ├── page
+│   │   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   │   │   ├── page.js
+│   │   │   │   │   │   ├── page.js.map
+│   │   │   ├── _not-found
+│   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   ├── page
+│   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   ├── page.js
+│   │   │   │   ├── page.js.map
+│   │   │   ├── (auth)
+│   │   │   │   ├── signup
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   ├── page
+│   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   │   ├── page.js
+│   │   │   │   │   ├── page.js.map
+│   │   │   │   ├── login
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   ├── page
+│   │   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   │   ├── page.js
+│   │   │   │   │   ├── page.js.map
+│   │   │   ├── admin
+│   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   ├── page
+│   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   ├── page.js
+│   │   │   │   ├── page.js.map
+│   │   │   ├── demo-workflow
+│   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   ├── page
+│   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   ├── server-reference-manifest.json
+│   │   │   │   │   ├── react-loadable-manifest.json
+│   │   │   │   │   ├── build-manifest.json
+│   │   │   │   │   ├── next-font-manifest.json
+│   │   │   │   ├── page.js
+│   │   │   │   ├── page.js.map
+│   │   │   ├── favicon.ico
+│   │   │   │   ├── route.js.map
+│   │   │   │   ├── route
+│   │   │   │   │   ├── app-build-manifest.json
+│   │   │   │   │   ├── app-paths-manifest.json
+│   │   │   │   │   ├── build-manifest.json
+│   │   │   │   ├── route.js
+│   │   ├── edge
+│   │   │   ├── chunks
+│   │   │   │   ├── node_modules_d4097117._.js
+│   │   │   │   ├── turbopack-edge-wrapper_dccefcff.js
+│   │   │   │   ├── node_modules_@sentry_vercel-edge_build_esm_index_97d7ed9c.js.map
+│   │   │   │   ├── _6998a599._.js
+│   │   │   │   ├── node_modules_@sentry_core_build_esm_b8759c9b._.js
+│   │   │   │   ├── edge-wrapper_4ce347a3.js.map
+│   │   │   │   ├── node_modules_@sentry_core_build_esm_b8759c9b._.js.map
+│   │   │   │   ├── [root-of-the-server]__b77e0055._.js
+│   │   │   │   ├── node_modules_@sentry_vercel-edge_build_esm_index_97d7ed9c.js
+│   │   │   │   ├── [root-of-the-server]__b77e0055._.js.map
+│   │   │   │   ├── _6998a599._.js.map
+│   │   │   │   ├── edge-wrapper_dccefcff.js.map
+│   │   │   │   ├── node_modules_d4097117._.js.map
+│   │   │   │   ├── turbopack-edge-wrapper_4ce347a3.js
+│   │   ├── chunks
+│   │   │   ├── node_modules_01ac51b7._.js.map
+│   │   │   ├── node_modules_ad7de5d4._.js.map
+│   │   │   ├── node_modules_fa8d6400._.js
+│   │   │   ├── node_modules_@ai-sdk_anthropic_dist_index_mjs_2c9ebffe._.js.map
+│   │   │   ├── node_modules_b2c94ed6._.js.map
+│   │   │   ├── [root-of-the-server]__a19bfa73._.js.map
+│   │   │   ├── node_modules_@opentelemetry_api_build_esm_7e8f41ca._.js
+│   │   │   ├── node_modules_@sentry_nextjs_build_cjs_fa7d2898._.js.map
+│   │   │   ├── [turbopack]_runtime.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_operations_4c124372._.js.map
+│   │   │   ├── [externals]_node:async_hooks_3750e1ee._.js.map
+│   │   │   ├── node_modules_@sentry_core_build_cjs_97e9bc61._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_682b7d27._.js.map
+│   │   │   ├── node_modules_6220dcd7._.js
+│   │   │   ├── node_modules_f6ad0b49._.js.map
+│   │   │   ├── node_modules_inngest_aebb1e4a._.js
+│   │   │   ├── node_modules_f6ad0b49._.js
+│   │   │   ├── node_modules_@vercel_oidc_dist_7c2bef69._.js.map
+│   │   │   ├── node_modules_@sentry_node_build_cjs_50ab4bf6._.js.map
+│   │   │   ├── node_modules_6bf723d9._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_metricstotals_944d48e0.js.map
+│   │   │   ├── node_modules_kysely_dist_esm_e0954e78._.js
+│   │   │   ├── [root-of-the-server]__99387ae6._.js
+│   │   │   ├── node_modules_jose_dist_webapi_053f7f0d._.js.map
+│   │   │   ├── node_modules_3a039630._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_funcs_c8f4f50f._.js.map
+│   │   │   ├── node_modules_better-auth_dist_c590f8f3._.js.map
+│   │   │   ├── node_modules_next_dist_397f8839._.js
+│   │   │   ├── 338a0_zod_v3_a526a5b3._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_8d28efd9._.js
+│   │   │   ├── node_modules_@sentry_nextjs_build_cjs_fa7d2898._.js
+│   │   │   ├── [root-of-the-server]__d7f9e77a._.js
+│   │   │   ├── node_modules_handlebars_4fa5359a._.js
+│   │   │   ├── node_modules_0c5b327f._.js.map
+│   │   │   ├── [externals]_node:async_hooks_3750e1ee._.js
+│   │   │   ├── node_modules_better-auth_dist_plugins_897ea954._.js
+│   │   │   ├── node_modules_fa8d6400._.js.map
+│   │   │   ├── node_modules_13b4d24a._.js
+│   │   │   ├── node_modules_jose_dist_webapi_053f7f0d._.js
+│   │   │   ├── node_modules_better-auth_dist_chunks_bun-sqlite-dialect_mjs_ac94bb8b._.js.map
+│   │   │   ├── sentry_server_config_ts_8712b202._.js
+│   │   │   ├── node_modules_handlebars_4fa5359a._.js.map
+│   │   │   ├── sentry_server_config_ts_8712b202._.js.map
+│   │   │   ├── [root-of-the-server]__01581db1._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_5bbee766._.js
+│   │   │   ├── node_modules_@vercel_oidc_dist_7fd3d757._.js
+│   │   │   ├── node_modules_@sentry_bc9d860f._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_operations_4c124372._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_5bbee766._.js.map
+│   │   │   ├── node_modules_@opentelemetry_api_build_esm_e96249e4._.js.map
+│   │   │   ├── [root-of-the-server]__d7f9e77a._.js.map
+│   │   │   ├── 94679_@sentry_node-core_build_cjs_ad0736f0._.js.map
+│   │   │   ├── node_modules_8420ba30._.js
+│   │   │   ├── node_modules_next_dist_ace248f6._.js.map
+│   │   │   ├── [root-of-the-server]__bd8ffd1e._.js.map
+│   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-unsupported_39c1f15d.js
+│   │   │   ├── node_modules_next_18653026._.js.map
+│   │   │   ├── [root-of-the-server]__b24e5763._.js.map
+│   │   │   ├── node_modules_better-auth_dist_df5310f3._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_682b7d27._.js
+│   │   │   ├── 1649d_zod_v3_ff88a4ce._.js
+│   │   │   ├── node_modules_better-auth_dist_chunks_node-sqlite-dialect_mjs_29019df6._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_a3852584._.js.map
+│   │   │   ├── [root-of-the-server]__ffd5aed5._.js
+│   │   │   ├── node_modules_eaeaae39._.js.map
+│   │   │   ├── node_modules_better-auth_dist_chunks_create-telemetry_mjs_7b66b123._.js
+│   │   │   ├── node_modules_better-auth_dist_shared_96bdf3f8._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_ca95d643._.js.map
+│   │   │   ├── node_modules_zod_35b232cd._.js
+│   │   │   ├── src_instrumentation_ts_18ea1a8f._.js
+│   │   │   ├── 1649d_zod_v3_ff88a4ce._.js.map
+│   │   │   ├── node_modules_@apm-js-collab_code-transformer_index_87720b9d.js.map
+│   │   │   ├── node_modules_better-auth_dist_plugins_897ea954._.js.map
+│   │   │   ├── node_modules_inngest_aebb1e4a._.js.map
+│   │   │   ├── node_modules_8d1e6627._.js.map
+│   │   │   ├── node_modules_better-auth_dist_cb20449b._.js.map
+│   │   │   ├── node_modules_7f93cafb._.js.map
+│   │   │   ├── node_modules_zod_35b232cd._.js.map
+│   │   │   ├── node_modules_@trpc_server_dist_c94a6104._.js
+│   │   │   ├── node_modules_ad7de5d4._.js
+│   │   │   ├── [root-of-the-server]__ac19ce95._.js.map
+│   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-linux_eae54430.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_8d28efd9._.js.map
+│   │   │   ├── node_modules_f2b28af2._.js.map
+│   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_1a88d418._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_sdk_06a61d5c._.js.map
+│   │   │   ├── [root-of-the-server]__41577ef0._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_metricstotals_944d48e0.js
+│   │   │   ├── node_modules_zod_64e986be._.js.map
+│   │   │   ├── node_modules_inngest_208421da._.js.map
+│   │   │   ├── node_modules_next_78d862e1._.js.map
+│   │   │   ├── [root-of-the-server]__99387ae6._.js.map
+│   │   │   ├── node_modules_next_18653026._.js
+│   │   │   ├── node_modules_ai_dist_index_mjs_b0116780._.js
+│   │   │   ├── [root-of-the-server]__bd8ffd1e._.js
+│   │   │   ├── [turbopack]_runtime.js
+│   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_99d83bca._.js
+│   │   │   ├── node_modules_@trpc_server_dist_c94a6104._.js.map
+│   │   │   ├── node_modules_better-auth_dist_chunks_node-sqlite-dialect_mjs_29019df6._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_ca95d643._.js
+│   │   │   ├── node_modules_next_dist_ace248f6._.js
+│   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_308f4f2c._.js.map
+│   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_1a88d418._.js
+│   │   │   ├── [root-of-the-server]__389a0d80._.js
+│   │   │   ├── node_modules_@sentry_bc9d860f._.js.map
+│   │   │   ├── node_modules_@apm-js-collab_code-transformer_pkg_orchestrion_js_73ebd7cd.js
+│   │   │   ├── node_modules_better-auth_dist_df5310f3._.js
+│   │   │   ├── [externals]_node:inspector_7a4283c6._.js.map
+│   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-unsupported_39c1f15d.js.map
+│   │   │   ├── node_modules_zod_64e986be._.js
+│   │   │   ├── [root-of-the-server]__2870716a._.js.map
+│   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_99d83bca._.js.map
+│   │   │   ├── [root-of-the-server]__2870716a._.js
+│   │   │   ├── [root-of-the-server]__85effaa9._.js.map
+│   │   │   ├── src_instrumentation_ts_18ea1a8f._.js.map
+│   │   │   ├── [externals]_node:inspector_7a4283c6._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_a3852584._.js
+│   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_308f4f2c._.js
+│   │   │   ├── ssr
+│   │   │   │   ├── node_modules_6ea11da0._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_6bc878e4._.js
+│   │   │   │   ├── [root-of-the-server]__d27bde19._.js
+│   │   │   │   ├── node_modules_@apm-js-collab_code-transformer_pkg_orchestrion_js_9a4867ff.js
+│   │   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_0d320fc0._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_40de7958._.js
+│   │   │   │   ├── [root-of-the-server]__ddda3325._.js
+│   │   │   │   ├── node_modules_better-auth_dist_plugins_e16e0026._.js
+│   │   │   │   ├── node_modules_a8046332._.js
+│   │   │   │   ├── node_modules_better-auth_dist_5271b00d._.js
+│   │   │   │   ├── node_modules_next_9a2ff53d._.js.map
+│   │   │   │   ├── [turbopack]_runtime.js.map
+│   │   │   │   ├── node_modules_next_dist_compiled_next-devtools_index_a19313bf.js.map
+│   │   │   │   ├── node_modules_next_dist_client_components_builtin_unauthorized_15817684.js.map
+│   │   │   │   ├── _22bf60df._.js
+│   │   │   │   ├── node_modules_@trpc_server_dist_4bb2fd58._.js
+│   │   │   │   ├── node_modules_zod_3702c10e._.js.map
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_lucide-react_ece2aaf0.js
+│   │   │   │   ├── [root-of-the-server]__3a21ab9a._.js
+│   │   │   │   ├── node_modules_next_13091662._.js
+│   │   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_dd0b2e44._.js
+│   │   │   │   ├── src_45dfcaa0._.js
+│   │   │   │   ├── node_modules_@xyflow_react_dist_esm_index_8a8c2632.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_sdkvalidationerror_58e6358f.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_funcs_696aa553._.js.map
+│   │   │   │   ├── node_modules_next_dist_3d006c5c._.js.map
+│   │   │   │   ├── node_modules_inngest_95e085e2._.js.map
+│   │   │   │   ├── [root-of-the-server]__5e937723._.js
+│   │   │   │   ├── node_modules_00c1faac._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_sdk_41a420a2._.js
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_icons_621478f9._.js
+│   │   │   │   ├── [root-of-the-server]__c80f7c8f._.js
+│   │   │   │   ├── [root-of-the-server]__5e742bd0._.js
+│   │   │   │   ├── node_modules_42f46fac._.js.map
+│   │   │   │   ├── node_modules_bb681d96._.js.map
+│   │   │   │   ├── node_modules_fd8d9c64._.js
+│   │   │   │   ├── node_modules_next_f71b9665._.js
+│   │   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_0d320fc0._.js
+│   │   │   │   ├── node_modules_24ac33bb._.js.map
+│   │   │   │   ├── node_modules_@apm-js-collab_code-transformer_index_fcebfb15.js
+│   │   │   │   ├── [root-of-the-server]__6a8c2e2b._.js
+│   │   │   │   ├── node_modules_next_dist_720b0e4c._.js.map
+│   │   │   │   ├── node_modules_04611905._.js.map
+│   │   │   │   ├── node_modules_next_dist_esm_968ff1ee._.js.map
+│   │   │   │   ├── [root-of-the-server]__5e937723._.js.map
+│   │   │   │   ├── 338a0_zod_v3_3525db7d._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_68ac9fad._.js
+│   │   │   │   ├── node_modules_2697d375._.js
+│   │   │   │   ├── node_modules_next_dist_7668db3b._.js
+│   │   │   │   ├── [root-of-the-server]__f152921c._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_shared_acdfd8f3._.js
+│   │   │   │   ├── [root-of-the-server]__156e7aad._.js
+│   │   │   │   ├── node_modules_next_dist_720b0e4c._.js
+│   │   │   │   ├── node_modules_jose_dist_webapi_4d4e0dd9._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_8a66403c._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_metricstotals_0ac8e253.js.map
+│   │   │   │   ├── node_modules_cf74496d._.js
+│   │   │   │   ├── [root-of-the-server]__3a21ab9a._.js.map
+│   │   │   │   ├── [root-of-the-server]__5e742bd0._.js.map
+│   │   │   │   ├── [root-of-the-server]__f152921c._.js
+│   │   │   │   ├── [root-of-the-server]__1d0009b8._.js.map
+│   │   │   │   ├── node_modules_2697d375._.js.map
+│   │   │   │   ├── node_modules_7da2db0c._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_create-telemetry_mjs_3fcbba90._.js
+│   │   │   │   ├── [root-of-the-server]__e7195e97._.js
+│   │   │   │   ├── node_modules_00c1faac._.js.map
+│   │   │   │   ├── node_modules_6587b692._.js.map
+│   │   │   │   ├── [externals]_next_dist_shared_lib_no-fallback-error_external_59b92b38.js.map
+│   │   │   │   ├── [root-of-the-server]__42534d74._.js.map
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_lucide-react_ece2aaf0.js.map
+│   │   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-linux_2103b34c.js
+│   │   │   │   ├── [root-of-the-server]__933a6b44._.js
+│   │   │   │   ├── [root-of-the-server]__70a73b34._.js.map
+│   │   │   │   ├── node_modules_30af2092._.js.map
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_icons_621478f9._.js.map
+│   │   │   │   ├── [root-of-the-server]__c80f7c8f._.js.map
+│   │   │   │   ├── node_modules_next_bb300dfd._.js
+│   │   │   │   ├── [root-of-the-server]__3ec34574._.js.map
+│   │   │   │   ├── node_modules_next_dist_compiled_6c3ad287._.js.map
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_38415331._.js
+│   │   │   │   ├── node_modules_next_dist_client_d7c8d3f6._.js.map
+│   │   │   │   ├── [root-of-the-server]__5b976c27._.js.map
+│   │   │   │   ├── node_modules_next_ad8e02d6._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_8a66403c._.js
+│   │   │   │   ├── node_modules_24cc7efe._.js
+│   │   │   │   ├── src_components_4a6bbada._.js
+│   │   │   │   ├── node_modules_@apm-js-collab_code-transformer_index_fcebfb15.js.map
+│   │   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_818f0fdf._.js
+│   │   │   │   ├── node_modules_next_460d7fe1._.js.map
+│   │   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_dd0b2e44._.js.map
+│   │   │   │   ├── [root-of-the-server]__933a6b44._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_plugins_dd3adb25._.js
+│   │   │   │   ├── node_modules_inngest_95e085e2._.js
+│   │   │   │   ├── node_modules_next_9a2ff53d._.js
+│   │   │   │   ├── node_modules_zod_094b6cfc._.js
+│   │   │   │   ├── node_modules_@sentry_core_build_cjs_5514704d._.js
+│   │   │   │   ├── node_modules_abc1f7b9._.js.map
+│   │   │   │   ├── [root-of-the-server]__10c6413d._.js.map
+│   │   │   │   ├── node_modules_tailwind-merge_dist_bundle-mjs_mjs_0b83d5d5._.js
+│   │   │   │   ├── src_2813fff4._.js.map
+│   │   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-unsupported_b9ee0cac.js
+│   │   │   │   ├── src_2813fff4._.js
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_38415331._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_68ac9fad._.js.map
+│   │   │   │   ├── node_modules_@swc_helpers_cjs_0d822dfe._.js.map
+│   │   │   │   ├── [root-of-the-server]__edb98da8._.js
+│   │   │   │   ├── [root-of-the-server]__fa248b9f._.js.map
+│   │   │   │   ├── node_modules_@sentry_node_build_cjs_4741d310._.js
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_create-telemetry_mjs_3fcbba90._.js.map
+│   │   │   │   ├── [root-of-the-server]__d27bde19._.js.map
+│   │   │   │   ├── node_modules_24ac33bb._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_8340ca66._.js
+│   │   │   │   ├── node_modules_0d78a8a4._.js.map
+│   │   │   │   ├── node_modules_@xyflow_system_dist_esm_index_c46e22ad.js.map
+│   │   │   │   ├── node_modules_next_dist_client_d7c8d3f6._.js
+│   │   │   │   ├── src_0d32f61f._.js
+│   │   │   │   ├── [root-of-the-server]__ddda3325._.js.map
+│   │   │   │   ├── node_modules_zod_f0da496c._.js
+│   │   │   │   ├── [root-of-the-server]__edb98da8._.js.map
+│   │   │   │   ├── src_features_f9ceffb4._.js.map
+│   │   │   │   ├── node_modules_@sentry_b730be51._.js.map
+│   │   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_818f0fdf._.js.map
+│   │   │   │   ├── node_modules_next_ad8e02d6._.js
+│   │   │   │   ├── node_modules_6ea11da0._.js
+│   │   │   │   ├── node_modules_67ce130d._.js
+│   │   │   │   ├── node_modules_next_dist_client_components_builtin_unauthorized_15817684.js
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_bun-sqlite-dialect_mjs_56ecaa2c._.js
+│   │   │   │   ├── [root-of-the-server]__54445b6d._.js
+│   │   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_298797ac._.js.map
+│   │   │   │   ├── node_modules_next_dist_75543274._.js
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_node-sqlite-dialect_mjs_a74a90fb._.js.map
+│   │   │   │   ├── [root-of-the-server]__10c6413d._.js
+│   │   │   │   ├── src_generated_prisma_8cb58c37._.js.map
+│   │   │   │   ├── node_modules_@trpc_server_dist_4bb2fd58._.js.map
+│   │   │   │   ├── node_modules_9e4e12ce._.js
+│   │   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-linux_2103b34c.js.map
+│   │   │   │   ├── src_features_f9ceffb4._.js
+│   │   │   │   ├── node_modules_b6e1a585._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_6bc878e4._.js.map
+│   │   │   │   ├── node_modules_1ea959c6._.js
+│   │   │   │   ├── node_modules_1ea959c6._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_987e3caf._.js.map
+│   │   │   │   ├── 1649d_zod_v3_f4b524ec._.js
+│   │   │   │   ├── node_modules_next_bb300dfd._.js.map
+│   │   │   │   ├── node_modules_next_dist_7668db3b._.js.map
+│   │   │   │   ├── src_117166e6._.js.map
+│   │   │   │   ├── src_f7ee593e._.js.map
+│   │   │   │   ├── node_modules_next_dist_5bf4e031._.js
+│   │   │   │   ├── node_modules_next_dist_compiled_next-devtools_index_a19313bf.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_operations_9d74d0f0._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_bd65bff0._.js
+│   │   │   │   ├── node_modules_better-auth_dist_plugins_e16e0026._.js.map
+│   │   │   │   ├── node_modules_@swc_helpers_cjs_0d822dfe._.js
+│   │   │   │   ├── node_modules_better-auth_dist_shared_acdfd8f3._.js.map
+│   │   │   │   ├── [turbopack]_runtime.js
+│   │   │   │   ├── node_modules_zod_f0da496c._.js.map
+│   │   │   │   ├── [root-of-the-server]__f0336b73._.js
+│   │   │   │   ├── [root-of-the-server]__dd29c37e._.js
+│   │   │   │   ├── node_modules_@sentry_nextjs_build_cjs_f5ddcc7c._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_db01583a._.js
+│   │   │   │   ├── [root-of-the-server]__a56a5c43._.js
+│   │   │   │   ├── node_modules_next_dist_5bf4e031._.js.map
+│   │   │   │   ├── node_modules_abc1f7b9._.js
+│   │   │   │   ├── src_1841affd._.js.map
+│   │   │   │   ├── src_c7224082._.js.map
+│   │   │   │   ├── node_modules_kysely_dist_esm_31f33e94._.js.map
+│   │   │   │   ├── src_app_global-error_tsx_aa661ba4._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_224e7b71._.js.map
+│   │   │   │   ├── node_modules_next_dist_de2f2f5e._.js
+│   │   │   │   ├── node_modules_20466e09._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_sdkvalidationerror_58e6358f.js.map
+│   │   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_89c5f8e8._.js
+│   │   │   │   ├── 338a0_zod_v3_d367e71b._.js.map
+│   │   │   │   ├── node_modules_next_dist_compiled_6c3ad287._.js
+│   │   │   │   ├── node_modules_@sentry_nextjs_build_cjs_f5ddcc7c._.js
+│   │   │   │   ├── node_modules_79928b8b._.js.map
+│   │   │   │   ├── [root-of-the-server]__e2f7bb3d._.js
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_bd65bff0._.js.map
+│   │   │   │   ├── node_modules_79928b8b._.js
+│   │   │   │   ├── node_modules_@sentry_b730be51._.js
+│   │   │   │   ├── node_modules_better-auth_dist_224e7b71._.js
+│   │   │   │   ├── node_modules_@sentry_core_build_cjs_5514704d._.js.map
+│   │   │   │   ├── node_modules_a8046332._.js.map
+│   │   │   │   ├── node_modules_04611905._.js
+│   │   │   │   ├── node_modules_6bc3f0aa._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_sdk_41a420a2._.js.map
+│   │   │   │   ├── node_modules_1b11fecf._.js.map
+│   │   │   │   ├── node_modules_fd8d9c64._.js.map
+│   │   │   │   ├── [root-of-the-server]__1d0009b8._.js
+│   │   │   │   ├── node_modules_0d78a8a4._.js
+│   │   │   │   ├── 94679_@sentry_node-core_build_cjs_60071788._.js
+│   │   │   │   ├── node_modules_@trpc_client_dist_28719d41._.js.map
+│   │   │   │   ├── [root-of-the-server]__dd29c37e._.js.map
+│   │   │   │   ├── node_modules_@xyflow_react_dist_esm_index_8a8c2632.js
+│   │   │   │   ├── [root-of-the-server]__ee2efd0d._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_funcs_696aa553._.js
+│   │   │   │   ├── node_modules_30af2092._.js
+│   │   │   │   ├── [root-of-the-server]__5b976c27._.js
+│   │   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-unsupported_b9ee0cac.js.map
+│   │   │   │   ├── [root-of-the-server]__e7195e97._.js.map
+│   │   │   │   ├── [root-of-the-server]__156e7aad._.js.map
+│   │   │   │   ├── node_modules_67ce130d._.js.map
+│   │   │   │   ├── [externals]_node:inspector_7a4283c6._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_node-sqlite-dialect_mjs_a74a90fb._.js
+│   │   │   │   ├── [root-of-the-server]__55064e8f._.js
+│   │   │   │   ├── src_c7224082._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_db01583a._.js.map
+│   │   │   │   ├── node_modules_next_f71b9665._.js.map
+│   │   │   │   ├── node_modules_b6e1a585._.js
+│   │   │   │   ├── node_modules_jose_dist_webapi_42b3bde6._.js.map
+│   │   │   │   ├── src_45dfcaa0._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_fdc13de5._.js
+│   │   │   │   ├── node_modules_next_dist_client_components_builtin_forbidden_45780354.js.map
+│   │   │   │   ├── node_modules_tailwind-merge_dist_bundle-mjs_mjs_0b83d5d5._.js.map
+│   │   │   │   ├── [root-of-the-server]__c193cbbb._.js.map
+│   │   │   │   ├── node_modules_next_dist_server_route-modules_app-page_f354387c._.js.map
+│   │   │   │   ├── node_modules_next_dist_3d006c5c._.js
+│   │   │   │   ├── src_f7ee593e._.js
+│   │   │   │   ├── [externals]_node:inspector_7a4283c6._.js
+│   │   │   │   ├── node_modules_42f46fac._.js
+│   │   │   │   ├── node_modules_cf74496d._.js.map
+│   │   │   │   ├── [root-of-the-server]__3ec34574._.js
+│   │   │   │   ├── [root-of-the-server]__f2f94776._.js.map
+│   │   │   │   ├── src_329eaf7c._.js
+│   │   │   │   ├── node_modules_next_dist_client_components_9774470f._.js
+│   │   │   │   ├── node_modules_next_dist_client_components_9774470f._.js.map
+│   │   │   │   ├── node_modules_@opentelemetry_api_build_esm_3a98b06d._.js
+│   │   │   │   ├── node_modules_@apm-js-collab_code-transformer_pkg_orchestrion_js_9a4867ff.js.map
+│   │   │   │   ├── node_modules_@xyflow_system_dist_esm_index_c46e22ad.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_40de7958._.js.map
+│   │   │   │   ├── [root-of-the-server]__fa248b9f._.js
+│   │   │   │   ├── node_modules_8b66d6df._.js.map
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_icons_index_bce085f7.js.map
+│   │   │   │   ├── [root-of-the-server]__54445b6d._.js.map
+│   │   │   │   ├── [root-of-the-server]__6a8c2e2b._.js.map
+│   │   │   │   ├── node_modules_8b66d6df._.js
+│   │   │   │   ├── [root-of-the-server]__f2f94776._.js
+│   │   │   │   ├── src_0d32f61f._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_fdc13de5._.js.map
+│   │   │   │   ├── node_modules_next_13760f8d._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_ce05917d._.js
+│   │   │   │   ├── node_modules_eae07232._.js.map
+│   │   │   │   ├── node_modules_jose_dist_webapi_00ce02e9._.js.map
+│   │   │   │   ├── [root-of-the-server]__b16a70a9._.js.map
+│   │   │   │   ├── 1649d_zod_v3_f4b524ec._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_ce05917d._.js.map
+│   │   │   │   ├── node_modules_lucide-react_dist_esm_icons_index_bce085f7.js
+│   │   │   │   ├── [root-of-the-server]__d9f9eae5._.js
+│   │   │   │   ├── [root-of-the-server]__306dc833._.js
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_metricstotals_0ac8e253.js
+│   │   │   │   ├── node_modules_@sentry_node_build_cjs_4741d310._.js.map
+│   │   │   │   ├── [root-of-the-server]__f33b016f._.js.map
+│   │   │   │   ├── node_modules_@trpc_client_dist_28719d41._.js
+│   │   │   │   ├── [root-of-the-server]__75e6b88b._.js
+│   │   │   │   ├── [root-of-the-server]__e2f7bb3d._.js.map
+│   │   │   │   ├── [root-of-the-server]__d9f9eae5._.js.map
+│   │   │   │   ├── src_app_global-error_tsx_aa661ba4._.js
+│   │   │   │   ├── node_modules_next_dist_75543274._.js.map
+│   │   │   │   ├── node_modules_1b11fecf._.js
+│   │   │   │   ├── node_modules_d47f8d9c._.js
+│   │   │   │   ├── node_modules_jose_dist_webapi_42b3bde6._.js
+│   │   │   │   ├── [root-of-the-server]__b16a70a9._.js
+│   │   │   │   ├── node_modules_next_dist_client_components_builtin_forbidden_45780354.js
+│   │   │   │   ├── node_modules_jose_dist_webapi_4d4e0dd9._.js
+│   │   │   │   ├── node_modules_jose_dist_webapi_00ce02e9._.js
+│   │   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_89c5f8e8._.js.map
+│   │   │   │   ├── [root-of-the-server]__f0336b73._.js.map
+│   │   │   │   ├── node_modules_eae07232._.js
+│   │   │   │   ├── 338a0_zod_v3_3525db7d._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_987e3caf._.js
+│   │   │   │   ├── [root-of-the-server]__086a19fe._.js.map
+│   │   │   │   ├── node_modules_next_13091662._.js.map
+│   │   │   │   ├── node_modules_cd1b5fda._.js
+│   │   │   │   ├── node_modules_9e4e12ce._.js.map
+│   │   │   │   ├── 338a0_zod_v3_d367e71b._.js
+│   │   │   │   ├── [root-of-the-server]__a56a5c43._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_8340ca66._.js.map
+│   │   │   │   ├── node_modules_kysely_dist_esm_31f33e94._.js
+│   │   │   │   ├── [root-of-the-server]__78b41529._.js
+│   │   │   │   ├── [root-of-the-server]__f33b016f._.js
+│   │   │   │   ├── [root-of-the-server]__306dc833._.js.map
+│   │   │   │   ├── src_app_ca777385._.js
+│   │   │   │   ├── 94679_@sentry_node-core_build_cjs_60071788._.js.map
+│   │   │   │   ├── node_modules_next_dist_de2f2f5e._.js.map
+│   │   │   │   ├── [root-of-the-server]__75e6b88b._.js.map
+│   │   │   │   ├── [externals]_next_dist_shared_lib_no-fallback-error_external_59b92b38.js
+│   │   │   │   ├── node_modules_better-auth_dist_plugins_dd3adb25._.js.map
+│   │   │   │   ├── node_modules_6bc3f0aa._.js.map
+│   │   │   │   ├── [root-of-the-server]__55064e8f._.js.map
+│   │   │   │   ├── node_modules_next_image_5872f03d.js.map
+│   │   │   │   ├── node_modules_7da2db0c._.js
+│   │   │   │   ├── node_modules_bb681d96._.js
+│   │   │   │   ├── node_modules_@opentelemetry_api_build_esm_3a98b06d._.js.map
+│   │   │   │   ├── node_modules_next_dist_esm_968ff1ee._.js
+│   │   │   │   ├── node_modules_20466e09._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_shared_d848e9ff._.js.map
+│   │   │   │   ├── [root-of-the-server]__78b41529._.js.map
+│   │   │   │   ├── [root-of-the-server]__086a19fe._.js
+│   │   │   │   ├── node_modules_next_460d7fe1._.js
+│   │   │   │   ├── node_modules_better-auth_dist_5271b00d._.js.map
+│   │   │   │   ├── src_app_ca777385._.js.map
+│   │   │   │   ├── node_modules_24cc7efe._.js.map
+│   │   │   │   ├── src_generated_prisma_8cb58c37._.js
+│   │   │   │   ├── [root-of-the-server]__ee2efd0d._.js.map
+│   │   │   │   ├── node_modules_next_image_5872f03d.js
+│   │   │   │   ├── 94679_@opentelemetry_resources_build_esm_detectors_platform_node_machine-id_298797ac._.js
+│   │   │   │   ├── src_1841affd._.js
+│   │   │   │   ├── node_modules_6587b692._.js
+│   │   │   │   ├── [root-of-the-server]__c193cbbb._.js
+│   │   │   │   ├── src_329eaf7c._.js.map
+│   │   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_operations_9d74d0f0._.js
+│   │   │   │   ├── src_117166e6._.js
+│   │   │   │   ├── src_components_4a6bbada._.js.map
+│   │   │   │   ├── node_modules_next_dist_server_route-modules_app-page_f354387c._.js
+│   │   │   │   ├── src_2af8f2bc._.js
+│   │   │   │   ├── src_2af8f2bc._.js.map
+│   │   │   │   ├── node_modules_zod_3702c10e._.js
+│   │   │   │   ├── node_modules_cd1b5fda._.js.map
+│   │   │   │   ├── _22bf60df._.js.map
+│   │   │   │   ├── node_modules_next_13760f8d._.js.map
+│   │   │   │   ├── node_modules_better-auth_dist_shared_d848e9ff._.js
+│   │   │   │   ├── [root-of-the-server]__70a73b34._.js
+│   │   │   │   ├── node_modules_better-auth_dist_chunks_bun-sqlite-dialect_mjs_56ecaa2c._.js.map
+│   │   │   │   ├── node_modules_d47f8d9c._.js.map
+│   │   │   │   ├── node_modules_zod_094b6cfc._.js.map
+│   │   │   │   ├── [root-of-the-server]__42534d74._.js
+│   │   │   ├── dae31_build_esm_detectors_platform_node_machine-id_getMachineId-linux_eae54430.js.map
+│   │   │   ├── node_modules_3a039630._.js.map
+│   │   │   ├── [root-of-the-server]__85effaa9._.js
+│   │   │   ├── node_modules_13b4d24a._.js.map
+│   │   │   ├── 2e4a4_next_dist_server_app-render_after-task-async-storage_external_7bcc6304.js.map
+│   │   │   ├── [root-of-the-server]__2ed81469._.js.map
+│   │   │   ├── [root-of-the-server]__b24e5763._.js
+│   │   │   ├── node_modules_6bf723d9._.js.map
+│   │   │   ├── node_modules_@ai-sdk_anthropic_dist_index_mjs_2c9ebffe._.js
+│   │   │   ├── node_modules_better-auth_dist_cb20449b._.js
+│   │   │   ├── node_modules_@apm-js-collab_code-transformer_pkg_orchestrion_js_73ebd7cd.js.map
+│   │   │   ├── node_modules_@sentry_node_build_cjs_50ab4bf6._.js
+│   │   │   ├── node_modules_@opentelemetry_api_build_esm_e96249e4._.js
+│   │   │   ├── node_modules_ai_dist_index_mjs_b0116780._.js.map
+│   │   │   ├── node_modules_8d1e6627._.js
+│   │   │   ├── node_modules_@apm-js-collab_code-transformer_index_87720b9d.js
+│   │   │   ├── node_modules_zod_01ab970d._.js.map
+│   │   │   ├── node_modules_b2c94ed6._.js
+│   │   │   ├── [root-of-the-server]__a19bfa73._.js
+│   │   │   ├── node_modules_better-auth_dist_chunks_create-telemetry_mjs_7b66b123._.js.map
+│   │   │   ├── node_modules_next_78d862e1._.js
+│   │   │   ├── node_modules_@opentelemetry_api_build_esm_7e8f41ca._.js.map
+│   │   │   ├── node_modules_better-auth_dist_c590f8f3._.js
+│   │   │   ├── node_modules_01ac51b7._.js
+│   │   │   ├── node_modules_@ai-sdk_openai_dist_index_mjs_19cd50d6._.js.map
+│   │   │   ├── node_modules_@sentry_core_build_cjs_97e9bc61._.js
+│   │   │   ├── [root-of-the-server]__2ed81469._.js
+│   │   │   ├── node_modules_next_dist_397f8839._.js.map
+│   │   │   ├── node_modules_@vercel_oidc_dist_7fd3d757._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_da5ed377._.js
+│   │   │   ├── [root-of-the-server]__41577ef0._.js.map
+│   │   │   ├── 338a0_zod_v3_a526a5b3._.js.map
+│   │   │   ├── node_modules_jose_dist_webapi_0ea6a1fc._.js.map
+│   │   │   ├── [root-of-the-server]__389a0d80._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_da5ed377._.js.map
+│   │   │   ├── node_modules_better-auth_dist_chunks_bun-sqlite-dialect_mjs_ac94bb8b._.js
+│   │   │   ├── 94679_@sentry_node-core_build_cjs_ad0736f0._.js
+│   │   │   ├── [root-of-the-server]__ffd5aed5._.js.map
+│   │   │   ├── node_modules_better-auth_dist_shared_96bdf3f8._.js.map
+│   │   │   ├── node_modules_@vercel_oidc_dist_7c2bef69._.js
+│   │   │   ├── node_modules_jose_dist_webapi_0ea6a1fc._.js
+│   │   │   ├── node_modules_eaeaae39._.js
+│   │   │   ├── node_modules_inngest_208421da._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_sdk_06a61d5c._.js
+│   │   │   ├── node_modules_6bd7c765._.js.map
+│   │   │   ├── node_modules_6220dcd7._.js.map
+│   │   │   ├── node_modules_zod_01ab970d._.js
+│   │   │   ├── 2e4a4_next_dist_server_app-render_after-task-async-storage_external_7bcc6304.js
+│   │   │   ├── node_modules_@ai-sdk_openai_dist_index_mjs_19cd50d6._.js
+│   │   │   ├── node_modules_0c5b327f._.js
+│   │   │   ├── node_modules_6bd7c765._.js
+│   │   │   ├── [root-of-the-server]__01581db1._.js
+│   │   │   ├── [root-of-the-server]__ac19ce95._.js
+│   │   │   ├── node_modules_f2b28af2._.js
+│   │   │   ├── node_modules_8420ba30._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_funcs_c8f4f50f._.js
+│   │   │   ├── node_modules_kysely_dist_esm_e0954e78._.js.map
+│   │   │   ├── node_modules_7f93cafb._.js
+│   │   ├── instrumentation.js.map
+│   │   ├── server-reference-manifest.js
+│   │   ├── pages-manifest.json
+│   │   ├── instrumentation
+│   │   │   ├── middleware-manifest.json
+│   │   ├── middleware-build-manifest.js
+│   │   ├── next-font-manifest.json
+│   ├── prerender-manifest.json
+│   ├── postcss.js.map
+│   ├── build-manifest.json
+│   ├── webpack-loaders.js
+│   ├── cache
+│   │   ├── .rscinfo
+│   │   ├── next-devtools-config.json
+│   │   ├── images
+│   │   │   ├── HYTUX2VYa0XUJX4EOTTw51MkoVu3Vl7WssAYtgogblE
+│   │   │   │   ├── 60.1776003302085.7ntNKdqw092wV-LhH37-dRdkQunPI35qwPV1P0yXL8g.Vy8iMTBjMTItMTlkNjQwZDM4ZGIi.webp
+│   │   │   ├── rIYo_3f-_DsG2Gq0dDlBK9xIuMDNcEcExeXNNJ7YqkE
+│   │   │   │   ├── 60.1775571019316.MTdrus-XJjrC9yEXdJXy3okK95s_PJA8sLBOLJxeNJQ.Vy8iMTBjMTItMTlkNjQwZDM4ZGIi.webp
+│   │   │   ├── 5pzj_JAIRhYhCJXd9-tDNt_SwLvT4qDfINMvWcF_jlE
+│   │   │   │   ├── 60.1775500278762.NpYAQyjrINzp-iIcdWTJW_gWIA14TDEg3lbenkiHU_s.Vy8iMTBjMTItMTlkNjQwZDM4ZGIi.webp
+│   │   │   ├── G--bNvR1EXUjhXh7E1Trhn3ptff3HqB827dOs0oYqmQ
+│   │   │   │   ├── 60.1775985743643.lxgK7xfSVpAsRNSO8VOAWxEE3T1mnmpYevDwY6Cap44.Vy8iMTBjMTItMTlkNjQwZDM4ZGIi.webp
+│   │   ├── chrome-devtools-workspace-uuid
+│   ├── types
+│   │   ├── validator.ts
+│   │   ├── routes.d.ts
+│   ├── static
+│   │   ├── chunks
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_b193cda3._.js
+│   │   │   ├── node_modules_next_app_72f3d36f.js
+│   │   │   ├── src_app_(auth)_signup_page_tsx_60ad28f2._.js
+│   │   │   ├── node_modules_lucide-react_dist_esm_9cd4cea4._.js.map
+│   │   │   ├── node_modules_next_dist_compiled_next-devtools_index_5277ebc8.js
+│   │   │   ├── node_modules_@sentry-internal_replay_build_npm_esm_index_32be9d39.js
+│   │   │   ├── node_modules_next_dist_58bff358._.js
+│   │   │   ├── src_app_test_page_tsx_0fc0ee54._.js
+│   │   │   ├── src_5500a853._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_b193cda3._.js.map
+│   │   │   ├── node_modules_db4bb196._.js.map
+│   │   │   ├── turbopack-_5a3ca252._.js
+│   │   │   ├── node_modules_lucide-react_dist_esm_9cd4cea4._.js
+│   │   │   ├── node_modules_next_error_1cfbb379.js
+│   │   │   ├── src_fba8e525._.js
+│   │   │   ├── node_modules_next_dist_3d8feecb._.js.map
+│   │   │   ├── src_app_(auth)_login_page_tsx_60ad28f2._.js
+│   │   │   ├── src_app_globals_css_bad6b30c._.single.css
+│   │   │   ├── 338a0_zod_v3_6210411b._.js
+│   │   │   ├── pages
+│   │   │   │   ├── _app.js
+│   │   │   │   ├── _error.js
+│   │   │   ├── node_modules_@sentry-internal_replay_build_npm_esm_index_32be9d39.js.map
+│   │   │   ├── node_modules_@sentry-internal_browser-utils_build_esm_6c3a029f._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_fb238730._.js
+│   │   │   ├── node_modules_next_dist_e3bb8dea._.js.map
+│   │   │   ├── node_modules_next_dist_b0daae9a._.js
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_f1e3e383._.js.map
+│   │   │   ├── turbopack-_0f8a6545._.js
+│   │   │   ├── node_modules_@xyflow_react_dist_esm_index_efc13f23.js.map
+│   │   │   ├── turbopack-pages__app_c7284e2d._.js
+│   │   │   ├── node_modules_@xyflow_system_dist_esm_index_5e50f387.js.map
+│   │   │   ├── node_modules_next_b4f284d7._.js
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_f0d8c494._.js.map
+│   │   │   ├── node_modules_next_dist_shared_lib_e9db6ec6._.js.map
+│   │   │   ├── src_00d2e5d2._.js
+│   │   │   ├── node_modules_d59b5da9._.js.map
+│   │   │   ├── src_app_layout_tsx_a83bfe74._.js
+│   │   │   ├── [next]_internal_font_google_geist_mono_8d43a2aa_module_css_bad6b30c._.single.css.map
+│   │   │   ├── src_606b5766._.js
+│   │   │   ├── src_app_(dashboard)_(rest)_workflows_page_tsx_a276bb38._.js
+│   │   │   ├── node_modules_929d1492._.js
+│   │   │   ├── node_modules_3d57bf6b._.js.map
+│   │   │   ├── src_fafff42c._.js
+│   │   │   ├── src_app_globals_css_bad6b30c._.single.css.map
+│   │   │   ├── src_app_favicon_ico_mjs_a059968a._.js
+│   │   │   ├── node_modules_next_dist_client_cf1d9188._.js.map
+│   │   │   ├── src_b50c8c40._.js
+│   │   │   ├── src_app_(dashboard)_(editor)_workflows_[workflowId]_page_tsx_a276bb38._.js
+│   │   │   ├── src_606b5766._.js.map
+│   │   │   ├── node_modules_better-auth_dist_shared_85fa3e80._.js.map
+│   │   │   ├── node_modules_2e25aba2._.js.map
+│   │   │   ├── node_modules_929d1492._.js.map
+│   │   │   ├── node_modules_next_dist_abffcd14._.js.map
+│   │   │   ├── src_5500a853._.js.map
+│   │   │   ├── [root-of-the-server]__d3d64581._.js.map
+│   │   │   ├── node_modules_lucide-react_dist_esm_icons_index_6b37bdeb.js
+│   │   │   ├── src_app_demo-workflow_page_tsx_0fc0ee54._.js
+│   │   │   ├── _a0ff3932._.js
+│   │   │   ├── node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js
+│   │   │   ├── src_606ddb40._.js.map
+│   │   │   ├── node_modules_next_dist_b0daae9a._.js.map
+│   │   │   ├── node_modules_next_dist_client_7dd460f2._.js
+│   │   │   ├── src_54c8bb8f._.js
+│   │   │   ├── [root-of-the-server]__0f0ba101._.css.map
+│   │   │   ├── src_app_(auth)_layout_tsx_721e8f05._.js
+│   │   │   ├── node_modules_lucide-react_dist_esm_icons_9375dc4c._.js.map
+│   │   │   ├── node_modules_next_dist_client_7dd460f2._.js.map
+│   │   │   ├── node_modules_next_dist_shared_lib_e9db6ec6._.js
+│   │   │   ├── node_modules_3d57bf6b._.js
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_868135c9._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_components_fb238730._.js.map
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_f0d8c494._.js
+│   │   │   ├── src_app_global-error_tsx_721e8f05._.js
+│   │   │   ├── _50dbfb3f._.js.map
+│   │   │   ├── node_modules_fabb05ca._.js
+│   │   │   ├── node_modules_fabb05ca._.js.map
+│   │   │   ├── node_modules_jose_dist_webapi_d4157aa3._.js.map
+│   │   │   ├── 1649d_zod_v3_f7cace3d._.js.map
+│   │   │   ├── node_modules_next_dist_shared_lib_5975d31c._.js
+│   │   │   ├── node_modules_lucide-react_dist_esm_lucide-react_78492e78.js.map
+│   │   │   ├── src_app_(dashboard)_(rest)_workflows_page_tsx_aeea53bb._.js
+│   │   │   ├── _5a3ca252._.js.map
+│   │   │   ├── src_features_workspace-canvas_07eb6c50._.js
+│   │   │   ├── node_modules_next_router_9e4be07f.js
+│   │   │   ├── node_modules_next_64e8ee52._.js
+│   │   │   ├── src_app_(dashboard)_(rest)_credentials_page_tsx_aeea53bb._.js
+│   │   │   ├── node_modules_2e25aba2._.js
+│   │   │   ├── src_app_global-error_tsx_8e7553f5._.js.map
+│   │   │   ├── node_modules_next_dist_compiled_b1d87949._.js
+│   │   │   ├── node_modules_lucide-react_dist_esm_icons_9375dc4c._.js
+│   │   │   ├── src_app_(dashboard)_(editor)_workflows_[workflowId]_page_tsx_aeea53bb._.js
+│   │   │   ├── node_modules_@swc_helpers_cjs_b3dc30d6._.js.map
+│   │   │   ├── node_modules_next_dist_e3bb8dea._.js
+│   │   │   ├── node_modules_better-auth_dist_2643edee._.js
+│   │   │   ├── node_modules_@xyflow_react_dist_style_6d3bc72a.css.map
+│   │   │   ├── src_instrumentation-client_ts_3e309371._.js.map
+│   │   │   ├── node_modules_lucide-react_dist_esm_lucide-react_78492e78.js
+│   │   │   ├── node_modules_next_dist_compiled_react-dom_1e674e59._.js.map
+│   │   │   ├── _c1ff637f._.js
+│   │   │   ├── node_modules_zod_761443a8._.js
+│   │   │   ├── node_modules_next_b4f284d7._.js.map
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_sdkvalidationerror_d6f75179.js.map
+│   │   │   ├── node_modules_next_dist_compiled_b1d87949._.js.map
+│   │   │   ├── node_modules_next_dist_0cccb603._.js.map
+│   │   │   ├── [next]_entry_page-loader_ts_43b523b5._.js
+│   │   │   ├── node_modules_next_64e8ee52._.js.map
+│   │   │   ├── node_modules_9902c182._.js.map
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_83a3e0a5._.js
+│   │   │   ├── node_modules_next_dist_8db7fb1f._.js.map
+│   │   │   ├── [next]_internal_font_google_geist_a71539c9_module_css_bad6b30c._.single.css
+│   │   │   ├── node_modules_better-auth_dist_plugins_dd273856._.js.map
+│   │   │   ├── node_modules_6aef0c6a._.js.map
+│   │   │   ├── src_app_global-error_tsx_0fc0ee54._.js
+│   │   │   ├── node_modules_next_dist_8db7fb1f._.js
+│   │   │   ├── src_instrumentation-client_ts_3e309371._.js
+│   │   │   ├── node_modules_next_dist_client_cf1d9188._.js
+│   │   │   ├── node_modules_next_error_1cfbb379.js.map
+│   │   │   ├── [root-of-the-server]__7c9318ed._.js.map
+│   │   │   ├── node_modules_better-auth_dist_plugins_dd273856._.js
+│   │   │   ├── node_modules_23ff23bd._.js
+│   │   │   ├── node_modules_@xyflow_react_dist_esm_index_efc13f23.js
+│   │   │   ├── src_deea589c._.js
+│   │   │   ├── [next]_entry_page-loader_ts_742e4b53._.js
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_0f91932c._.js
+│   │   │   ├── pages__error_2da965e7._.js
+│   │   │   ├── node_modules_d59b5da9._.js
+│   │   │   ├── [root-of-the-server]__7c9318ed._.js
+│   │   │   ├── node_modules_@sentry_core_build_esm_5e41c220._.js.map
+│   │   │   ├── node_modules_zod_ba060665._.js
+│   │   │   ├── [next]_internal_font_google_geist_mono_8d43a2aa_module_css_bad6b30c._.single.css
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_d27f3a52._.js
+│   │   │   ├── node_modules_@polar-sh_sdk_dist_esm_models_errors_sdkvalidationerror_d6f75179.js
+│   │   │   ├── node_modules_next_dist_compiled_166120c5._.js.map
+│   │   │   ├── src_app_(auth)_login_page_tsx_cf774ac5._.js
+│   │   │   ├── node_modules_tailwind-merge_dist_bundle-mjs_mjs_56b6fd65._.js.map
+│   │   │   ├── node_modules_next_router_9e4be07f.js.map
+│   │   │   ├── src_app_(dashboard)_layout_tsx_721e8f05._.js
+│   │   │   ├── node_modules_next_dist_shared_lib_2c2ec201._.js.map
+│   │   │   ├── node_modules_@sentry-internal_browser-utils_build_esm_6c3a029f._.js.map
+│   │   │   ├── node_modules_1499614a._.js
+│   │   │   ├── node_modules_next_dist_shared_lib_5975d31c._.js.map
+│   │   │   ├── node_modules_next_dist_0cccb603._.js
+│   │   │   ├── node_modules_9902c182._.js
+│   │   │   ├── node_modules_tailwind-merge_dist_bundle-mjs_mjs_56b6fd65._.js
+│   │   │   ├── turbopack-_50dbfb3f._.js
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_c8c997ce._.js.map
+│   │   │   ├── src_606ddb40._.js
+│   │   │   ├── node_modules_696ed21d._.js.map
+│   │   │   ├── node_modules_next_dist_build_polyfills_polyfill-nomodule.js
+│   │   │   ├── src_1b414cb1._.js.map
+│   │   │   ├── 338a0_zod_v3_6210411b._.js.map
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_83a3e0a5._.js.map
+│   │   │   ├── [next]_entry_page-loader_ts_742e4b53._.js.map
+│   │   │   ├── pages__app_c7284e2d._.js.map
+│   │   │   ├── node_modules_zod_761443a8._.js.map
+│   │   │   ├── pages__app_2da965e7._.js
+│   │   │   ├── node_modules_better-auth_dist_shared_85fa3e80._.js
+│   │   │   ├── src_00d2e5d2._.js.map
+│   │   │   ├── src_app_(auth)_signup_page_tsx_cf774ac5._.js
+│   │   │   ├── node_modules_@xyflow_react_dist_style_6d3bc72a.css
+│   │   │   ├── node_modules_next_dist_shared_lib_b4122b32._.js.map
+│   │   │   ├── src_b50c8c40._.js.map
+│   │   │   ├── node_modules_next_dist_53b9775f._.js.map
+│   │   │   ├── src_app_layout_tsx_dc384a38._.js
+│   │   │   ├── src_fba8e525._.js.map
+│   │   │   ├── node_modules_e370cf95._.js.map
+│   │   │   ├── node_modules_next_dist_3d8feecb._.js
+│   │   │   ├── src_app_global-error_tsx_8e7553f5._.js
+│   │   │   ├── node_modules_next_dist_compiled_next-devtools_index_a9cb0712.js.map
+│   │   │   ├── [next]_internal_font_google_geist_a71539c9_module_css_bad6b30c._.single.css.map
+│   │   │   ├── node_modules_@swc_helpers_cjs_b3dc30d6._.js
+│   │   │   ├── node_modules_next_dist_5b402162._.js
+│   │   │   ├── node_modules_@sentry_browser_build_npm_esm_38e05107._.js
+│   │   │   ├── src_app_(dashboard)_(rest)_executions_page_tsx_aeea53bb._.js
+│   │   │   ├── node_modules_next_dist_client_d0aa886c._.js
+│   │   │   ├── [root-of-the-server]__d3d64581._.js
+│   │   │   ├── node_modules_@sentry_browser_build_npm_esm_38e05107._.js.map
+│   │   │   ├── node_modules_23ff23bd._.js.map
+│   │   │   ├── node_modules_next_dist_compiled_react-dom_1e674e59._.js
+│   │   │   ├── src_3707c5f1._.js.map
+│   │   │   ├── node_modules_next_dist_client_d0aa886c._.js.map
+│   │   │   ├── src_app_(auth)_layout_tsx_0fc0ee54._.js
+│   │   │   ├── node_modules_next_dist_compiled_next-devtools_index_5277ebc8.js.map
+│   │   │   ├── src_app_admin_layout_tsx_0fc0ee54._.js
+│   │   │   ├── node_modules_lucide-react_dist_esm_icons_index_6b37bdeb.js.map
+│   │   │   ├── node_modules_696ed21d._.js
+│   │   │   ├── node_modules_next_dist_shared_lib_b4122b32._.js
+│   │   │   ├── node_modules_zod_ba060665._.js.map
+│   │   │   ├── [root-of-the-server]__0f0ba101._.css
+│   │   │   ├── node_modules_react-dom_4411d9bd._.js.map
+│   │   │   ├── src_app_(dashboard)_layout_tsx_0fc0ee54._.js
+│   │   │   ├── node_modules_next_dist_5b402162._.js.map
+│   │   │   ├── node_modules_f457dcdb._.js
+│   │   │   ├── node_modules_next_dist_shared_lib_2c2ec201._.js
+│   │   │   ├── src_app_favicon_ico_mjs_6539a659._.js
+│   │   │   ├── src_3707c5f1._.js
+│   │   │   ├── src_features_workspace-canvas_07eb6c50._.js.map
+│   │   │   ├── src_54c8bb8f._.js.map
+│   │   │   ├── node_modules_6aef0c6a._.js
+│   │   │   ├── node_modules_e370cf95._.js
+│   │   │   ├── node_modules_db4bb196._.js
+│   │   │   ├── node_modules_next_dist_compiled_db4d59bb._.js.map
+│   │   │   ├── turbopack-pages__error_a8cf3d4c._.js
+│   │   │   ├── node_modules_next_dist_compiled_db4d59bb._.js
+│   │   │   ├── node_modules_react-dom_4411d9bd._.js
+│   │   │   ├── node_modules_next_dist_compiled_5150ccfd._.js
+│   │   │   ├── node_modules_next_dist_abffcd14._.js
+│   │   │   ├── pages__error_a8cf3d4c._.js.map
+│   │   │   ├── node_modules_next_dist_compiled_5150ccfd._.js.map
+│   │   │   ├── node_modules_1499614a._.js.map
+│   │   │   ├── node_modules_jose_dist_webapi_d4157aa3._.js
+│   │   │   ├── node_modules_better-auth_dist_2643edee._.js.map
+│   │   │   ├── [turbopack]_browser_dev_hmr-client_hmr-client_ts_f1e3e383._.js
+│   │   │   ├── _c1ff637f._.js.map
+│   │   │   ├── src_deea589c._.js.map
+│   │   │   ├── 1649d_zod_v3_f7cace3d._.js
+│   │   │   ├── node_modules_next_dist_53b9775f._.js
+│   │   │   ├── node_modules_next_dist_compiled_166120c5._.js
+│   │   │   ├── src_1b414cb1._.js
+│   │   │   ├── node_modules_f457dcdb._.js.map
+│   │   │   ├── node_modules_next_dist_58bff358._.js.map
+│   │   │   ├── node_modules_@sentry_core_build_esm_5e41c220._.js
+│   │   │   ├── [next]_entry_page-loader_ts_43b523b5._.js.map
+│   │   │   ├── node_modules_next_app_72f3d36f.js.map
+│   │   │   ├── _0f8a6545._.js.map
+│   │   │   ├── src_fafff42c._.js.map
+│   │   │   ├── node_modules_@xyflow_system_dist_esm_index_5e50f387.js
+│   │   ├── media
+│   │   │   ├── 4fa387ec64143e14-s.c1fdd6c2.woff2
+│   │   │   ├── favicon.0b3bf435.ico
+│   │   │   ├── bbc41e54d2fcbd21-s.799d8ef8.woff2
+│   │   │   ├── caa3a2e1cccd8315-s.p.853070df.woff2
+│   │   │   ├── 797e433ab948586e-s.p.dbea232f.woff2
+│   │   │   ├── 8a480f0b521d4e75-s.8e0177b5.woff2
+│   │   │   ├── 7178b3e590c64307-s.b97b3418.woff2
+│   │   ├── development
+│   │   │   ├── _clientMiddlewareManifest.json
+│   │   │   ├── _ssgManifest.js
+│   │   │   ├── _buildManifest.js
+│   ├── package.json
+│   ├── routes-manifest.json
+│   ├── build
+│   │   ├── chunks
+│   │   │   ├── [turbopack]_runtime.js.map
+│   │   │   ├── [turbopack-node]_transforms_webpack-loaders_ts_5a40237e._.js
+│   │   │   ├── [root-of-the-server]__974941ed._.js
+│   │   │   ├── [root-of-the-server]__51225daf._.js
+│   │   │   ├── node_modules_fe693df6._.js
+│   │   │   ├── [turbopack]_runtime.js
+│   │   │   ├── [root-of-the-server]__c7ae8543._.js
+│   │   │   ├── [turbopack-node]_transforms_postcss_ts_5260e9fa._.js
+│   │   │   ├── [root-of-the-server]__4718a9dd._.js.map
+│   │   │   ├── [turbopack-node]_transforms_postcss_ts_5260e9fa._.js.map
+│   │   │   ├── [turbopack-node]_transforms_webpack-loaders_ts_5a40237e._.js.map
+│   │   │   ├── [root-of-the-server]__51225daf._.js.map
+│   │   │   ├── [root-of-the-server]__974941ed._.js.map
+│   │   │   ├── [root-of-the-server]__4718a9dd._.js
+│   │   │   ├── [root-of-the-server]__c7ae8543._.js.map
+│   │   │   ├── node_modules_fe693df6._.js.map
+│   ├── fallback-build-manifest.json
+├── log.md
+├── generate-structure.sh
+├── components.json
+├── public
+│   ├── globe.svg
+│   ├── vercel.svg
+│   ├── next.svg
+│   ├── window.svg
+│   ├── logos
+│   │   ├── googleform.svg
+│   │   ├── openai.svg
+│   │   ├── slack.svg
+│   │   ├── google.svg
+│   │   ├── discord.svg
+│   │   ├── stripe.svg
+│   │   ├── anthropic.svg
+│   │   ├── gemini.svg
+│   │   ├── github.svg
+│   │   ├── logo.svg
+│   ├── logo.png
+│   ├── file.svg
+├── package-lock.json
+├── biome.json
+├── prisma
+│   ├── schema.prisma
+│   ├── seed
+│   │   ├── seed.ts
+│   ├── schema.prisma.backup
+├── package.json
+├── .gitignore
+├── next-env.d.ts
+├── sentry.server.config.ts
+├── .env
+├── README.md

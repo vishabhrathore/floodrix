@@ -1,4 +1,14 @@
-import { createLoader } from "nuqs/server";
-import { calcWorkflowParams } from "../params";
+// src/features/calc-workflows/server/params-loader.ts
 
-export const calcWorkflowParamsLoader = createLoader(calcWorkflowParams);
+import { calcWorkflowParamsLoader } from "../params";
+
+/**
+ * Server-side: parse searchParams using the nuqs loader.
+ * Usage in page.tsx:
+ *   const params = await loadCalcWorkflowParams(searchParams);
+ */
+export async function loadCalcWorkflowParams(
+    searchParams: Promise<Record<string, string | string[] | undefined>>
+) {
+    return calcWorkflowParamsLoader(searchParams);
+}

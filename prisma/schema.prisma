@@ -267,6 +267,7 @@ model CalcWorkflow {
   category         String?
   tags             Json                   @default("[]")
   metadata         Json                   @default("{}")
+  canvasState      Json                   @default("{}")
   status           WorkflowStatus         @default(DRAFT)
   visibility       Visibility             @default(PRIVATE)
   currentVersionId String?                @unique

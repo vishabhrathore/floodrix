@@ -1,32 +1,21 @@
-// ═══════════════════════════════════════════════════════════════════════════
-//  src/features/workflow-canvas/nodes/base/base-node.tsx
-//  Shared wrapper for ALL node types
-//
-//  Every node renders:
-//    ┌─ accent border (left)
-//    ├─ header: icon + label + type badge + menu
-//    ├─ body: type-specific content (children)
-//    ├─ footer: optional (reference, status)
-//    └─ handles: positioned based on NODE_HANDLES config
-//
-//  This component owns layout, selection, hover, and handles.
-//  Each node type only renders its body content.
-// ═══════════════════════════════════════════════════════════════════════════
+// src/components/react-flow/calculator/calc-base-node.tsx
 
 "use client";
 
 import { memo, type ReactNode } from "react";
-import { Position, useConnection } from "@xyflow/react";
+import { Position } from "@xyflow/react";
 import {
     MoreHorizontal,
     Copy,
     Trash2,
     Settings,
+    BookOpen,
     type LucideIcon,
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import { NODE_ACCENTS, NODE_HANDLES, type NodeTypeKey } from "@/theme/calc-theme";
 import { NodeHandle } from "./calc-base-handle";
+import { useWorkflowCanvasStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
 
 // ─── Props ───────────────────────────────────────────────────────────────
 
@@ -36,24 +25,19 @@ interface BaseNodeProps {
     label: string;
     selected?: boolean;
     children: ReactNode;
-
-    // Optional overrides
     subtitle?: string;
     footer?: ReactNode;
     width?: number;
     badge?: string;
     reference?: string;
-
-    // Execution state (shown during workflow runs)
     executionStatus?: "pending" | "running" | "completed" | "errored" | "waiting" | "skipped";
-
-    // Callbacks
+    // Optional explicit callbacks — if not provided, BaseNode reads from store
     onDelete?: () => void;
     onDuplicate?: () => void;
     onConfigure?: () => void;
 }
 
-// ─── Execution Status Indicators ─────────────────────────────────────────
+// ─── Execution Status ────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { dot: string; ring: string; label: string }> = {
     pending: { dot: "#d1d5db", ring: "transparent", label: "Pending" },
@@ -78,14 +62,25 @@ function BaseNodeInner({
     badge,
     reference,
     executionStatus,
-    onDelete,
-    onDuplicate,
-    onConfigure,
+    onDelete: onDeleteProp,
+    onDuplicate: onDuplicateProp,
+    onConfigure: onConfigureProp,
 }: BaseNodeProps) {
     const accent = NODE_ACCENTS[nodeType];
     const handles = NODE_HANDLES[nodeType];
     const IconComponent = (Icons as unknown as Record<string, LucideIcon>)[accent.icon];
     const status = executionStatus ? STATUS_STYLES[executionStatus] : null;
+
+    // Get store actions — these work for all node types without explicit props
+    const store = useWorkflowCanvasStore;
+    const handleDelete = onDeleteProp ?? (() => store.getState().deleteNode(id));
+    const handleDuplicate = onDuplicateProp ?? (() => store.getState().duplicateNode(id));
+
+    // For configure, we dispatch a custom event that the canvas component listens to.
+    // This avoids needing to thread the config drawer through every node type.
+    const handleConfigure = onConfigureProp ?? (() => {
+        window.dispatchEvent(new CustomEvent("floodrix:configure-node", { detail: { nodeId: id } }));
+    });
 
     return (
         <div
@@ -104,8 +99,8 @@ function BaseNodeInner({
                 fontFamily: "'Inter', system-ui, sans-serif",
             }}
         >
-            {/* ── Input Handles (left side) ────────────────────────────────── */}
-            {handles.inputs.map((h, i) => (
+            {/* Input Handles */}
+            {handles.inputs.map((h) => (
                 <NodeHandle
                     key={h.id}
                     id={h.id}
@@ -113,14 +108,12 @@ function BaseNodeInner({
                     dataType={h.dataType}
                     label={h.label}
                     position={Position.Left}
-                    // index={i}
-                    // total={handles.inputs.length}
                     required={h.required}
                 />
             ))}
 
-            {/* ── Output Handles (right side) ──────────────────────────────── */}
-            {handles.outputs.map((h, i) => (
+            {/* Output Handles */}
+            {handles.outputs.map((h) => (
                 <NodeHandle
                     key={h.id}
                     id={h.id}
@@ -128,12 +121,10 @@ function BaseNodeInner({
                     dataType={h.dataType}
                     label={h.label}
                     position={Position.Right}
-                // index={i}
-                // total={handles.outputs.length}
                 />
             ))}
 
-            {/* ── Header ───────────────────────────────────────────────────── */}
+            {/* Header */}
             <div
                 style={{
                     display: "flex",
@@ -238,29 +229,25 @@ function BaseNodeInner({
                     </div>
                 )}
 
-                {/* Menu button (visible on hover) */}
+                {/* 3-dot menu */}
                 <div
                     className="opacity-0 group-hover/node:opacity-100"
-                    style={{
-                        transition: "opacity 0.1s",
-                        position: "relative",
-                        flexShrink: 0,
-                    }}
+                    style={{ transition: "opacity 0.1s", flexShrink: 0 }}
                 >
                     <NodeMenu
-                        onDelete={onDelete}
-                        onDuplicate={onDuplicate}
-                        onConfigure={onConfigure}
+                        onConfigure={handleConfigure}
+                        onDuplicate={handleDuplicate}
+                        onDelete={handleDelete}
                     />
                 </div>
             </div>
 
-            {/* ── Body ─────────────────────────────────────────────────────── */}
+            {/* Body */}
             <div style={{ padding: "8px 10px" }}>
                 {children}
             </div>
 
-            {/* ── Footer (optional) ────────────────────────────────────────── */}
+            {/* Footer */}
             {(footer || reference) && (
                 <div
                     style={{
@@ -273,7 +260,7 @@ function BaseNodeInner({
                 >
                     {reference && (
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <Icons.BookOpen size={10} strokeWidth={1.5} />
+                            <BookOpen size={10} strokeWidth={1.5} />
                             <span>{reference}</span>
                         </div>
                     )}
@@ -281,33 +268,34 @@ function BaseNodeInner({
                 </div>
             )}
 
-            {/* ── Pulse animation ──────────────────────────────────────────── */}
             <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.3); }
-        }
-      `}</style>
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(1.3); }
+                }
+            `}</style>
         </div>
     );
 }
 
 export const BaseNode = memo(BaseNodeInner);
 
-// ─── Node Menu ───────────────────────────────────────────────────────────
+// ─── Node Menu (3-dot dropdown) ──────────────────────────────────────────
 
 function NodeMenu({
     onDelete,
     onDuplicate,
     onConfigure,
 }: {
-    onDelete?: () => void;
-    onDuplicate?: () => void;
-    onConfigure?: () => void;
+    onDelete: () => void;
+    onDuplicate: () => void;
+    onConfigure: () => void;
 }) {
     return (
         <div className="group/menu relative">
             <button
+                className="nodrag"
+                onClick={(e) => e.stopPropagation()}
                 style={{
                     width: 22,
                     height: 22,
@@ -323,8 +311,9 @@ function NodeMenu({
                 <MoreHorizontal size={12} color="#94a3b8" />
             </button>
 
+            {/* Dropdown — shows on hover */}
             <div
-                className="hidden group-hover/menu:block"
+                className="nodrag hidden group-hover/menu:block"
                 style={{
                     position: "absolute",
                     right: 0,
@@ -338,15 +327,10 @@ function NodeMenu({
                     minWidth: 140,
                 }}
             >
-                {onConfigure && (
-                    <MenuButton icon={Settings} label="Configure" onClick={onConfigure} />
-                )}
-                {onDuplicate && (
-                    <MenuButton icon={Copy} label="Duplicate" onClick={onDuplicate} />
-                )}
-                {onDelete && (
-                    <MenuButton icon={Trash2} label="Delete" onClick={onDelete} danger />
-                )}
+                <MenuButton icon={Settings} label="Configure" onClick={onConfigure} />
+                <MenuButton icon={Copy} label="Duplicate" onClick={onDuplicate} />
+                <div style={{ height: 1, backgroundColor: "#f3f4f6", margin: "2px 0" }} />
+                <MenuButton icon={Trash2} label="Delete" onClick={onDelete} danger />
             </div>
         </div>
     );
@@ -365,7 +349,11 @@ function MenuButton({
 }) {
     return (
         <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            className="nodrag"
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
             style={{
                 display: "flex",
                 alignItems: "center",
@@ -381,8 +369,12 @@ function MenuButton({
                 color: danger ? "#ef4444" : "#374151",
                 fontFamily: "inherit",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = danger ? "#fef2f2" : "#f9fafb"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = danger ? "#fef2f2" : "#f9fafb";
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+            }}
         >
             <Icon size={13} strokeWidth={1.5} />
             {label}

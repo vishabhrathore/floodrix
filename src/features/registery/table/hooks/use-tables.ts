@@ -10,6 +10,51 @@ export const useSuspenseTables = () => {
   return useSuspenseQuery(trpc.tables.getMany.queryOptions(params));
 };
 
+export const useTable = (id?: string) => {
+  const trpc = useTRPC();
+  return useSuspenseQuery(
+    trpc.tables.getOne.queryOptions(
+      { id: id! },
+      { enabled: !!id }
+    )
+  );
+};
+
+export const useCreateTable = () => {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.tables.create.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Table "${data.name}" created`);
+        queryClient.invalidateQueries(trpc.tables.getMany.queryOptions({}));
+      },
+      onError: (error: any) => {
+        toast.error(`Failed to create table: ${error.message}`);
+      },
+    }),
+  );
+};
+
+export const useUpdateTable = () => {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.tables.update.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Table "${data.name}" updated`);
+        queryClient.invalidateQueries(trpc.tables.getMany.queryOptions({}));
+        queryClient.invalidateQueries(trpc.tables.getOne.queryOptions({ id: data.id }));
+      },
+      onError: (error: any) => {
+        toast.error(`Failed to update table: ${error.message}`);
+      },
+    }),
+  );
+};
+
 export const useCreateSystemTable = () => {
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -20,7 +65,7 @@ export const useCreateSystemTable = () => {
         toast.success(`System table "${data.name}" created`);
         queryClient.invalidateQueries(trpc.tables.getMany.queryOptions({}));
       },
-      onError: (error) => {
+      onError: (error: any) => {
         toast.error(`Failed to create system table: ${error.message}`);
       },
     }),

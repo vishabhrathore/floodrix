@@ -1,77 +1,116 @@
-import prisma from "@/lib/db";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+// src/features/calc-workflows/server/routers.ts
+
 import z from "zod";
-import { PAGINATION } from "@/config/constants";
-import { WorkflowStatus, Visibility } from "@/generated/prisma";
 import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { Prisma } from "@/generated/prisma";
+import prisma from "@/lib/db";
+import { PAGINATION } from "@/config/constants";
 
 export const calcWorkflowsRouter = createTRPCRouter({
   getMany: protectedProcedure
     .input(
       z.object({
-        page: z.number().default(PAGINATION.DEFAULT_PAGE),
-        pageSize: z
-          .number()
-          .min(PAGINATION.MIN_PAGE_SIZE)
-          .max(PAGINATION.MAX_PAGE_SIZE)
-          .default(PAGINATION.DEFAULT_PAGE_SIZE),
-        search: z.string().default(""),
-        organizationId: z.string().optional(),
+        organizationId: z.string(),
+        search: z.string().optional(),
         status: z.string().optional(),
+        page: z.number().int().min(1).default(PAGINATION.DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(100).default(PAGINATION.DEFAULT_PAGE_SIZE),
       })
     )
-    .query(async ({ input }) => {
-      const { page, pageSize, search, organizationId, status } = input;
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.auth.user.id;
+      const { organizationId, search, status, page, pageSize } = input;
 
-      const whereClause = {
-        deletedAt: null, // Only fetch workflows that haven't been soft-deleted
-        OR: [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { slug: { contains: search, mode: "insensitive" as const } },
-        ],
-        ...(organizationId && { organizationId }),
-        ...(status && { status: status as WorkflowStatus }),
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { globalRole: true },
+      });
+
+      if (user.globalRole !== "SUPER_ADMIN") {
+        const member = await prisma.organizationMember.findUnique({
+          where: {
+            userId_organizationId: { userId, organizationId },
+          },
+        });
+        if (!member) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+        }
+      }
+
+      const where: Prisma.CalcWorkflowWhereInput = {
+        organizationId,
+        deletedAt: null,
+        ...(status ? { status: status as any } : {}),
+        ...(search
+          ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+            ],
+          }
+          : {}),
       };
 
-      const [items, totalCount] = await Promise.all([
+      const [items, totalItems] = await Promise.all([
         prisma.calcWorkflow.findMany({
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-          where: whereClause,
-          include: {
-            organization: { select: { name: true } },
-            currentVersion: { select: { version: true, publishedAt: true } },
-            _count: { select: { nodes: true, sessions: true } },
-          },
+          where,
           orderBy: { updatedAt: "desc" },
+          take: pageSize,
+          skip: (page - 1) * pageSize,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            category: true,
+            tags: true,
+            status: true,
+            visibility: true,
+            publishedAt: true,
+            updatedAt: true,
+            createdAt: true,
+            _count: { select: { nodes: true, sessions: true } },
+            ratingAggregate: {
+              select: { averageRating: true, ratingCount: true },
+            },
+          },
         }),
-        prisma.calcWorkflow.count({ where: whereClause }),
+        prisma.calcWorkflow.count({ where }),
       ]);
 
-      const totalPages = Math.ceil(totalCount / pageSize);
+      const totalPages = Math.ceil(totalItems / pageSize);
 
-      return {
-        items,
-        page,
-        pageSize,
-        totalCount,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      };
+      return { items, totalItems, totalPages, page };
     }),
 
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: input.id, deletedAt: null },
-        include: {
-          organization: { select: { name: true, isPersonal: true } },
-          currentVersion: true,
-          _count: {
-            select: { versions: true, nodes: true, edges: true, sessions: true },
-          },
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.auth.user.id;
+
+      return prisma.calcWorkflow.findFirstOrThrow({
+        where: {
+          id: input.id,
+          deletedAt: null,
+          organization: { members: { some: { userId } } },
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          category: true,
+          tags: true,
+          status: true,
+          visibility: true,
+          organizationId: true,
+          publishedAt: true,
+          updatedAt: true,
+          createdAt: true,
+          metadata: true,
+          _count: { select: { nodes: true, edges: true, variables: true, sessions: true } },
+          currentVersion: { select: { version: true, publishedAt: true } },
         },
       });
     }),
@@ -79,71 +118,64 @@ export const calcWorkflowsRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        organizationId: z.string().min(1, "Organization ID is required"),
-        name: z.string().min(1, "Name is required"),
-        slug: z.string().min(1, "Slug is required"),
-        description: z.string().optional(),
+        organizationId: z.string(),
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
         category: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // Check for slug uniqueness within the organization
-      const existing = await prisma.calcWorkflow.findUnique({
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.auth.user.id;
+
+      const member = await prisma.organizationMember.findUnique({
         where: {
-          organizationId_slug: {
-            organizationId: input.organizationId,
-            slug: input.slug,
-          },
+          userId_organizationId: { userId, organizationId: input.organizationId },
         },
       });
+      if (!member) throw new TRPCError({ code: "FORBIDDEN" });
 
-      if (existing) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "A workflow with this slug already exists in this organization.",
-        });
-      }
+      const baseSlug = input.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+      const existing = await prisma.calcWorkflow.count({
+        where: { organizationId: input.organizationId, slug: { startsWith: baseSlug } },
+      });
+      const slug = existing > 0 ? `${baseSlug}-${existing + 1}` : baseSlug;
 
       return prisma.calcWorkflow.create({
         data: {
           organizationId: input.organizationId,
           name: input.name,
-          slug: input.slug,
+          slug,
           description: input.description,
-          category: input.category,
+          category: input.category ?? "Flood Discharge",
+          status: "DRAFT",
+          visibility: "PRIVATE",
         },
       });
     }),
 
-  update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        category: z.string().optional(),
-        status: z.nativeEnum(WorkflowStatus).optional(),
-        visibility: z.nativeEnum(Visibility).optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      return prisma.calcWorkflow.update({
-        where: { id },
-        data,
-      });
-    }),
-
-  delete: protectedProcedure
+  remove: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      // Soft delete implementation based on your schema's `deletedAt` field
-      return prisma.calcWorkflow.update({
-        where: { id: input.id },
-        data: {
-          deletedAt: new Date(),
-          status: "ARCHIVED", // Automatically archive on delete
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.auth.user.id;
+
+      const wf = await prisma.calcWorkflow.findFirst({
+        where: {
+          id: input.id,
+          deletedAt: null,
+          organization: { members: { some: { userId } } },
         },
       });
+      if (!wf) throw new TRPCError({ code: "NOT_FOUND" });
+
+      await prisma.calcWorkflow.update({
+        where: { id: input.id },
+        data: { deletedAt: new Date() },
+      });
+
+      return { success: true };
     }),
 });

@@ -9,6 +9,8 @@ import { workspacesRouter } from '@/features/workspace/server/routers';
 import { librarySubmissionsRouter } from '@/features/library/server/routers';
 import { formulasRouter } from '@/features/registery/formula/server/routers';
 import { tablesRouter } from '@/features/registery/table/server/routers';
+import { calcWorkflowCanvasRouter } from '@/features/workflow-canvas/server/router';
+import { calcExecutionRouter } from '@/features/workflow-canvas/server/execution-router';
 
 export const appRouter = createTRPCRouter({
   workflows: workflowsRouter,
@@ -21,6 +23,8 @@ export const appRouter = createTRPCRouter({
   librarySubmissions: librarySubmissionsRouter,
   tables: tablesRouter,
   formulas: formulasRouter,
+  calcWorkflowCanvas: calcWorkflowCanvasRouter,
+  calcExecution: calcExecutionRouter,
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;

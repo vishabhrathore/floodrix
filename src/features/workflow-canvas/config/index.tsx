@@ -23,7 +23,7 @@ function collectAvailableVariables(
 
     for (const node of nodes) {
         const config = (node.data?.config as Record<string, unknown>) ?? {};
-        const nodeLabel = (node.data?.label as string) ?? node.type ?? "Node";
+        const nodeLabel = (node.data?.label as string) || (config.label as string) || node.type || "Node";
 
         // INPUT nodes → each field is a variable
         if (node.type === "INPUT") {
@@ -40,21 +40,23 @@ function collectAvailableVariables(
             }
         }
 
-        // LOOKUP_TABLE → result_variable
-        if (node.type === "LOOKUP_TABLE" && config.result_variable) {
-            vars.push({
-                key: config.result_variable as string,
-                label: `${nodeLabel} result`,
-                sourceNode: nodeLabel,
-            });
-        }
+        // LOOKUP_TABLE / FORMULA (Legacy and Unified)
+        const resultVar = (
+            (config.outputBinding as any)?.contextKey ||
+            (config.outputBinding as any)?.nodeVar ||
+            config.result_variable
+        ) as string | undefined;
 
-        // FORMULA → result_variable
-        if (node.type === "FORMULA" && config.result_variable) {
+        const resultUnit = (
+            (config.outputBinding as any)?.unit ||
+            config.result_unit
+        ) as string | undefined;
+
+        if (resultVar) {
             vars.push({
-                key: config.result_variable as string,
+                key: resultVar,
                 label: `${nodeLabel} result`,
-                unit: config.result_unit as string | undefined,
+                unit: resultUnit,
                 sourceNode: nodeLabel,
             });
         }
@@ -82,16 +84,6 @@ function collectAvailableVariables(
             });
         }
 
-        // DISPLAY → result_variable
-        if (node.type === "DISPLAY" && config.result_variable) {
-            vars.push({
-                key: config.result_variable as string,
-                label: `${nodeLabel} result`,
-                unit: config.result_unit as string | undefined,
-                sourceNode: nodeLabel,
-            });
-        }
-
         // DECISION → set_variables from branches
         if (node.type === "DECISION") {
             const branches = config.branches as Record<string, { set_variables?: Record<string, unknown> }> | undefined;
@@ -110,7 +102,7 @@ function collectAvailableVariables(
     // Deduplicate by key
     const seen = new Set<string>();
     return vars.filter((v) => {
-        if (seen.has(v.key)) return false;
+        if (!v.key || seen.has(v.key)) return false;
         seen.add(v.key);
         return true;
     });
@@ -119,10 +111,11 @@ function collectAvailableVariables(
 // ─── Node type → config component ────────────────────────────────────────
 
 function getConfigComponent(
+    nodeId: string,
     nodeType: CalcNodeType,
     config: Record<string, unknown>,
     onSave: (config: Record<string, unknown>) => void,
-    availableVariables: { key: string; label: string; unit?: string; sourceNode?: string }[]
+    availableVariables: any[]
 ): React.ReactNode | null {
     switch (nodeType) {
         case "INPUT":
@@ -130,13 +123,21 @@ function getConfigComponent(
         case "FORMULA":
             return (
                 <FormulaConfig
+                    nodeId={nodeId}
                     config={config as any}
                     availableVariables={availableVariables}
                     onSave={onSave}
                 />
             );
         case "LOOKUP_TABLE":
-            return <LookupConfig config={config as any} onSave={onSave} />;
+            return (
+                <LookupConfig
+                    nodeId={nodeId}
+                    config={config as any}
+                    availableVariables={availableVariables}
+                    onSave={onSave}
+                />
+            );
         case "DECISION":
             return <DecisionConfig config={config as any} onSave={onSave} />;
         case "DISPLAY":
@@ -154,6 +155,7 @@ interface ConfigDrawerState {
     nodeType: CalcNodeType | null;
     nodeLabel: string;
     config: Record<string, unknown>;
+    draftConfig: Record<string, unknown>;
 }
 
 export function useConfigDrawer(workflowId: string) {
@@ -167,6 +169,7 @@ export function useConfigDrawer(workflowId: string) {
         nodeType: null,
         nodeLabel: "",
         config: {},
+        draftConfig: {},
     });
 
     // Collect all available variables from every node on the canvas
@@ -191,12 +194,14 @@ export function useConfigDrawer(workflowId: string) {
             const node = store.nodes.find((n) => n.id === nodeId);
             if (!node) return;
 
+            const config = (node.data?.config as Record<string, unknown>) ?? {};
             setState({
                 open: true,
                 nodeId,
                 nodeType: node.type as CalcNodeType,
                 nodeLabel: (node.data?.label as string) ?? node.type ?? "Node",
-                config: (node.data?.config as Record<string, unknown>) ?? {},
+                config,
+                draftConfig: config,
             });
         },
         [store.nodes]
@@ -206,23 +211,29 @@ export function useConfigDrawer(workflowId: string) {
         setState((s) => ({ ...s, open: false }));
     }, []);
 
+    const handleDraftChange = useCallback((newConfig: Record<string, unknown>) => {
+        setState(s => ({ ...s, draftConfig: newConfig }));
+    }, []);
+
     const handleSave = useCallback(
-        (config: Record<string, unknown>) => {
+        () => {
             if (!state.nodeId) return;
 
+            const finalConfig = state.draftConfig;
+
             // Optimistic update in store
-            store.updateNodeConfig(state.nodeId, config);
+            store.updateNodeConfig(state.nodeId, finalConfig);
 
             // Persist to server
             saveMutation.mutate({
                 workflowId,
                 nodeId: state.nodeId,
-                config,
+                config: finalConfig,
             });
 
             closeDrawer();
         },
-        [state.nodeId, workflowId, store, saveMutation, closeDrawer]
+        [state.nodeId, state.draftConfig, workflowId, store, saveMutation, closeDrawer]
     );
 
     const drawer =
@@ -237,7 +248,7 @@ export function useConfigDrawer(workflowId: string) {
                 onSave={handleSave}
                 isSaving={saveMutation.isPending}
             >
-                {getConfigComponent(state.nodeType, state.config, handleSave, availableVariables)}
+                {state.nodeId && getConfigComponent(state.nodeId, state.nodeType, state.draftConfig, handleDraftChange, availableVariables)}
             </ConfigDrawer>
         ) : null;
 

@@ -14,8 +14,10 @@ import { anthropicChannel } from "./channels/anthropic";
 import { discordChannel } from "./channels/discord";
 import { slackChannel } from "./channels/slack";
 
+import { WorkflowExecutor } from "@/features/workflow-canvas/engine/workflow-executor";
+
 export const executeWorkflow = inngest.createFunction(
-  { 
+  {
     id: "execute-workflow",
     retries: process.env.NODE_ENV === "production" ? 3 : 0,
     onFailure: async ({ event, step }) => {
@@ -29,7 +31,7 @@ export const executeWorkflow = inngest.createFunction(
       });
     },
   },
-  { 
+  {
     event: "workflows/execute.workflow",
     channels: [
       httpRequestChannel(),
@@ -115,4 +117,22 @@ export const executeWorkflow = inngest.createFunction(
       result: context,
     };
   },
+);
+
+export const resumeCalcSession = inngest.createFunction(
+  {
+    id: "resume-calc-session",
+    retries: 3,
+  },
+  {
+    event: "calc/session.resume",
+  },
+  async ({ event, step }) => {
+    const { sessionId } = event.data;
+
+    await step.run("resume-execution", async () => {
+      const executor = new WorkflowExecutor(prisma);
+      return executor.continueExecution(sessionId, { isBackgroundRun: true });
+    });
+  }
 );

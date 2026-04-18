@@ -85,9 +85,18 @@ export const tablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const organizationId = ctx.auth.organizationId;
+      let organizationId = (ctx.auth as any).organizationId;
+
+      // Fallback to personal organization if not in context
       if (!organizationId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Organization required" });
+        const personalOrg = await prisma.organization.findFirst({
+          where: { founderId: ctx.auth.user.id, isPersonal: true }
+        });
+        organizationId = personalOrg?.id;
+      }
+
+      if (!organizationId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "User must have a personal organization." });
       }
 
       const existing = await prisma.tableRegistryItem.findUnique({
@@ -100,11 +109,14 @@ export const tablesRouter = createTRPCRouter({
         throw new TRPCError({ code: "CONFLICT", message: "Slug already exists" });
       }
 
+      const isPublished = input.visibility === Visibility.PUBLIC ? true : input.isPublished;
+
       return prisma.tableRegistryItem.create({
         data: {
           ...input,
           organizationId,
           isSystem: false,
+          isPublished,
         },
       });
     }),
@@ -126,7 +138,7 @@ export const tablesRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
-      const organizationId = ctx.auth.organizationId;
+      const organizationId = (ctx.auth as any).organizationId;
 
       const item = await prisma.tableRegistryItem.findUnique({
         where: { id, deletedAt: null },
@@ -171,7 +183,7 @@ export const tablesRouter = createTRPCRouter({
         where: { name: "System Registry" },
       });
 
-      const organizationId = systemOrg?.id || ctx.auth.organizationId;
+      const organizationId = systemOrg?.id || (ctx.auth as any).organizationId;
 
       if (!organizationId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Organization required for system tables" });

@@ -110,11 +110,11 @@ export const geminiExecutor: NodeExecutor<GeminiData> = async ({
       },
     );
 
-    const text = 
-      steps[0].content[0].type === "text" 
+    const text =
+      steps[0].content[0].type === "text"
         ? steps[0].content[0].text
         : "";
-    
+
     await publish(
       geminiChannel().status({
         nodeId,
@@ -129,7 +129,7 @@ export const geminiExecutor: NodeExecutor<GeminiData> = async ({
       },
     }
   } catch (error) {
-     await publish(
+    await publish(
       geminiChannel().status({
         nodeId,
         status: "error",

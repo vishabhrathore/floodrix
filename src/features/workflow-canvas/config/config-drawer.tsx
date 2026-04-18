@@ -83,8 +83,7 @@ export function ConfigDrawer({
                         <Button
                             size="sm"
                             onClick={() => {
-                                // The individual config components manage their own state
-                                // and call onSave with the full config object
+                                onSave({}); // The actual data is handled by the hook's closure now
                             }}
                             disabled={isSaving}
                             className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"

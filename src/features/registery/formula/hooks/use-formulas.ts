@@ -1,6 +1,6 @@
 // hooks.ts
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFormulasParams } from "./use-formulas-params";
 
@@ -12,9 +12,9 @@ export const useSuspenseFormulas = () => {
 
 export const useFormula = (id?: string) => {
   const trpc = useTRPC();
-  return useSuspenseQuery(
+  return useQuery(
     trpc.formulas.getOne.queryOptions(
-      { id: id! },
+      { id: id as string },
       { enabled: !!id }
     )
   );

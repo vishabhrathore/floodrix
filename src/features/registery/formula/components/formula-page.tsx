@@ -157,9 +157,9 @@ function FormulaCard({ formula }: FormulaCardProps) {
                             Inputs
                         </p>
                         <div className="flex flex-wrap gap-1">
-                            {inputVars.slice(0, 4).map((v) => (
+                            {inputVars.slice(0, 4).map((v, i) => (
                                 <span
-                                    key={v.notation}
+                                    key={`${v.notation}-${i}`}
                                     className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
                                 >
                                     {v.notation}
@@ -258,7 +258,7 @@ export const FormulaRegistryList = () => {
         return (
             <EmptyView
                 message={params.search ? `No formulas match "${params.search}"` : "The formula registry is empty."}
-                onNew={() => { }} // Placeholder or redirect to new
+                onNew={() => window.location.href = "/admin/registery/formulas/new"}
             />
         );
     }

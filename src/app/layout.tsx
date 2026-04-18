@@ -32,14 +32,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <TRPCReactProvider>
-          <NuqsAdapter>
+        <NuqsAdapter>
+          <TRPCReactProvider>
             <Provider>
               {children}
               <Toaster />
             </Provider>
-          </NuqsAdapter>
-        </TRPCReactProvider>
+          </TRPCReactProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

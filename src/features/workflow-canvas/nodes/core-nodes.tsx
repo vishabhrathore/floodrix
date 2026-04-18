@@ -101,32 +101,41 @@ export const InputNode = memo(InputNodeInner);
 //  Can reference a registry formula or be inline.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { useTable } from "@/features/registery/table/hooks/use-tables";
+
 function FormulaNodeInner({ id, data, selected }: NodeProps) {
     const d = data as NodeData;
     const config = d.config;
     const result = d.executionResult;
 
-    const displayExpr = (config.display_expression || config.expression || "") as string;
-    const source = config.source as string | undefined;
-    const resultVar = config.result_variable as string | undefined;
-    const resultUnit = config.result_unit as string | undefined;
-    const reference = config.reference as string | undefined;
-    const showVars = (config.showVars || []) as { key: string; label: string; unit: string }[];
+    const mode = config.mode as string | undefined;
+    const isRegistry = mode === "registry";
+    const displayExpr = (config.inlineDisplayExpression || config.inlineExpression || config.display_expression || config.expression || "") as string;
+    const resultVar = ((config.outputBinding as any)?.nodeVar || config.result_variable) as string | undefined;
+    const resultUnit = ((config.outputBinding as any)?.unit || config.result_unit) as string | undefined;
+    const reference = (config.description || config.reference) as string | undefined;
+    const showVars = (config.inputBindings || config.showVars || []) as any[];
 
     return (
         <BaseNode
             id={id}
             nodeType="FORMULA"
-            label={d.label || "Formula"}
-            subtitle={source === "registry" ? "From registry" : "Inline"}
+            label={(config.label as string) || d.label || "Formula"}
+            subtitle={isRegistry ? "From registry" : "Inline"}
             selected={selected}
             executionStatus={d.executionStatus}
-            badge={source === "registry" ? "Registry" : undefined}
+            badge={isRegistry ? "Registry" : undefined}
             reference={reference}
         >
-            {displayExpr ? (
+            {displayExpr || isRegistry ? (
                 <>
-                    <FormulaDisplay expression={displayExpr} />
+                    {displayExpr ? (
+                        <FormulaDisplay expression={displayExpr} />
+                    ) : (
+                        <div className="flex h-12 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[11px] text-slate-400">
+                            {isRegistry ? "Registry Item Linked" : "No formula configured"}
+                        </div>
+                    )}
 
                     {showVars.length > 0 && (
                         <>
@@ -134,10 +143,10 @@ function FormulaNodeInner({ id, data, selected }: NodeProps) {
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                                 {showVars.map((v) => (
                                     <VariablePill
-                                        key={v.key}
-                                        name={v.key}
+                                        key={v.contextKey || v.key}
+                                        name={v.nodeVar || v.key}
                                         unit={v.unit}
-                                        value={result ? (result[v.key] as number) : undefined}
+                                        value={result ? (result[v.nodeVar || v.key] as number) : undefined}
                                     />
                                 ))}
                             </div>
@@ -172,20 +181,24 @@ function LookupTableNodeInner({ id, data, selected }: NodeProps) {
     const config = d.config;
     const result = d.executionResult;
 
-    const lookupKey = config.lookup_key as string | undefined;
-    const resultVar = config.result_variable as string | undefined;
-    const rows = (config.rows || config.data || []) as {
-        label?: string;
-        range?: [number, number | null];
-        value: number;
-    }[];
-    const reference = config.reference as string | undefined;
+    const mode = config.mode as "registry" | "inline" | undefined;
+    const isRegistry = mode === "registry";
+
+    // Fetch registry data if in registry mode
+    const { data: registryItem, isLoading: isLoadingRegistry } = useTable(isRegistry ? (config.registryId as string) : undefined);
+
+    const lookupKey = ((config.keyBindings as any)?.[0]?.contextKey || config.lookup_key) as string | undefined;
+    const resultVar = ((config.outputBinding as any)?.contextKey || config.result_variable) as string | undefined;
+
+    // Resolve rows: from registry item OR from inline config
+    const rawRows = (isRegistry ? (registryItem?.data as any[]) : (config.inlineData as any[] || config.rows as any[] || config.data as any[])) || [];
+    const reference = (config.description || config.reference || (isRegistry ? registryItem?.reference : undefined)) as string | undefined;
 
     const matchedIndex = result?.matchedIndex as number | undefined;
     const selectedValue = result?.selectedValue as number | undefined;
 
-    const tableRows = rows.map((r) => ({
-        label: r.label || `${r.range?.[0]}–${r.range?.[1] ?? "∞"}`,
+    const tableRows = rawRows.slice(0, 5).map((r: any) => ({
+        label: r.label || (r.range ? `${r.range?.[0]}–${r.range?.[1] ?? "∞"}` : String(r.key || Object.values(r)[0] || "")),
         value: r.value,
     }));
 
@@ -193,11 +206,12 @@ function LookupTableNodeInner({ id, data, selected }: NodeProps) {
         <BaseNode
             id={id}
             nodeType="LOOKUP_TABLE"
-            label={d.label || "Lookup Table"}
-            subtitle={lookupKey ? `Key: ${lookupKey}` : undefined}
+            label={(config.label as string) || d.label || (isRegistry && registryItem ? registryItem.name : "Lookup Table")}
+            subtitle={lookupKey ? `Key: ${lookupKey}` : (isRegistry && isLoadingRegistry ? "Loading registry..." : undefined)}
             selected={selected}
             executionStatus={d.executionStatus}
             reference={reference}
+            badge={isRegistry ? "Registry" : undefined}
         >
             {tableRows.length > 0 ? (
                 <>
@@ -216,7 +230,10 @@ function LookupTableNodeInner({ id, data, selected }: NodeProps) {
                     )}
                 </>
             ) : (
-                <EmptyState message="No table data" action="Configure table" />
+                <EmptyState
+                    message={isRegistry && !config.registryId ? "No table selected" : "No table data"}
+                    action={isRegistry ? "Select registry table" : "Configure table"}
+                />
             )}
         </BaseNode>
     );

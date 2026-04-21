@@ -1,65 +1,102 @@
-// src/features/workflow-canvas/hooks/use-execution.ts
+// ═══════════════════════════════════════════════════════════════════════════
+//  src/features/workflow-canvas/hooks/use-execution.ts
+//
+//  CHUNK 3 CHANGES:
+//    - startRun accepts { stepMode } option
+//    - new methods: stepForward, stepBack
+//    - state now carries stepOutput from the server response
+//    - polling interval kept at 1.5s; only active when status = RUNNING
+// ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useCallback, useRef } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { SessionStatus } from "@/generated/prisma";
 import { useTRPC } from "@/trpc/client";
+import { useExecutionHighlightStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
 
 interface InputField {
     key: string;
     label: string;
     unit?: string | null;
-    defaultValue?: unknown;
-    dataType: string;
+    default?: unknown;
+    hint?: string;
+    data_type?: string;
+    required?: boolean;
+    constraints?: { min?: number; max?: number; step?: number };
 }
 
 interface PausedNode {
     nodeId: string;
     nodeLabel: string;
     fields: InputField[];
+    message?: string;
+}
+
+interface StepOutput {
+    nodeId: string;
+    nodeLabel: string;
+    nodeType: string;
+    outputs: Record<string, unknown>;
+    result: Record<string, unknown>;
+    durationMs: number;
+    stepNumber: number;
+    totalSteps: number;
 }
 
 interface ExecutionState {
     status: SessionStatus | null;
     sessionId: string | null;
     currentNodeId: string | null;
+    pauseReason: string | null;
     pausedNode: PausedNode | null;
+    stepOutput: StepOutput | null;
+    variables: Record<string, unknown>;
     error: string | null;
     completedAt: string | null;
 }
 
 const POLL_INTERVAL_MS = 1500;
 
+const initialState: ExecutionState = {
+    status: null, sessionId: null, currentNodeId: null,
+    pauseReason: null, pausedNode: null, stepOutput: null,
+    variables: {}, error: null, completedAt: null,
+};
+
 export function useExecution(workflowId: string) {
     const trpc = useTRPC();
-    const queryClient = useQueryClient();
-
-    const [state, setState] = useState<ExecutionState>({
-        status: null,
-        sessionId: null,
-        currentNodeId: null,
-        pausedNode: null,
-        error: null,
-        completedAt: null,
-    });
-
+    const [state, setState] = useState<ExecutionState>(initialState);
     const pollingRef = useRef(false);
+
+    const syncHighlights = useExecutionHighlightStore((s) => s.syncExecutionHighlights);
+    const setActiveNode = useExecutionHighlightStore((s) => s.setActiveExecutionNode);
+
+
+    // Helper to absorb a server response into state
+    const ingest = useCallback((data: any) => {
+        setState((s) => ({
+            ...s,
+            status: data.status as SessionStatus,
+            sessionId: data.sessionId ?? s.sessionId,
+            currentNodeId: data.currentNodeId ?? (data.pausedNode?.nodeId ?? null),
+            pauseReason: data.pauseReason ?? null,
+            pausedNode: (data.pausedNode as PausedNode) ?? null,
+            stepOutput: (data.stepOutput as StepOutput) ?? null,
+            variables: (data.variables as Record<string, unknown>) ?? s.variables,
+            completedAt: data.completedAt ?? null,
+            error: data.error?.message ?? null,
+        }));
+        pollingRef.current = data.status === "RUNNING";
+        // NEW: sync highlights
+        if (Array.isArray(data.nodeExecutions)) {
+            syncHighlights(data.nodeExecutions);
+        }
+        setActiveNode(data.currentNodeId ?? null);
+    }, []);
 
     const startMutation = useMutation(
         trpc.calcExecution.startRun.mutationOptions({
-            onSuccess(data) {
-                setState({
-                    status: data.status as SessionStatus,
-                    sessionId: data.sessionId,
-                    currentNodeId: data.currentNodeId ?? null,
-                    pausedNode: (data.pausedNode as PausedNode) ?? null,
-                    error: null,
-                    completedAt: null,
-                });
-                if (data.status === "RUNNING") {
-                    pollingRef.current = true;
-                }
-            },
+            onSuccess: ingest,
             onError(err) {
                 setState((s) => ({ ...s, status: "ERRORED", error: err.message }));
             },
@@ -68,19 +105,25 @@ export function useExecution(workflowId: string) {
 
     const submitInputMutation = useMutation(
         trpc.calcExecution.submitInput.mutationOptions({
-            onSuccess(data) {
-                setState((s) => ({
-                    ...s,
-                    status: data.status as SessionStatus,
-                    currentNodeId: data.currentNodeId ?? null,
-                    pausedNode: (data.pausedNode as PausedNode) ?? null,
-                    completedAt: data.completedAt ?? null,
-                    error: null,
-                }));
-                if (data.status === "RUNNING") {
-                    pollingRef.current = true;
-                }
+            onSuccess: ingest,
+            onError(err) {
+                setState((s) => ({ ...s, error: err.message }));
             },
+        })
+    );
+
+    const stepForwardMutation = useMutation(
+        trpc.calcExecution.stepForward.mutationOptions({
+            onSuccess: ingest,
+            onError(err) {
+                setState((s) => ({ ...s, error: err.message }));
+            },
+        })
+    );
+
+    const stepBackMutation = useMutation(
+        trpc.calcExecution.stepBack.mutationOptions({
+            onSuccess: ingest,
             onError(err) {
                 setState((s) => ({ ...s, error: err.message }));
             },
@@ -96,7 +139,10 @@ export function useExecution(workflowId: string) {
         })
     );
 
-    useQuery(
+    // Poll the session while it's marked RUNNING. We use a sentinel ref
+    // (not derived from state.status) so TanStack Query doesn't re-register
+    // the interval on every render.
+    const sessionQuery = useQuery(
         trpc.calcExecution.getSession.queryOptions(
             { sessionId: state.sessionId! },
             {
@@ -106,29 +152,44 @@ export function useExecution(workflowId: string) {
         )
     );
 
-    const startRun = useCallback(() => {
+    // When poll result comes back with a terminal status, absorb it
+    // (Handled by the useEffect below to avoid render-time side effects)
+    //     if (sessionQuery.data && sessionQuery.data.status !== "RUNNING" && pollingRef.current) {
+    //     ingest(sessionQuery.data);
+    // }
+
+    // ─── Actions ──────────────────────────────────────────────────────────
+    //todo:ai-check
+    useEffect(() => {
+        if (sessionQuery.data && sessionQuery.data.status !== "RUNNING" && pollingRef.current) {
+            ingest(sessionQuery.data);
+        }
+    }, [sessionQuery.data, ingest]);
+
+    const startRun = useCallback((opts: { stepMode?: boolean } = {}) => {
         if (!workflowId) return;
-        setState({
-            status: "RUNNING",
-            sessionId: null,
-            currentNodeId: null,
-            pausedNode: null,
-            error: null,
-            completedAt: null,
+        setState({ ...initialState, status: "RUNNING" });
+        startMutation.mutate({
+            workflowId,
+            stepMode: opts.stepMode ?? false,
+            liveUpdates: opts.stepMode ?? false,
         });
-        startMutation.mutate({ workflowId });
     }, [workflowId, startMutation]);
 
-    const submitInput = useCallback(
-        (values: Record<string, unknown>) => {
-            if (!state.sessionId) return;
-            submitInputMutation.mutate({
-                sessionId: state.sessionId,
-                values,
-            });
-        },
-        [state.sessionId, submitInputMutation]
-    );
+    const submitInput = useCallback((values: Record<string, unknown>) => {
+        if (!state.sessionId) return;
+        submitInputMutation.mutate({ sessionId: state.sessionId, values });
+    }, [state.sessionId, submitInputMutation]);
+
+    const stepForward = useCallback(() => {
+        if (!state.sessionId) return;
+        stepForwardMutation.mutate({ sessionId: state.sessionId });
+    }, [state.sessionId, stepForwardMutation]);
+
+    const stepBack = useCallback((targetNodeId: string) => {
+        if (!state.sessionId) return;
+        stepBackMutation.mutate({ sessionId: state.sessionId, targetNodeId });
+    }, [state.sessionId, stepBackMutation]);
 
     const cancel = useCallback(() => {
         if (!state.sessionId) return;
@@ -138,14 +199,7 @@ export function useExecution(workflowId: string) {
 
     const reset = useCallback(() => {
         pollingRef.current = false;
-        setState({
-            status: null,
-            sessionId: null,
-            currentNodeId: null,
-            pausedNode: null,
-            error: null,
-            completedAt: null,
-        });
+        setState(initialState);
     }, []);
 
     return {
@@ -154,12 +208,23 @@ export function useExecution(workflowId: string) {
         isPaused: state.status === "PAUSED",
         isComplete: state.status === "COMPLETED",
         isErrored: state.status === "ERRORED",
+        // Pause reason shortcuts for the UI
+        isStepPause: state.pauseReason === "step_complete",
+        isInputPause: state.pauseReason === "awaiting_user_input",
+        isValidationPause: state.pauseReason === "validation_error",
+
+        // Actions
         startRun,
         submitInput,
+        stepForward,
+        stepBack,
         cancel,
         reset,
+
+        // Loading flags
         isStarting: startMutation.isPending,
         isSubmitting: submitInputMutation.isPending,
+        isStepping: stepForwardMutation.isPending || stepBackMutation.isPending,
         isCancelling: cancelMutation.isPending,
     };
 }

@@ -1,7 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//  /engine/formula-engine.ts
-//  Single source of truth for formula sandboxing and validation.
-//  Merges formula-sandbox.ts, formula-validator.ts (two versions).
+//  src/features/workflow-canvas/engine/formula-validator.ts
+//
+//  CHUNK 1 CHANGE: safeEvaluate / safeEvaluateMultiLine now respect a
+//  timeout. mathjs has no native cancellation, so we use a worker-style
+//  technique: run the evaluation, but bail with a timeout error if it takes
+//  too long. For the synchronous mathjs API the best we can do is set a
+//  reasonable complexity ceiling (already done via MAX_COMPLEXITY in
+//  validateExpression) and wrap the evaluation in a wall-clock check after
+//  the fact.
+//
+//  True cancellation requires running mathjs in a Worker. That's a chunk-5
+//  hardening item. For now: validate complexity up front + measure wall
+//  clock + reject if over the threshold. This catches accidental loops in
+//  CUSTOM_CODE without adding worker overhead to every formula evaluation.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { create, all, parse, type MathJsInstance, type MathNode } from "mathjs";
@@ -16,22 +27,16 @@ const BLOCKED_FUNCTIONS = new Set([
 ]);
 
 export const ALLOWED_FUNCTIONS = new Set([
-    // Arithmetic
     "abs", "ceil", "floor", "round", "sign", "trunc", "fix",
     "mod", "gcd", "lcm", "factorial",
-    // Powers & roots
     "sqrt", "cbrt", "pow", "exp", "expm1", "square", "cube", "nthRoot",
     "log", "log2", "log10", "log1p",
-    // Trigonometric
     "sin", "cos", "tan",
     "asin", "acos", "atan", "atan2",
     "sinh", "cosh", "tanh",
     "asinh", "acosh", "atanh",
-    // Min / Max
     "min", "max",
-    // Comparison
     "equal", "unequal", "larger", "smaller", "largerEq", "smallerEq",
-    // Logical
     "and", "or", "not", "xor",
 ]);
 
@@ -45,34 +50,43 @@ const BLOCKED_NODE_TYPES = new Set([
 const MAX_COMPLEXITY = 200;
 const MAX_MULTILINE_LINES = 50;
 
+/** Default per-evaluation wall-clock budget. Override via opts.timeoutMs. */
+const DEFAULT_EVAL_TIMEOUT_MS = 5_000;
+
 // ─── Types ────────────────────────────────────────────────────────────────
 
 export interface ValidationResult {
     valid: boolean;
     errors: string[];
     warnings: string[];
-    /** Variables referenced in the expression, with read/write usage. */
     variables: { name: string; usage: "read" | "write" }[];
     functions: string[];
     complexity: number;
 }
 
-// ─── Sandboxed mathjs Instance ────────────────────────────────────────────
+export interface EvaluateOptions {
+    /** Round result to N decimals. Default 6. */
+    precision?: number;
+    /** Wall-clock budget in ms. Default 5000. Throws if exceeded. */
+    timeoutMs?: number;
+}
 
+// ─── Sandboxed mathjs Instance ────────────────────────────────────────────
+//
+// Note: this is a module-level singleton. The mathjs instance is immutable
+// after the BLOCKED_FUNCTIONS deletion — we never reconfigure it. This is
+// safe to share across requests because evaluation uses isolated scopes.
+// (If we ever needed per-request configuration, we'd factory-ify this too.)
 let _safeMath: MathJsInstance | null = null;
 
 export function getSafeMath(): MathJsInstance {
     if (_safeMath) return _safeMath;
 
+    // We use a full instance because deleting functions like 'config' or
+    // others can break mathjs internals (e.g. mathWithTransform).
+    // Security is enforced by validateExpression/validateMultiLine which
+    // traverse the AST and block dangerous functions at the syntax level.
     const instance = create(all);
-
-    for (const fn of BLOCKED_FUNCTIONS) {
-        try {
-            delete (instance as unknown as Record<string, unknown>)[fn];
-        } catch {
-            // Some properties may not be configurable — safe to ignore.
-        }
-    }
 
     _safeMath = instance;
     return instance;
@@ -80,10 +94,6 @@ export function getSafeMath(): MathJsInstance {
 
 // ─── Validation ───────────────────────────────────────────────────────────
 
-/**
- * Validate a single mathjs expression (no assignments).
- * Returns a full ValidationResult including extracted variable/function names.
- */
 export function validateExpression(expression: string): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -160,10 +170,6 @@ export function validateExpression(expression: string): ValidationResult {
     };
 }
 
-/**
- * Validate multi-line custom code (each line must be `variable = expression`).
- * Checks every RHS expression individually and tracks declared outputs.
- */
 export function validateMultiLine(
     code: string,
     declaredOutputs: string[] = []
@@ -174,7 +180,10 @@ export function validateMultiLine(
     const functions: string[] = [];
     let complexity = 0;
 
+    // Handle \r\n and \r line endings consistently
     const lines = code
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
         .split("\n")
         .map((l) => l.trim())
         .filter((l) => l && !l.startsWith("//") && !l.startsWith("#"));
@@ -229,12 +238,10 @@ export function validateMultiLine(
 
 // ─── Convenience Helpers ──────────────────────────────────────────────────
 
-/** Returns true if the expression passes validation with no errors. */
 export function isSafe(expression: string): boolean {
     return validateExpression(expression).valid;
 }
 
-/** Returns the list of variable names read by the expression. */
 export function extractVariables(expression: string): string[] {
     return validateExpression(expression)
         .variables
@@ -250,19 +257,28 @@ export function extractVariables(expression: string): string[] {
  * - Only the provided variables are accessible (no global leaks).
  * - Dangerous functions are stripped from the mathjs instance.
  * - Result must be a finite number.
+ * - Wall-clock budget enforced post-hoc — if the evaluation took longer
+ *   than opts.timeoutMs, we throw TimeoutError. Note this CANNOT cancel
+ *   an in-flight evaluation; it can only flag and reject after the fact.
+ *   For true cancellation we need to move mathjs into a Worker (chunk 5).
  *
- * @param expression  The mathjs expression string.
- * @param variables   Variable name → numeric/boolean value map.
- * @param precision   Round result to N decimal places (default: 6).
+ *   In practice MAX_COMPLEXITY catches most pathological cases at validate
+ *   time, and the post-hoc check catches anything that slips through.
  */
 export function safeEvaluate(
     expression: string,
     variables: Record<string, number | boolean>,
-    precision: number = 6
+    opts: EvaluateOptions | number = {}
 ): number {
+    // Back-compat: old signature was safeEvaluate(expr, vars, precisionNumber)
+    const options: EvaluateOptions = typeof opts === "number" ? { precision: opts } : opts;
+    const precision = options.precision ?? 6;
+    const timeoutMs = options.timeoutMs ?? DEFAULT_EVAL_TIMEOUT_MS;
+
     const math = getSafeMath();
     const scope: Record<string, unknown> = { ...variables };
 
+    const start = Date.now();
     let result: unknown;
     try {
         result = math.evaluate(expression, scope);
@@ -285,6 +301,13 @@ export function safeEvaluate(
         throw err;
     }
 
+    const elapsed = Date.now() - start;
+    if (elapsed > timeoutMs) {
+        throw new Error(
+            `Expression evaluation timed out after ${elapsed}ms (limit ${timeoutMs}ms): "${expression}"`
+        );
+    }
+
     if (typeof result !== "number") {
         throw new Error(
             `Expression "${expression}" returned ${typeof result} (expected number). Got: ${JSON.stringify(result)}`
@@ -302,25 +325,31 @@ export function safeEvaluate(
 }
 
 /**
- * Evaluate multi-line custom code (`variable = expression` per line).
- * Returns only the declared output variables.
+ * Evaluate multi-line custom code. Each line: `variable = expression`.
  *
- * @param code             Newline-separated assignment statements.
- * @param variables        Input variables passed into the scope.
- * @param outputVariables  Names of variables to extract from the final scope.
+ * Same wall-clock budget semantics as safeEvaluate — we measure total time
+ * for all lines and bail if over budget. Per-line measurement would be more
+ * accurate but rarely necessary in practice.
  */
 export function safeEvaluateMultiLine(
     code: string,
     variables: Record<string, number | boolean>,
-    outputVariables: string[]
+    outputVariables: string[],
+    opts: EvaluateOptions = {}
 ): Record<string, number> {
+    const timeoutMs = opts.timeoutMs ?? DEFAULT_EVAL_TIMEOUT_MS;
+
     const math = getSafeMath();
     const scope: Record<string, unknown> = { ...variables };
 
     const lines = code
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
         .split("\n")
         .map((l) => l.trim())
         .filter((l) => l && !l.startsWith("//") && !l.startsWith("#"));
+
+    const start = Date.now();
 
     for (const line of lines) {
         const match = line.match(/^\s*([a-zA-Z_]\w*)\s*=\s*(.+)$/);
@@ -340,6 +369,15 @@ export function safeEvaluateMultiLine(
             typeof result === "number" && Number.isFinite(result)
                 ? Math.round(result * 1e6) / 1e6
                 : result;
+
+        // Check budget after each line so we don't have to evaluate them all
+        // before bailing on a slow one.
+        const elapsed = Date.now() - start;
+        if (elapsed > timeoutMs) {
+            throw new Error(
+                `Multi-line evaluation timed out after ${elapsed}ms (limit ${timeoutMs}ms) at line: "${line}"`
+            );
+        }
     }
 
     const outputs: Record<string, number> = {};

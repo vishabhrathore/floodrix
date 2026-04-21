@@ -40,30 +40,56 @@ const edgeSchema = z.object({
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-async function assertWorkflowAccess(workflowId: string, userId: string) {
+async function assertWorkflowAccess(workflowId: string, userId: string): Promise<any> {
+    const user = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { globalRole: true },
+    });
+
+    const where: Prisma.CalcWorkflowWhereInput = {
+        id: workflowId,
+        deletedAt: null,
+    };
+
+    if (user.globalRole !== "SUPER_ADMIN") {
+        where.organization = { members: { some: { userId } } };
+    }
+
     const workflow = await prisma.calcWorkflow.findFirst({
-        where: {
-            id: workflowId,
-            deletedAt: null,
-            organization: { members: { some: { userId } } },
-        },
+        where,
         select: { id: true, organizationId: true, status: true },
     });
+
     if (!workflow) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found or access denied" });
     }
     return workflow;
 }
 
 async function resolveActorId(userId: string, workflowId: string): Promise<string> {
+    const user = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { globalRole: true },
+    });
+
+    // Strategy for Super Admin: find their global admin actor if it exists,
+    // otherwise fallback to their first available actor or throw.
     const actor = await prisma.calcActor.findFirst({
         where: {
             userId,
-            organization: { calcWorkflows: { some: { id: workflowId } } },
+            ...(user.globalRole !== "SUPER_ADMIN"
+                ? { organization: { calcWorkflows: { some: { id: workflowId } } } }
+                : {}),
         },
         select: { id: true },
     });
+
     if (!actor) {
+        // If super admin has no actor at all, we might want to return 'actor_superadmin'
+        // which is often created during seeding.
+        if (user.globalRole === "SUPER_ADMIN") {
+            return "actor_superadmin";
+        }
         throw new TRPCError({ code: "FORBIDDEN", message: "Actor not found for this organization" });
     }
     return actor.id;

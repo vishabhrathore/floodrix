@@ -1,6 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//  src/server/engine/registry-resolver.optimized.ts
-//  FIXED: Per-request cache, single-query resolution, batch loading
+//  src/features/workflow-canvas/engine/registry-resolver.ts
+//
+//  CHUNK 1 CHANGE: removed the `export const registryResolver` singleton at
+//  the bottom of the file. That singleton defeated the entire per-execution
+//  cache pattern this file implements — once any code held a reference to
+//  the singleton, its formula cache would serve stale data after publishes.
+//
+//  All callers should use createRegistryResolver() instead. Chunk 2 wires
+//  this into FormulaHandler / LookupTableHandler via the executor.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { PrismaClient } from "@/generated/prisma";
@@ -34,18 +41,7 @@ interface ResolvedTable {
     version: number;
 }
 
-// ─── PROBLEM: Singleton cache persists across requests ───────────────────
-//
-// BAD:
-//   class RegistryResolver {
-//     private formulaCache = new Map()  // Lives forever on the singleton
-//     // If someone publishes a new formula version, the cache still
-//     // serves the old one until the server restarts
-//   }
-//   export const registryResolver = new RegistryResolver()
-//
-// GOOD: Factory function creates a resolver per execution context
-//   The cache lives only for the duration of one workflow execution
+export type RegistryResolver = ReturnType<typeof createRegistryResolver>;
 
 export function createRegistryResolver() {
     // Cache scoped to THIS execution — garbage collected when execution ends
@@ -53,16 +49,6 @@ export function createRegistryResolver() {
     const tableCache = new Map<string, ResolvedTable>();
 
     return {
-        // ─── PROBLEM: Two sequential queries for pinned version ────────────
-        //
-        // BAD:
-        //   const versionRecord = await db.registryVersion.findFirst(...)
-        //   if (!versionRecord) {
-        //     formula = await db.formulaRegistryItem.findUnique(...)  // Second query
-        //   }
-        //
-        // GOOD: Single query that checks both sources
-
         async resolveFormula(
             db: PrismaClient,
             registryId: string,
@@ -75,7 +61,6 @@ export function createRegistryResolver() {
             let resolved: ResolvedFormula;
 
             if (version !== null) {
-                // Pinned version — try version snapshot first, fall back to current record
                 const [versionRecord, currentRecord] = await Promise.all([
                     db.formulaRegistryVersion.findUnique({
                         where: {
@@ -114,7 +99,6 @@ export function createRegistryResolver() {
                     );
                 }
             } else {
-                // Float to latest — single query
                 const record = await db.formulaRegistryItem.findUnique({
                     where: { id: registryId },
                     select: {
@@ -205,29 +189,20 @@ export function createRegistryResolver() {
             db: PrismaClient,
             workflowId: string
         ) {
-            // Load all registry usages for this workflow (Formulas and Tables)
             const [formulaUsages, tableUsages] = await Promise.all([
                 db.formulaRegistryUsage.findMany({
                     where: { calcWorkflowId: workflowId },
-                    select: {
-                        formulaRegistryId: true,
-                        pinnedVersion: true,
-                    },
+                    select: { formulaRegistryId: true, pinnedVersion: true },
                 }),
                 db.tableRegistryUsage.findMany({
                     where: { calcWorkflowId: workflowId },
-                    select: {
-                        tableRegistryId: true,
-                        pinnedVersion: true,
-                    },
+                    select: { tableRegistryId: true, pinnedVersion: true },
                 })
             ]);
 
-            // Collect IDs
             const formulaIds = formulaUsages.map((u) => u.formulaRegistryId);
             const tableIds = tableUsages.map((u) => u.tableRegistryId);
 
-            // Batch load ALL formulas and tables in TWO queries (parallel)
             const [formulas, tables] = await Promise.all([
                 formulaIds.length > 0
                     ? db.formulaRegistryItem.findMany({
@@ -253,7 +228,6 @@ export function createRegistryResolver() {
                     : [],
             ]);
 
-            // Warm the cache
             for (const f of formulas) {
                 const resolved = mapFormulaRecord(f);
                 formulaCache.set(`f:${f.id}:latest`, resolved);
@@ -266,7 +240,6 @@ export function createRegistryResolver() {
                 tableCache.set(`t:${t.id}:${t.currentVersion}`, resolved);
             }
 
-            // Also load pinned versions if any differ from current
             const pinnedFormulas = formulaUsages.filter((u) => u.pinnedVersion !== null);
             const pinnedTables = tableUsages.filter((u) => u.pinnedVersion !== null);
 
@@ -279,11 +252,7 @@ export function createRegistryResolver() {
                                 version: u.pinnedVersion!,
                             })),
                         },
-                        select: {
-                            formulaRegistryId: true,
-                            version: true,
-                            snapshot: true,
-                        },
+                        select: { formulaRegistryId: true, version: true, snapshot: true },
                     }) : [],
                     pinnedTables.length > 0 ? db.tableRegistryVersion.findMany({
                         where: {
@@ -292,11 +261,7 @@ export function createRegistryResolver() {
                                 version: u.pinnedVersion!,
                             })),
                         },
-                        select: {
-                            tableRegistryId: true,
-                            version: true,
-                            snapshot: true,
-                        },
+                        select: { tableRegistryId: true, version: true, snapshot: true },
                     }) : []
                 ]);
 
@@ -395,4 +360,19 @@ function mapTableSnapshot(
     };
 }
 
-export const registryResolver = createRegistryResolver();
+// ─── REMOVED ──────────────────────────────────────────────────────────────
+//
+//   export const registryResolver = createRegistryResolver();   ← DELETED
+//
+// If you see this import elsewhere in the codebase after applying this file,
+// replace with `createRegistryResolver()` called inside the function that
+// needs it. The legacy executor (workflow-executor.ts) used the singleton —
+// Chunk 2 deletes that file entirely so the import will go away naturally.
+//
+// If you have non-engine code importing the singleton (audit screens, admin
+// panels), do this instead:
+//
+//   const resolver = createRegistryResolver();
+//   const formula = await resolver.resolveFormula(db, id, version);
+//
+// The cache is per-call, but for one-off admin queries that's fine.

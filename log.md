@@ -73,6 +73,59 @@ vishabh@vishabh-HP-Pavilion-Gaming-Laptop-15-ec2xxx:~/myproject/nodebase$
 -     data: { deletedAt: new Date() },
 - });
 
-+ await tx.calcEdge.deleteMany({
+- await tx.calcEdge.deleteMany({
+
 -     where: { calcWorkflowId: workflowId },
 - });
+
+          npx tsx prisma/seed
+
+/seed.ts
+🌱  Starting FloodRix dev seed…
+
+✅  Billing plans
+✅  Users (1 super admin + 5 org users)
+✅  Organizations + members
+✅  Billing + usage
+✅  Calc actors
+✅  Calc workflows + rating aggregates
+✅  Nodes, edges, variables
+✅  Calc versions + current pointers
+✅  Ratings
+✅  Library submissions (2 approved, 2 pending)
+✅  Formula registry (2 system formulas)
+✅  Table registry (2 system tables)
+✅  Execution sessions + node executions (sess_1, sess_2 have idempotencyKey)
+✅  Workspace + folder tree
+✅  Audit logs
+✅  Batch jobs + row executions
+
+┌──────────────────────────────────────────────────────────┐
+│  🎉  Seed complete!                                       │
+│                                                          │
+│  Super admin login                                       │
+│    Email:    <admin@floodrix.com>                          │
+│    Password: password123                                 │
+│    Role:     SUPER_ADMIN                                 │
+│                                                          │
+│  What was seeded                                         │
+│    3  billing plans   (Free / Pro / Enterprise)          │
+│    6  users           (1 super admin + 5 org users)      │
+│    6  organizations   (5 real + 1 admin personal)        │
+│    5  billing records                                    │
+│    6  calc workflows  (2 listed, 1 pending, 3 draft)     │
+│    4  calc versions                                      │
+│    4  library submissions (2 approved, 2 pending)        │
+│    2  formula registry items  (system)                   │
+│    2  table registry items    (system)                   │
+│    6  execution sessions      (3 complete, 1 paused, 1 err)│
+│       └ sess_1 + sess_2 carry an idempotencyKey          │
+│    1  workspace + folder tree                            │
+│    7  audit log entries                                  │
+│    1  batch job (12 rows, 11 success, 1 error)           │
+└──────────────────────────────────────────────────────────┘
+
+vishabh@vishabh-HP-Pavilion-Gaming-Laptop-15-ec2xxx:~/myprojec
+t/nodebase$ ^C
+vishabh@vishabh-HP-Pavilion-Gaming-Laptop-15-ec2xxx:~/myprojec
+t/nodebase$

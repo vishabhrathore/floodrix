@@ -4,6 +4,17 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
+generator erd {
+  provider        = "prisma-erd-generator"
+  output          = "./ERD.svg"
+  puppeteerConfig = "./prisma/puppeteer.config.json"
+}
+
+generator mermaid {
+  provider = "prisma-erd-generator"
+  output   = "./ERD.md"
+}
+
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
@@ -646,6 +657,7 @@ model CalcSession {
   error          Json?
   runMode        RunMode               @default(SINGLE)
   metadata       Json                  @default("{}")
+  idempotencyKey String?
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   nodeExecutions CalcNodeExecution[]
@@ -654,6 +666,7 @@ model CalcSession {
   version        CalcVersion?          @relation(fields: [versionId], references: [id])
   workspaceRuns  WorkspaceSessionRun[]
 
+  @@unique([calcWorkflowId, idempotencyKey])
   @@index([calcWorkflowId, status])
   @@index([calcWorkflowId, actorId])
   @@index([actorId, calcWorkflowId, status])
@@ -681,6 +694,7 @@ model CalcNodeExecution {
   node        CalcNode?           @relation(fields: [calcNodeId], references: [id])
   session     CalcSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@unique([sessionId, calcNodeId])
   @@index([sessionId])
   @@map("calc_node_executions")
 }

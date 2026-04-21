@@ -40,13 +40,26 @@ const Page = async ({ params }: PageProps) => {
     const auth = await requireAuth();
     const { workflowId } = await params;
 
-    // Support both CUID and slug
+    const where: any = {
+        deletedAt: null,
+        OR: [{ id: workflowId }, { slug: workflowId }],
+    };
+
+    // Only enforce organization membership for non-super-admins
+    if (auth.user.globalRole !== "SUPER_ADMIN") {
+        where.organization = {
+            members: { some: { userId: auth.user.id } }
+        };
+    }
+
+    //     where: {
+    //     deletedAt: null,
+    //     organization: { members: { some: { userId: auth.user.id } } },
+    //     OR: [{ id: workflowId }, { slug: workflowId }],
+    // },
+
     const workflow = await prisma.calcWorkflow.findFirst({
-        where: {
-            deletedAt: null,
-            organization: { members: { some: { userId: auth.user.id } } },
-            OR: [{ id: workflowId }, { slug: workflowId }],
-        },
+        where,
         select: { id: true, name: true, status: true, organizationId: true },
     });
 

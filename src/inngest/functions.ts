@@ -14,8 +14,12 @@ import { anthropicChannel } from "./channels/anthropic";
 import { discordChannel } from "./channels/discord";
 import { slackChannel } from "./channels/slack";
 
+import { calcSessionResume } from "./functions/session-resume";
+import { calcSessionStart } from "./functions/session-start";
+import { calcSessionTtlSweeper } from "./functions/session-ttl-sweeper";
+
 export const executeWorkflow = inngest.createFunction(
-  { 
+  {
     id: "execute-workflow",
     retries: process.env.NODE_ENV === "production" ? 3 : 0,
     onFailure: async ({ event, step }) => {
@@ -29,7 +33,7 @@ export const executeWorkflow = inngest.createFunction(
       });
     },
   },
-  { 
+  {
     event: "workflows/execute.workflow",
     channels: [
       httpRequestChannel(),
@@ -116,3 +120,9 @@ export const executeWorkflow = inngest.createFunction(
     };
   },
 );
+
+export const calcFunctions = [
+  calcSessionResume,
+  calcSessionStart,
+  calcSessionTtlSweeper,
+];

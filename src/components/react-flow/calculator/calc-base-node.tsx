@@ -4,6 +4,7 @@
 
 import { memo, type ReactNode } from "react";
 import { Position } from "@xyflow/react";
+import { cn } from "@/lib/utils";
 import {
     MoreHorizontal,
     Copy,
@@ -16,7 +17,8 @@ import * as Icons from "lucide-react";
 import { NODE_ACCENTS, NODE_HANDLES, type NodeTypeKey } from "@/theme/calc-theme";
 import { NodeHandle } from "./calc-base-handle";
 import { useWorkflowCanvasStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
-
+import { useExecutionHighlightStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
+import { NodeExecutionStatus } from "@/generated/prisma";
 // ─── Props ───────────────────────────────────────────────────────────────
 
 interface BaseNodeProps {
@@ -82,9 +84,18 @@ function BaseNodeInner({
         window.dispatchEvent(new CustomEvent("floodrix:configure-node", { detail: { nodeId: id } }));
     });
 
+    const executionStatusValue = useExecutionHighlightStore(
+        (s) => s.nodeExecutionStatus[id]
+    );
+    const isActiveExecutionNode = useExecutionHighlightStore(
+        (s) => s.activeExecutionNodeId === id
+    );
+
+    const executionClass = getExecutionHighlightClass(executionStatusValue, isActiveExecutionNode)
+
     return (
         <div
-            className="group/node"
+            className={cn("group/node", executionClass)}
             style={{
                 width,
                 borderRadius: 10,
@@ -381,3 +392,68 @@ function MenuButton({
         </button>
     );
 }
+
+
+export function getExecutionHighlightClass(
+    status: NodeExecutionStatus | undefined,
+    isActive: boolean
+): string {
+    if (!status) return "";
+
+    // Active node gets a thicker ring + pulse
+    if (isActive && (status === "RUNNING" || status === "WAITING")) {
+        return "ring-2 ring-amber-400 ring-offset-2 shadow-lg animate-pulse";
+    }
+
+    switch (status) {
+        case "RUNNING":
+            return "ring-2 ring-amber-300 ring-offset-1 shadow-sm";
+        case "WAITING":
+            return "ring-2 ring-purple-300 ring-offset-1";
+        case "COMPLETED":
+            return "ring-1 ring-emerald-300 shadow-sm";
+        case "ERRORED":
+            return "ring-2 ring-red-400 shadow-md";
+        case "SKIPPED":
+            return "opacity-50 ring-1 ring-neutral-200";
+        case "PENDING":
+        default:
+            return "";
+    }
+}
+
+
+
+// ─── Full integration example ─────────────────────────────────────────────
+//
+// Here's what your calc-base-node.tsx might look like after merge (trimmed):
+//
+//   "use client";
+//   import { Handle, Position } from "@xyflow/react";
+//   import { cn } from "@/lib/utils";
+//   import { useExecutionHighlightStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
+//   import { getExecutionHighlightClass } from "./execution-highlight"; // if you extracted it
+//
+//   export function CalcBaseNode({ id, data, children }: Props) {
+//     const executionStatus = useExecutionHighlightStore(
+//       (s) => s.nodeExecutionStatus[id]
+//     );
+//     const isActive = useExecutionHighlightStore(
+//       (s) => s.activeExecutionNodeId === id
+//     );
+//     const executionClass = getExecutionHighlightClass(executionStatus, isActive);
+//
+//     return (
+//       <div className={cn(
+//         "rounded-lg border bg-white px-4 py-3 shadow-sm",
+//         "transition-all duration-200",
+//         executionClass,  // ← this makes it glow during execution
+//       )}>
+//         {children}
+//         <Handle type="source" position={Position.Right} />
+//         <Handle type="target" position={Position.Left} />
+//       </div>
+//     );
+//   }
+//
+// You do NOT need to change calc-node-fields.tsx or calc-base-handle.tsx.

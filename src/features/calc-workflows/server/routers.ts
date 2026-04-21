@@ -88,13 +88,19 @@ export const calcWorkflowsRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const userId = ctx.auth.user.id;
+      const isAdmin = ctx.auth.user.globalRole === "SUPER_ADMIN";
+
+      const where: Prisma.CalcWorkflowWhereInput = {
+        id: input.id,
+        deletedAt: null,
+      };
+
+      if (!isAdmin) {
+        where.organization = { members: { some: { userId } } };
+      }
 
       return prisma.calcWorkflow.findFirstOrThrow({
-        where: {
-          id: input.id,
-          deletedAt: null,
-          organization: { members: { some: { userId } } },
-        },
+        where,
         select: {
           id: true,
           name: true,
@@ -127,12 +133,19 @@ export const calcWorkflowsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.user.id;
 
-      const member = await prisma.organizationMember.findUnique({
-        where: {
-          userId_organizationId: { userId, organizationId: input.organizationId },
-        },
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { globalRole: true },
       });
-      if (!member) throw new TRPCError({ code: "FORBIDDEN" });
+
+      if (user.globalRole !== "SUPER_ADMIN") {
+        const member = await prisma.organizationMember.findUnique({
+          where: {
+            userId_organizationId: { userId, organizationId: input.organizationId },
+          },
+        });
+        if (!member) throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+      }
 
       const baseSlug = input.name
         .toLowerCase()
@@ -161,13 +174,19 @@ export const calcWorkflowsRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.auth.user.id;
+      const isAdmin = ctx.auth.user.globalRole === "SUPER_ADMIN";
+
+      const where: Prisma.CalcWorkflowWhereInput = {
+        id: input.id,
+        deletedAt: null,
+      };
+
+      if (!isAdmin) {
+        where.organization = { members: { some: { userId } } };
+      }
 
       const wf = await prisma.calcWorkflow.findFirst({
-        where: {
-          id: input.id,
-          deletedAt: null,
-          organization: { members: { some: { userId } } },
-        },
+        where,
       });
       if (!wf) throw new TRPCError({ code: "NOT_FOUND" });
 

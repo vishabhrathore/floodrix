@@ -18,8 +18,23 @@ import {
 } from "@xyflow/react";
 import { createId } from "@paralleldrive/cuid2";
 import type { NodeTypeKey } from "@/theme/calc-theme";
+import { NodeExecutionStatus } from "@/generated/prisma";
 
 // ─── Types ────────────────────────────────────────────────────────────────
+export interface ExecutionHighlightSlice {
+    /** Per-node status during an active run. Cleared when the run ends. */
+    nodeExecutionStatus: Record<string, NodeExecutionStatus>;
+    /** The node the executor is currently working on (paused-at or running). */
+    activeExecutionNodeId: string | null;
+
+    setNodeExecutionStatus: (nodeId: string, status: NodeExecutionStatus) => void;
+    setActiveExecutionNode: (nodeId: string | null) => void;
+    clearExecutionHighlights: () => void;
+    /** Bulk update from a server response (e.g. after stepForward). */
+    syncExecutionHighlights: (
+        executions: { calcNodeId: string | null; status: NodeExecutionStatus }[]
+    ) => void;
+}
 
 /** A snapshot of nodes+edges pushed onto the undo stack */
 interface CanvasSnapshot {
@@ -373,3 +388,26 @@ export const useWorkflowCanvasStore = create<WorkflowCanvasState>((set, get) => 
 // ─── Backwards-compatible alias ───────────────────────────────────────────
 // The original canvas.tsx imports `useWorkflowCanvas` — keep that working.
 export const useWorkflowCanvas = useWorkflowCanvasStore;
+
+export const useExecutionHighlightStore = create<ExecutionHighlightSlice>((set) => ({
+    nodeExecutionStatus: {},
+    activeExecutionNodeId: null,
+
+    setNodeExecutionStatus: (nodeId, status) =>
+        set((s) => ({
+            nodeExecutionStatus: { ...s.nodeExecutionStatus, [nodeId]: status },
+        })),
+
+    setActiveExecutionNode: (nodeId) => set({ activeExecutionNodeId: nodeId }),
+
+    clearExecutionHighlights: () =>
+        set({ nodeExecutionStatus: {}, activeExecutionNodeId: null }),
+
+    syncExecutionHighlights: (executions) => {
+        const map: Record<string, NodeExecutionStatus> = {};
+        for (const e of executions) {
+            if (e.calcNodeId) map[e.calcNodeId] = e.status;
+        }
+        set({ nodeExecutionStatus: map });
+    },
+}));

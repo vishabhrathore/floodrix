@@ -8,7 +8,8 @@ import { createRegistryResolver } from "./registry-resolver";
 import { auditService } from "./audit-service";
 import { Prisma } from "@/generated/prisma";
 import { inngest } from "@/inngest/client";
-
+import { createWorkflowExecutor } from "@/server/engine";
+const executor = createWorkflowExecutor(prisma);
 export const processBatchJob = inngest.createFunction(
     { id: "batch-process", name: "Process Calculator Batch" },
     { event: "batch/process" },
@@ -73,7 +74,7 @@ export const processBatchJob = inngest.createFunction(
             if (rows.length === 0) break;
 
             const results = await step.run(`process-chunk-${processedCount}`, async () => {
-                const executor = new WorkflowExecutor(prisma);
+                const executor = createWorkflowExecutor(prisma);
                 const chunkResults: {
                     rowId: string;
                     status: "COMPLETED" | "ERROR";

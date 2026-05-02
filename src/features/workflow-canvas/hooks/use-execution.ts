@@ -158,23 +158,26 @@ export function useExecution(workflowId: string) {
     //     ingest(sessionQuery.data);
     // }
 
+    const clearHighlights = useExecutionHighlightStore((s) => s.clearExecutionHighlights);
+
     // ─── Actions ──────────────────────────────────────────────────────────
     //todo:ai-check
     useEffect(() => {
-        if (sessionQuery.data && sessionQuery.data.status !== "RUNNING" && pollingRef.current) {
+        if (sessionQuery.data) {
             ingest(sessionQuery.data);
         }
     }, [sessionQuery.data, ingest]);
 
     const startRun = useCallback((opts: { stepMode?: boolean } = {}) => {
         if (!workflowId) return;
+        clearHighlights();
         setState({ ...initialState, status: "RUNNING" });
         startMutation.mutate({
             workflowId,
             stepMode: opts.stepMode ?? false,
             liveUpdates: opts.stepMode ?? false,
         });
-    }, [workflowId, startMutation]);
+    }, [workflowId, startMutation, clearHighlights]);
 
     const submitInput = useCallback((values: Record<string, unknown>) => {
         if (!state.sessionId) return;
@@ -199,8 +202,9 @@ export function useExecution(workflowId: string) {
 
     const reset = useCallback(() => {
         pollingRef.current = false;
+        clearHighlights();
         setState(initialState);
-    }, []);
+    }, [clearHighlights]);
 
     return {
         ...state,

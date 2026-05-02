@@ -14,7 +14,7 @@
 import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { createWorkflowExecutor, createRunOrchestrator, createSessionPoller } from "@/server/engine";
+import { createWorkflowExecutor, createRunOrchestrator, createSessionPoller, CalcContext } from "@/server/engine";
 import { Prisma } from "@/generated/prisma";
 import prisma from "@/lib/db";
 
@@ -91,7 +91,8 @@ export const calcExecutionRouter = createTRPCRouter({
 
             // CHUNK 4: go through the orchestrator. It picks strategy and
             // handles INLINE_ASYNC / BACKGROUND_BATCH handoffs automatically.
-            const orchestrator = createRunOrchestrator(prisma);
+            const calcCtx = new CalcContext(prisma, actorId, orgId);
+            const orchestrator = createRunOrchestrator(calcCtx);
 
             return orchestrator.start({
                 calcWorkflowId: input.workflowId,
@@ -108,8 +109,13 @@ export const calcExecutionRouter = createTRPCRouter({
     poll: protectedProcedure
         .input(z.object({ sessionId: z.string() }))
         .query(async ({ ctx, input }) => {
-            await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const poller = createSessionPoller(prisma);
+            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: session.calcWorkflowId },
+                select: { organizationId: true },
+            });
+            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            const poller = createSessionPoller(calcCtx);
             return poller.poll(input.sessionId);
         }),
 
@@ -136,7 +142,13 @@ export const calcExecutionRouter = createTRPCRouter({
                 });
             }
 
-            const executor = createWorkflowExecutor(prisma);
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: session.calcWorkflowId },
+                select: { organizationId: true },
+            });
+
+            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            const executor = createWorkflowExecutor(calcCtx);
             return executor.resumeWithInput(
                 input.sessionId,
                 session.currentNodeId,
@@ -147,8 +159,13 @@ export const calcExecutionRouter = createTRPCRouter({
     stepForward: protectedProcedure
         .input(z.object({ sessionId: z.string() }))
         .mutation(async ({ ctx, input }) => {
-            await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const executor = createWorkflowExecutor(prisma, { liveUpdates: true });
+            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: session.calcWorkflowId },
+                select: { organizationId: true },
+            });
+            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
             return executor.stepForward(input.sessionId);
         }),
 
@@ -158,8 +175,13 @@ export const calcExecutionRouter = createTRPCRouter({
             targetNodeId: z.string(),
         }))
         .mutation(async ({ ctx, input }) => {
-            await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const executor = createWorkflowExecutor(prisma, { liveUpdates: true });
+            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: session.calcWorkflowId },
+                select: { organizationId: true },
+            });
+            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
             return executor.stepBack(input.sessionId, input.targetNodeId);
         }),
 
@@ -167,7 +189,12 @@ export const calcExecutionRouter = createTRPCRouter({
         .input(z.object({ sessionId: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const executor = createWorkflowExecutor(prisma);
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: session.calcWorkflowId },
+                select: { organizationId: true },
+            });
+            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            const executor = createWorkflowExecutor(calcCtx);
             await executor.cancelExecution(input.sessionId, session.actorId);
             return { success: true };
         }),
@@ -287,7 +314,12 @@ export const calcExecutionRouter = createTRPCRouter({
                 where: { id: input.sessionId },
                 select: { calcWorkflowId: true, actorId: true, inputSnapshot: true },
             });
-            const orchestrator = createRunOrchestrator(prisma);
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: old.calcWorkflowId },
+                select: { organizationId: true },
+            });
+            const calcCtx = new CalcContext(prisma, old.actorId, wf.organizationId);
+            const orchestrator = createRunOrchestrator(calcCtx);
             return orchestrator.start({
                 calcWorkflowId: old.calcWorkflowId,
                 actorId: old.actorId,

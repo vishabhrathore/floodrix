@@ -22,9 +22,17 @@ import { useWorkflowCanvasStore } from "@/features/workflow-canvas/store/workflo
 
 interface WorkflowToolbarProps {
     workflowId: string;
-    onOpenRunner: (opts: { stepMode: boolean }) => void;
-    onSave?: () => void;
-    canSave?: boolean;
+    workflowName: string;
+    status: string;
+    saveState: "saved" | "unsaved" | "saving" | "error";
+    onRun: (opts: { stepMode: boolean }) => void;
+    onPublish: () => void;
+    onSave: () => void;
+    onRename?: (name: string) => void;
+    onDuplicate?: () => void;
+    onDelete?: () => void;
+    onSettings?: () => void;
+    isRunning?: boolean;
     canUndo?: boolean;
     canRedo?: boolean;
     onUndo?: () => void;
@@ -33,9 +41,13 @@ interface WorkflowToolbarProps {
 
 export function WorkflowToolbar({
     workflowId,
-    onOpenRunner,
+    workflowName,
+    status,
+    saveState,
+    onRun,
+    onPublish,
     onSave,
-    canSave = false,
+    isRunning = false,
     canUndo = false,
     canRedo = false,
     onUndo,
@@ -44,84 +56,104 @@ export function WorkflowToolbar({
     const [stepMode, setStepMode] = useState(false);
 
     return (
-        <div className="flex items-center gap-2 border-b bg-white px-4 py-2">
-            {/* ── Save / Undo / Redo ──────────────────────────────── */}
-            {onSave && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={onSave}
-                            disabled={!canSave}
-                            className="gap-1.5"
-                        >
-                            <Save className="h-4 w-4" />
-                            <span className="text-sm">Save</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Save workflow (⌘S)</TooltipContent>
-                </Tooltip>
-            )}
+        <div className="flex h-12 items-center justify-between border-b bg-white px-4 shadow-sm">
+            <div className="flex items-center gap-4">
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-sm font-semibold text-slate-900">{workflowName}</h1>
+                        <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${status === "PUBLISHED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                            }`}>
+                            {status}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className={`h-1.5 w-1.5 rounded-full ${saveState === "saving" ? "animate-pulse bg-blue-500" :
+                                saveState === "unsaved" ? "bg-amber-500" :
+                                    saveState === "error" ? "bg-red-500" : "bg-emerald-500"
+                            }`} />
+                        <span className="text-[10px] text-slate-400 capitalize">
+                            {saveState === "saving" ? "Saving changes..." :
+                                saveState === "unsaved" ? "Unsaved changes" :
+                                    saveState === "error" ? "Save failed" : "All changes saved"}
+                        </span>
+                    </div>
+                </div>
 
-            {onUndo && (
-                <Button size="sm" variant="ghost" onClick={onUndo} disabled={!canUndo}>
-                    <Undo2 className="h-4 w-4" />
-                </Button>
-            )}
-            {onRedo && (
-                <Button size="sm" variant="ghost" onClick={onRedo} disabled={!canRedo}>
-                    <Redo2 className="h-4 w-4" />
-                </Button>
-            )}
+                <Separator orientation="vertical" className="h-6" />
 
-            <Separator orientation="vertical" className="mx-1 h-5" />
+                <div className="flex items-center gap-1">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onSave}>
+                                <Save className="h-4 w-4 text-slate-500" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Save (⌘S)</TooltipContent>
+                    </Tooltip>
 
-            {/* ── Step-mode toggle ──────────────────────────────── */}
-            <div className="flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-1">
-                <Switch
-                    id="step-mode"
-                    checked={stepMode}
-                    onCheckedChange={setStepMode}
-                    className="scale-90"
-                />
-                <Label
-                    htmlFor="step-mode"
-                    className="text-xs font-medium text-neutral-700 cursor-pointer"
-                >
-                    Step mode
-                </Label>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <span className="text-[11px] text-neutral-400 cursor-help">ⓘ</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
-                        <p className="text-xs">
-                            Pauses after every node so you can inspect outputs before advancing.
-                            Useful for debugging calculations.
-                        </p>
-                    </TooltipContent>
-                </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canUndo} onClick={onUndo}>
+                                <Undo2 className="h-4 w-4 text-slate-500" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Undo</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!canRedo} onClick={onRedo}>
+                                <Redo2 className="h-4 w-4 text-slate-500" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Redo</TooltipContent>
+                    </Tooltip>
+                </div>
             </div>
 
-            {/* ── Run button ───────────────────────────────────── */}
-            <Button
-                size="sm"
-                onClick={() => onOpenRunner({ stepMode })}
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white ml-auto"
-            >
-                {stepMode ? (
-                    <>
-                        <StepForward className="h-4 w-4" />
-                        Step through
-                    </>
-                ) : (
-                    <>
-                        <Play className="h-4 w-4" />
-                        Run
-                    </>
-                )}
-            </Button>
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/50 px-2 py-1">
+                    <Switch
+                        id="step-mode"
+                        checked={stepMode}
+                        onCheckedChange={setStepMode}
+                        className="scale-75"
+                    />
+                    <Label htmlFor="step-mode" className="text-[11px] font-medium text-slate-600">
+                        Step Mode
+                    </Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs"
+                        onClick={onPublish}
+                    >
+                        Publish
+                    </Button>
+                    <Button
+                        size="sm"
+                        className={`h-8 gap-1.5 text-xs font-medium ${isRunning ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700"
+                            }`}
+                        onClick={() => onRun({ stepMode })}
+                        disabled={isRunning}
+                    >
+                        {isRunning ? (
+                            <>
+                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                Running...
+                            </>
+                        ) : (
+                            <>
+                                <Play className="h-3.5 w-3.5 fill-current" />
+                                Run Workflow
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }

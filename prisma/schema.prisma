@@ -103,6 +103,7 @@ model Organization {
   founder       User                  @relation("OrgFounder", fields: [founderId], references: [id], onDelete: Cascade)
   tableItems    TableRegistryItem[]
   workspaces    Workspace[]
+  auditLogs     AuditLog[]
 
   @@index([founderId])
   @@map("organizations")
@@ -867,6 +868,7 @@ model NodeTemplate {
 
 model AuditLog {
   id             String            @id @default(cuid())
+  organizationId String
   actorId        String?
   resourceType   AuditResourceType
   resourceId     String
@@ -883,7 +885,9 @@ model AuditLog {
   createdAt      DateTime          @default(now())
   actor          CalcActor?        @relation(fields: [actorId], references: [id])
   calcWorkflow   CalcWorkflow?     @relation(fields: [calcWorkflowId], references: [id])
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId, createdAt])
   @@index([resourceId])
   @@index([calcWorkflowId])
   @@index([createdAt])

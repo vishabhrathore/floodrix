@@ -14,6 +14,7 @@ import { createId } from "@paralleldrive/cuid2";
 // ─── Types ───────────────────────────────────────────────────────────────
 
 interface AuditLogInput {
+    organizationId: string;
     actorId: string;
     resourceType: AuditResourceType;
     resourceId: string;
@@ -29,6 +30,7 @@ interface AuditLogInput {
 }
 
 interface AuditQueryFilters {
+    organizationId?: string;
     calcWorkflowId?: string;
     actorId?: string;
     resourceType?: AuditResourceType;
@@ -49,6 +51,7 @@ class AuditService {
         return db.auditLog.create({
             data: {
                 id: createId(),
+                organizationId: input.organizationId,
                 actorId: input.actorId,
                 resourceType: input.resourceType,
                 resourceId: input.resourceId,
@@ -71,6 +74,7 @@ class AuditService {
         return db.auditLog.createMany({
             data: entries.map((input) => ({
                 id: createId(),
+                organizationId: input.organizationId,
                 actorId: input.actorId,
                 resourceType: input.resourceType,
                 resourceId: input.resourceId,
@@ -89,6 +93,7 @@ class AuditService {
 
     async logNodeChanges(
         db: PrismaClient,
+        organizationId: string,
         actorId: string,
         calcWorkflowId: string,
         changes: {
@@ -103,7 +108,7 @@ class AuditService {
 
         for (const node of changes.added) {
             entries.push({
-                actorId, resourceType: "NODE", resourceId: node.id, calcWorkflowId,
+                organizationId, actorId, resourceType: "NODE", resourceId: node.id, calcWorkflowId,
                 action: "NODE_ADDED",
                 changes: { nodeLabel: node.label, nodeType: node.type } as Prisma.InputJsonValue,
                 batchId,
@@ -112,7 +117,7 @@ class AuditService {
 
         for (const node of changes.removed) {
             entries.push({
-                actorId, resourceType: "NODE", resourceId: node.id, calcWorkflowId,
+                organizationId, actorId, resourceType: "NODE", resourceId: node.id, calcWorkflowId,
                 action: "NODE_REMOVED",
                 changes: { nodeLabel: node.label, nodeType: node.type } as Prisma.InputJsonValue,
                 batchId,
@@ -121,7 +126,7 @@ class AuditService {
 
         for (const mod of changes.modified) {
             entries.push({
-                actorId, resourceType: "NODE", resourceId: mod.id, calcWorkflowId,
+                organizationId, actorId, resourceType: "NODE", resourceId: mod.id, calcWorkflowId,
                 action: "NODE_CONFIG_CHANGED",
                 changes: { nodeLabel: mod.label, field: mod.field } as Prisma.InputJsonValue,
                 batchId,
@@ -130,7 +135,7 @@ class AuditService {
 
         for (const moved of changes.movedNodes) {
             entries.push({
-                actorId, resourceType: "NODE", resourceId: moved.id, calcWorkflowId,
+                organizationId, actorId, resourceType: "NODE", resourceId: moved.id, calcWorkflowId,
                 action: "NODE_MOVED",
                 changes: {
                     nodeLabel: moved.label,
@@ -151,6 +156,7 @@ class AuditService {
     async query(db: PrismaClient, filters: AuditQueryFilters) {
         const where: Prisma.AuditLogWhereInput = {};
 
+        if (filters.organizationId) where.organizationId = filters.organizationId;
         if (filters.calcWorkflowId) where.calcWorkflowId = filters.calcWorkflowId;
         if (filters.actorId) where.actorId = filters.actorId;
         if (filters.resourceType) where.resourceType = filters.resourceType;

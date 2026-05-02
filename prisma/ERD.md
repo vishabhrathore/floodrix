@@ -945,4 +945,5 @@ PERMISSION_CHANGED PERMISSION_CHANGED
     "audit_logs" |o--|| "AuditAction" : "enum:action"
     "audit_logs" }o--|o calc_actors : "actor"
     "audit_logs" }o--|o calc_workflows : "calcWorkflow"
+    "audit_logs" }o--|| organizations : "organization"
 ```

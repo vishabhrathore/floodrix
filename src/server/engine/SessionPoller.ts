@@ -174,6 +174,15 @@ export class SessionPoller {
             ? await this.getCompletedAt(sessionId)
             : null;
 
+        const sessionWithExecs = await this.db.calcSession.findUniqueOrThrow({
+            where: { id: sessionId },
+            select: {
+                nodeExecutions: {
+                    select: { calcNodeId: true, status: true }
+                }
+            }
+        });
+
         const result: PollResult = {
             sessionId: session.id,
             status: session.status,
@@ -184,6 +193,7 @@ export class SessionPoller {
             nextPollIntervalMs,
             error: errorField,
             completedAt,
+            nodeExecutions: sessionWithExecs.nodeExecutions as any[],
         };
 
         // Hydrate paused node info if needed (CHUNK 4: for input nodes waiting on user)

@@ -1172,6 +1172,7 @@ async function main() {
     const auditEvents = [
         {
             id: "audit_1",
+            organizationId: orgs[0].id,
             actorId: actors[0].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_dicken",
@@ -1182,6 +1183,7 @@ async function main() {
         },
         {
             id: "audit_2",
+            organizationId: orgs[1].id,
             actorId: actors[1].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_scour",
@@ -1192,6 +1194,7 @@ async function main() {
         },
         {
             id: "audit_3",
+            organizationId: orgs[0].id,
             actorId: actors[0].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_dicken",
@@ -1202,6 +1205,7 @@ async function main() {
         },
         {
             id: "audit_4",
+            organizationId: orgs[0].id,
             actorId: actors[0].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_dicken",
@@ -1212,6 +1216,7 @@ async function main() {
         },
         {
             id: "audit_5",
+            organizationId: orgs[0].id,
             actorId: actors[2].id,
             resourceType: AuditResourceType.NODE,
             resourceId: "node_dicken_formula",
@@ -1222,6 +1227,7 @@ async function main() {
         },
         {
             id: "audit_6",
+            organizationId: orgs[4].id,
             actorId: adminActor.id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "org_waterflow",
@@ -1232,6 +1238,7 @@ async function main() {
         },
         {
             id: "audit_7",
+            organizationId: orgs[5].id,
             actorId: adminActor.id,
             resourceType: AuditResourceType.FORMULA_REGISTRY,
             resourceId: "freg_dicken",
@@ -1248,6 +1255,7 @@ async function main() {
             update: {},
             create: {
                 id: a.id,
+                organizationId: a.organizationId,
                 actorId: a.actorId,
                 resourceType: a.resourceType,
                 resourceId: a.resourceId,

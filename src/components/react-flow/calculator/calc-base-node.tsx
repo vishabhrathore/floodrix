@@ -42,6 +42,13 @@ interface BaseNodeProps {
 // ─── Execution Status ────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { dot: string; ring: string; label: string }> = {
+    PENDING: { dot: "#d1d5db", ring: "transparent", label: "Pending" },
+    RUNNING: { dot: "#f59e0b", ring: "rgba(245,158,11,0.3)", label: "Running" },
+    COMPLETED: { dot: "#22c55e", ring: "transparent", label: "Done" },
+    ERRORED: { dot: "#ef4444", ring: "rgba(239,68,68,0.3)", label: "Error" },
+    WAITING: { dot: "#3b82f6", ring: "rgba(59,130,246,0.3)", label: "Waiting" },
+    SKIPPED: { dot: "#9ca3af", ring: "transparent", label: "Skipped" },
+    // Backwards compatibility for lowercase
     pending: { dot: "#d1d5db", ring: "transparent", label: "Pending" },
     running: { dot: "#f59e0b", ring: "rgba(245,158,11,0.3)", label: "Running" },
     completed: { dot: "#22c55e", ring: "transparent", label: "Done" },
@@ -63,7 +70,7 @@ function BaseNodeInner({
     width = 260,
     badge,
     reference,
-    executionStatus,
+    executionStatus: executionStatusProp,
     onDelete: onDeleteProp,
     onDuplicate: onDuplicateProp,
     onConfigure: onConfigureProp,
@@ -71,7 +78,6 @@ function BaseNodeInner({
     const accent = NODE_ACCENTS[nodeType];
     const handles = NODE_HANDLES[nodeType];
     const IconComponent = (Icons as unknown as Record<string, LucideIcon>)[accent.icon];
-    const status = executionStatus ? STATUS_STYLES[executionStatus] : null;
 
     // Get store actions — these work for all node types without explicit props
     const store = useWorkflowCanvasStore;
@@ -90,6 +96,10 @@ function BaseNodeInner({
     const isActiveExecutionNode = useExecutionHighlightStore(
         (s) => s.activeExecutionNodeId === id
     );
+
+    // Prioritize real-time store status over static prop
+    const effectiveStatus = executionStatusValue || executionStatusProp;
+    const statusStyle = effectiveStatus ? STATUS_STYLES[effectiveStatus] : null;
 
     const executionClass = getExecutionHighlightClass(executionStatusValue, isActiveExecutionNode)
 
@@ -200,22 +210,22 @@ function BaseNodeInner({
                 </div>
 
                 {/* Execution status dot */}
-                {status && (
+                {statusStyle && (
                     <div
                         style={{
                             width: 8,
                             height: 8,
                             borderRadius: "50%",
-                            backgroundColor: status.dot,
-                            boxShadow: status.ring !== "transparent"
-                                ? `0 0 0 3px ${status.ring}`
+                            backgroundColor: statusStyle.dot,
+                            boxShadow: statusStyle.ring !== "transparent"
+                                ? `0 0 0 3px ${statusStyle.ring}`
                                 : "none",
                             flexShrink: 0,
-                            animation: executionStatus === "running"
+                            animation: effectiveStatus === "RUNNING" || effectiveStatus === "running"
                                 ? "pulse 1.2s ease-in-out infinite"
                                 : undefined,
                         }}
-                        title={status.label}
+                        title={statusStyle.label}
                     />
                 )}
 

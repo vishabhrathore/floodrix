@@ -266,7 +266,7 @@ export class WorkflowExecutor {
             // Cancel-mid-execution check
             const liveStatus = await this.deps.repo.getStatus(sessionId);
             if (liveStatus === "CANCELLED") {
-                return this.buildResult(sessionId, "CANCELLED", variableStore.snapshot());
+                return await this.buildResult(sessionId, "CANCELLED", variableStore.snapshot());
             }
 
             const nodeId = session.executionOrder[currentIndex];
@@ -408,12 +408,18 @@ export class WorkflowExecutor {
                     skippedNodes: [...skipSet], stepMode: true,
                 });
 
+                const execs = await this.deps.db.calcNodeExecution.findMany({
+                    where: { sessionId },
+                    select: { calcNodeId: true, status: true },
+                });
+
                 return {
                     sessionId,
                     status: "PAUSED",
                     variables: variableStore.snapshot(),
                     pauseReason: "step_complete",
                     stepOutput,
+                    nodeExecutions: execs as any[],
                 };
             }
 
@@ -434,7 +440,7 @@ export class WorkflowExecutor {
             finalVariables: Object.keys(finalSnapshot).filter((k) => k !== "$nodes" && k !== "$results"),
         });
 
-        return this.buildResult(sessionId, "COMPLETED", finalSnapshot, durationMs);
+        return await this.buildResult(sessionId, "COMPLETED", finalSnapshot, durationMs);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -487,22 +493,34 @@ export class WorkflowExecutor {
             nodeId: node.id,
             error: error.message,
         });
+        const execs = await this.deps.db.calcNodeExecution.findMany({
+            where: { sessionId },
+            select: { calcNodeId: true, status: true },
+        });
+
         return {
             sessionId, status: "ERRORED",
             variables: store.snapshot(),
             error: { nodeId: node.id, nodeLabel: node.label, message: error.message, type: errorType },
+            nodeExecutions: execs as any[],
         };
     }
 
-    private buildResult(
+    private async buildResult(
         sessionId: string,
         status: "COMPLETED" | "CANCELLED",
         variables: VariableSnapshot,
         durationMs?: number
-    ): ExecutionResult {
+    ): Promise<ExecutionResult> {
+        const execs = await this.deps.db.calcNodeExecution.findMany({
+            where: { sessionId },
+            select: { calcNodeId: true, status: true },
+        });
+
         return {
             sessionId, status, variables,
             completedAt: this.deps.clock.nowDate().toISOString(),
+            nodeExecutions: execs as any[],
         };
     }
 }

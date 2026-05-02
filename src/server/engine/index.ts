@@ -9,8 +9,10 @@
 export { createWorkflowExecutor, createRunOrchestrator, createSessionPoller } from "./bootstrap";
 export type { BootstrapOptions, ExecutionOptions } from "./bootstrap";
 
-// ── Executor class (for type references only) ─────────────────────────────
+// ── Executor & Context ─────────────────────────────────────────────────────
 export { WorkflowExecutor } from "./WorkflowExecutor";
+export { AuditLogger } from "./AuditLogger";
+export { CalcContext } from "./calc-context";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export type {

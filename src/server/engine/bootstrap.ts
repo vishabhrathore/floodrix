@@ -20,6 +20,7 @@ import { WorkflowExecutor } from "./WorkflowExecutor";
 import { RunStrategyResolver } from "./RunStrategyResolver";
 import { RunOrchestrator } from "./RunOrchestrator";
 import { SessionPoller } from "./SessionPoller";
+import { CalcContext } from "./calc-context";
 
 // Sync handlers
 // import { InputHandler } from "./handlers/InputHandler";
@@ -73,9 +74,9 @@ export interface BootstrapOptions {
     liveUpdates?: boolean;
 }
 
-export function createWorkflowExecutor(db: PrismaClient, opts: BootstrapOptions = {}): WorkflowExecutor {
+export function createWorkflowExecutor(ctx: CalcContext, opts: BootstrapOptions = {}): WorkflowExecutor {
     const clock = opts.clock ?? DEFAULT_CLOCK;
-    const repo = new SessionRepository(db, clock);
+    const repo = new SessionRepository(ctx.db, clock);
     const registry = registerAllHandlers(new NodeHandlerRegistry());
 
     if (!opts.skipHandlerValidation) {
@@ -91,7 +92,7 @@ export function createWorkflowExecutor(db: PrismaClient, opts: BootstrapOptions 
 
     const emitter = new ExecutionEventEmitter();
     const dbListener = opts.overrideDatabaseListener ?? new DatabaseListener(repo, opts.liveUpdates ?? false);
-    const auditListener = opts.overrideAuditListener ?? new AuditListener(db);
+    const auditListener = opts.overrideAuditListener ?? new AuditListener(ctx.audit);
 
     emitter.on((e) => dbListener.handle(e), { name: "database", priority: 50 });
     emitter.on((e) => auditListener.handle(e), { name: "audit", priority: 100 });
@@ -102,7 +103,7 @@ export function createWorkflowExecutor(db: PrismaClient, opts: BootstrapOptions 
         emitter.on((e) => metricsListener.handle(e), { name: "metrics", priority: 200 });
     }
 
-    return new WorkflowExecutor({ db, repo, registry, emitter, clock });
+    return new WorkflowExecutor({ db: ctx.db, repo, registry, emitter, clock });
 }
 
 // ─── Factory: createRunOrchestrator ───────────────────────────────────────
@@ -111,24 +112,24 @@ export interface OrchestratorOptions extends BootstrapOptions {
     pollUrlPrefix?: string;
 }
 
-export function createRunOrchestrator(db: PrismaClient, opts: OrchestratorOptions = {}): RunOrchestrator {
+export function createRunOrchestrator(ctx: CalcContext, opts: OrchestratorOptions = {}): RunOrchestrator {
     const clock = opts.clock ?? DEFAULT_CLOCK;
-    const repo = new SessionRepository(db, clock);
-    const executor = createWorkflowExecutor(db, opts);
+    const repo = new SessionRepository(ctx.db, clock);
+    const executor = createWorkflowExecutor(ctx, opts);
     const resolver = new RunStrategyResolver();
 
     return new RunOrchestrator({
-        db, repo, executor, resolver, clock,
+        db: ctx.db, repo, executor, resolver, clock,
         pollUrlPrefix: opts.pollUrlPrefix,
     });
 }
 
 // ─── Factory: createSessionPoller ─────────────────────────────────────────
 
-export function createSessionPoller(db: PrismaClient, opts: BootstrapOptions = {}): SessionPoller {
+export function createSessionPoller(ctx: CalcContext, opts: BootstrapOptions = {}): SessionPoller {
     const clock = opts.clock ?? DEFAULT_CLOCK;
-    const repo = new SessionRepository(db, clock);
-    return new SessionPoller(db, repo, clock);
+    const repo = new SessionRepository(ctx.db, clock);
+    return new SessionPoller(ctx.db, repo, clock);
 }
 
 // ─── Exports ──────────────────────────────────────────────────────────────

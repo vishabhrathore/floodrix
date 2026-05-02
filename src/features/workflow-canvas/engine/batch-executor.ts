@@ -3,13 +3,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import prisma from "@/lib/db";
-import { WorkflowExecutor } from "./workflow-executor";
+
 import { createRegistryResolver } from "./registry-resolver";
 import { auditService } from "./audit-service";
 import { Prisma } from "@/generated/prisma";
 import { inngest } from "@/inngest/client";
-import { createWorkflowExecutor } from "@/server/engine";
-const executor = createWorkflowExecutor(prisma);
+import { createWorkflowExecutor, CalcContext } from "@/server/engine";
 export const processBatchJob = inngest.createFunction(
     { id: "batch-process", name: "Process Calculator Batch" },
     { event: "batch/process" },
@@ -21,10 +20,7 @@ export const processBatchJob = inngest.createFunction(
                 where: { id: batchJobId },
                 include: {
                     calcWorkflow: {
-                        include: {
-                            nodes: { where: { deletedAt: null } },
-                            edges: { where: { deletedAt: null } },
-                        },
+                        select: { id: true, organizationId: true },
                     },
                 },
             });
@@ -43,6 +39,7 @@ export const processBatchJob = inngest.createFunction(
                 data: { status: "PROCESSING", startedAt: new Date() },
             });
             await auditService.log(prisma, {
+                organizationId: calcWorkflow.organizationId,
                 actorId: job.actorId,
                 resourceType: "WORKFLOW",
                 resourceId: calcWorkflow.id,
@@ -74,7 +71,8 @@ export const processBatchJob = inngest.createFunction(
             if (rows.length === 0) break;
 
             const results = await step.run(`process-chunk-${processedCount}`, async () => {
-                const executor = createWorkflowExecutor(prisma);
+                const calcCtx = new CalcContext(prisma, job.actorId, calcWorkflow.organizationId);
+                const executor = createWorkflowExecutor(calcCtx);
                 const chunkResults: {
                     rowId: string;
                     status: "COMPLETED" | "ERROR";
@@ -145,6 +143,7 @@ export const processBatchJob = inngest.createFunction(
                 },
             });
             await auditService.log(prisma, {
+                organizationId: calcWorkflow.organizationId,
                 actorId: job.actorId,
                 resourceType: "WORKFLOW",
                 resourceId: calcWorkflow.id,

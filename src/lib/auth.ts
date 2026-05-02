@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "@/lib/db";
 
 // ─── Hardcoded free plan ID — must match your seed ───────────────────────────
-export const FREE_PLAN_ID = "plan_free";
+export const FREE_PLAN_ID = "plan-free";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -34,85 +34,92 @@ export const auth = betterAuth({
         after: async (user) => {
           const displayName = user.name || user.email.split("@")[0];
 
-          await prisma.$transaction(async (tx) => {
-            // ── 1. Personal organization ──────────────────────────────────
-            const org = await tx.organization.create({
-              data: {
-                name: `${displayName}'s Organization`,
-                founderId: user.id,
-                isPersonal: true,
-              },
-            });
+          try {
+            await prisma.$transaction(async (tx) => {
+              // ── 1. Personal organization ──────────────────────────────────
+              const org = await tx.organization.create({
+                data: {
+                  name: `${displayName}'s Organization`,
+                  founderId: user.id,
+                  isPersonal: true,
+                },
+              });
 
-            // ── 2. Org membership (OWNER) ─────────────────────────────────
-            await tx.organizationMember.create({
-              data: {
-                userId: user.id,
-                organizationId: org.id,
-                role: "OWNER",
-              },
-            });
+              // ── 2. Org membership (OWNER) ─────────────────────────────────
+              await tx.organizationMember.create({
+                data: {
+                  userId: user.id,
+                  organizationId: org.id,
+                  role: "OWNER",
+                },
+              });
 
-            // ── 3. CalcActor ──────────────────────────────────────────────
-            await tx.calcActor.create({
-              data: {
-                userId: user.id,
-                organizationId: org.id,
-                displayName,
-              },
-            });
+              // ── 3. CalcActor ──────────────────────────────────────────────
+              await tx.calcActor.create({
+                data: {
+                  userId: user.id,
+                  organizationId: org.id,
+                  displayName,
+                },
+              });
 
-            // ── 4. Free billing — hardcoded plan ID, no lookup ────────────
-            await tx.orgBilling.create({
-              data: {
-                organizationId: org.id,
-                planId: FREE_PLAN_ID,
-                billingType: "SUBSCRIPTION",
-                status: "ACTIVE",
-              },
-            });
+              // ── 4. Free billing — hardcoded plan ID, no lookup ────────────
+              await tx.orgBilling.create({
+                data: {
+                  organizationId: org.id,
+                  planId: FREE_PLAN_ID,
+                  billingType: "SUBSCRIPTION",
+                  status: "ACTIVE",
+                },
+              });
 
-            // ── 5. Current month usage window ─────────────────────────────
-            const now = new Date();
-            const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            const periodEnd = new Date(
-              now.getFullYear(),
-              now.getMonth() + 1,
-              0,
-              23,
-              59,
-              59
-            );
+              // ── 5. Current month usage window ─────────────────────────────
+              const now = new Date();
+              const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+              const periodEnd = new Date(
+                now.getFullYear(),
+                now.getMonth() + 1,
+                0,
+                23,
+                59,
+                59
+              );
 
-            await tx.orgUsage.create({
-              data: {
-                organizationId: org.id,
-                periodStart,
-                periodEnd,
-                totalRuns: 0,
-              },
-            });
+              await tx.orgUsage.create({
+                data: {
+                  organizationId: org.id,
+                  periodStart,
+                  periodEnd,
+                  totalRuns: 0,
+                },
+              });
 
-            // ── 6. Default workspace ──────────────────────────────────────
-            const workspace = await tx.workspace.create({
-              data: {
-                organizationId: org.id,
-                name: "My Workspace",
-                description: "Default workspace",
-                visibility: "PRIVATE",
-              },
-            });
+              // ── 6. Default workspace ──────────────────────────────────────
+              const workspace = await tx.workspace.create({
+                data: {
+                  organizationId: org.id,
+                  name: "My Workspace",
+                  description: "Default workspace",
+                  visibility: "PRIVATE",
+                },
+              });
 
-            // ── 7. Root workspace node ────────────────────────────────────
-            await tx.workspaceNode.create({
-              data: {
-                workspaceId: workspace.id,
-                nodeType: "ROOT",
-                name: "Root",
-                sortOrder: 0,
-              },
+              // ── 7. Root workspace node ────────────────────────────────────
+              await tx.workspaceNode.create({
+                data: {
+                  workspaceId: workspace.id,
+                  nodeType: "ROOT",
+                  name: "Root",
+                  sortOrder: 0,
+                },
+              });
             });
-          });
+          } catch (error) {
+            // ── Cleanup: If setup fails, delete the user so they can retry ──
+            // Otherwise, they are stuck in a "half-created" state (account exists but no org)
+            await prisma.user.delete({ where: { id: user.id } }).catch(() => { });
+            throw error;
+          }
         },
       },
     },

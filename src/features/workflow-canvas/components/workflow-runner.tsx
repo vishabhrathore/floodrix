@@ -32,10 +32,12 @@ interface WorkflowRunnerProps {
     workflowId: string;
     stepMode: boolean;
     onClose: () => void;
+    execution?: any; // Share execution state from parent if available
 }
 
-export function WorkflowRunner({ workflowId, stepMode, onClose }: WorkflowRunnerProps) {
-    const exec = useExecution(workflowId);
+export function WorkflowRunner({ workflowId, stepMode, onClose, execution }: WorkflowRunnerProps) {
+    const internalExec = useExecution(workflowId);
+    const exec = execution || internalExec;
     const [autoStarted, setAutoStarted] = useState(false);
 
     // Auto-start when the panel opens

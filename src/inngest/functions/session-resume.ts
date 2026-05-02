@@ -17,7 +17,7 @@
 
 import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
-import { createWorkflowExecutor } from "@/server/engine";
+import { createWorkflowExecutor, CalcContext } from "@/server/engine";
 
 /**
  * Event name contract:
@@ -84,7 +84,17 @@ export const calcSessionResume = inngest.createFunction(
         // Step 2: resume via executor. The executor re-enters its loop from
         // session.currentIndex, no special handling needed.
         const result = await step.run("continue-execution", async () => {
-            const executor = createWorkflowExecutor(prisma, {
+            const s = await prisma.calcSession.findUniqueOrThrow({
+                where: { id: sessionId },
+                select: { actorId: true, calcWorkflowId: true },
+            });
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: s.calcWorkflowId },
+                select: { organizationId: true },
+            });
+
+            const calcCtx = new CalcContext(prisma, s.actorId, wf.organizationId);
+            const executor = createWorkflowExecutor(calcCtx, {
                 liveUpdates: true, // Background runs always liveUpdate so client polling sees progress
             });
             return executor.continueExecution(sessionId, {

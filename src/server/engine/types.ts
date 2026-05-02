@@ -12,7 +12,7 @@
 //    RunStrategy, PollResult, AsyncNodeTransition
 // ═══════════════════════════════════════════════════════════════════════════
 
-import type { CalcNode, CalcEdge, CalcNodeType, SessionStatus } from "@/generated/prisma";
+import type { CalcNode, CalcEdge, CalcNodeType, SessionStatus, NodeExecutionStatus } from "@/generated/prisma";
 import type { RegistryResolver } from "@/features/workflow-canvas/engine/registry-resolver";
 
 // ─── Variables ────────────────────────────────────────────────────────────
@@ -143,6 +143,7 @@ export interface ExecutionResult {
     };
     completedAt?: string | null;
     error?: { nodeId: string; nodeLabel: string; message: string; type: string };
+    nodeExecutions?: { calcNodeId: string | null; status: NodeExecutionStatus }[];
 }
 
 // ─── Session Metadata ─────────────────────────────────────────────────────
@@ -270,4 +271,5 @@ export interface PollResult {
     /** Terminal error, if status is ERRORED. */
     error?: { nodeId: string; nodeLabel: string; message: string; type: string };
     completedAt?: string | null;
+    nodeExecutions?: { calcNodeId: string | null; status: NodeExecutionStatus }[];
 }

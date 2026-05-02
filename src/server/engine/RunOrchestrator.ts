@@ -222,11 +222,18 @@ export class RunOrchestrator {
 
     private async buildExistingSessionResult(sessionId: string): Promise<ExecutionResult> {
         const s = await this.deps.repo.loadSession(sessionId);
+        // CHUNK 4: include nodeExecutions for the UI highlights
+        const execs = await this.deps.db.calcNodeExecution.findMany({
+            where: { sessionId },
+            select: { calcNodeId: true, status: true },
+        });
+
         const result: ExecutionResult = {
             sessionId: s.id,
             status: s.status,
             variables: s.variables,
             pauseReason: (s.metadata.stepPauseReason ?? undefined) as ExecutionResult["pauseReason"],
+            nodeExecutions: execs as any[],
             // If it's still running or paused, hand back asyncPending so the
             // client picks up the existing session's poll loop.
             asyncPending:

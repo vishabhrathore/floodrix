@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ReactFlow,
     Background,
@@ -24,6 +24,7 @@ import { WorkflowToolbar } from "./workflow-toolbar";
 import { WorkflowSidebar } from "./workflow-sidebar";
 import { WorkflowInspector } from "./workflow-inspector";
 import { WorkflowMinimap } from "./workflow-minimap";
+import { WorkflowRunner } from "./workflow-runner";
 import { useAutoSave } from "../hooks/use-auto-save";
 import { useExecution } from "../hooks/use-execution";
 import { useNodeConfig } from "../hooks/use-node-config";
@@ -113,7 +114,30 @@ function WorkflowCanvasInternal({
 
     useEffect(() => {
         initializedRef.current = false;
+        setRunnerOpen(false);
     }, [workflowId]);
+
+    // ── Hooks ──────────────────────────────────────────────────────────────
+    const { saveNow } = useAutoSave({ disabled: false });
+    const execution = useExecution(workflowId);
+    const nodeConfig = useNodeConfig(workflowId);
+
+    const publishMutation = useMutation(
+        trpc.calcWorkflowCanvas.publish.mutationOptions()
+    );
+
+    useKeyboardShortcuts({ onSave: saveNow, disabled: false });
+
+    // ── Runner state ──────────────────────────────────────────────────────
+    const [runnerOpen, setRunnerOpen] = useState(false);
+    const [runnerStepMode, setRunnerStepMode] = useState(false);
+
+    const handleRun = useCallback((opts: { stepMode: boolean }) => {
+        setRunnerStepMode(opts.stepMode);
+        setRunnerOpen(true);
+        // Close inspector when runner opens
+        nodeConfig.closeInspector();
+    }, [nodeConfig]);
 
     // ── Config drawer ─────────────────────────────────────────────────────
     const { drawer: configDrawer, openDrawer: openConfigDrawer } =
@@ -162,17 +186,6 @@ function WorkflowCanvasInternal({
         return () => { store.flush = originalFlush; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workflowId]);
-
-    // ── Hooks ──────────────────────────────────────────────────────────────
-    const { saveNow } = useAutoSave({ disabled: false });
-    const execution = useExecution(workflowId);
-    const nodeConfig = useNodeConfig(workflowId);
-
-    const publishMutation = useMutation(
-        trpc.calcWorkflowCanvas.publish.mutationOptions()
-    );
-
-    useKeyboardShortcuts({ onSave: saveNow, disabled: false });
 
     // ── Canvas event handlers ──────────────────────────────────────────────
     const onDragOver = useCallback((e: React.DragEvent) => {
@@ -263,16 +276,18 @@ function WorkflowCanvasInternal({
                     workflowName={workflowName}
                     status={workflowStatus}
                     saveState={saveState}
-                    onRun={execution.startRun}
+                    onRun={handleRun}
                     onPublish={() => publishMutation.mutate({ workflowId })}
                     onSave={saveNow}
                     onRename={(name) => console.log("Rename to:", name)}
                     onDuplicate={() => console.log("Duplicate")}
                     onDelete={() => console.log("Delete")}
                     onSettings={() => console.log("Settings")}
-                    isRunning={execution.isRunning}
+                    isRunning={execution.isRunning || runnerOpen}
                     canUndo={store.canUndo}
                     canRedo={store.canRedo}
+                    onUndo={store.undo}
+                    onRedo={store.redo}
                 />
 
                 <div className="flex flex-1 overflow-hidden">
@@ -311,7 +326,16 @@ function WorkflowCanvasInternal({
                         </ReactFlow>
                     </div>
 
-                    {nodeConfig.isInspectorOpen && (
+                    {runnerOpen && (
+                        <WorkflowRunner
+                            workflowId={workflowId}
+                            stepMode={runnerStepMode}
+                            onClose={() => setRunnerOpen(false)}
+                            execution={execution}
+                        />
+                    )}
+
+                    {nodeConfig.isInspectorOpen && !runnerOpen && (
                         <WorkflowInspector
                             selectedNode={nodeConfig.selectedNode}
                             variables={workflowQuery.data?.variables ?? []}

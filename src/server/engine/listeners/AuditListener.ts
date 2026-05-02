@@ -13,18 +13,17 @@
 //  session-level "what happened" view.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { Prisma, type PrismaClient } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma";
 import type { ExecutionEvent } from "../types";
-import { auditService } from "@/features/workflow-canvas/engine/audit-service";
+import { AuditLogger } from "../AuditLogger";
 
 export class AuditListener {
-    constructor(private readonly db: PrismaClient) { }
+    constructor(private readonly logger: AuditLogger) { }
 
     async handle(event: ExecutionEvent): Promise<void> {
         switch (event.type) {
             case "session:started":
-                await auditService.log(this.db, {
-                    actorId: event.actorId,
+                await this.logger.log({
                     resourceType: "WORKFLOW",
                     resourceId: event.workflowId,
                     calcWorkflowId: event.workflowId,
@@ -38,8 +37,7 @@ export class AuditListener {
                 return;
 
             case "session:completed":
-                await auditService.log(this.db, {
-                    actorId: event.actorId,
+                await this.logger.log({
                     resourceType: "WORKFLOW",
                     resourceId: event.workflowId,
                     calcWorkflowId: event.workflowId,
@@ -54,8 +52,7 @@ export class AuditListener {
                 return;
 
             case "session:errored":
-                await auditService.log(this.db, {
-                    actorId: event.actorId,
+                await this.logger.log({
                     resourceType: "WORKFLOW",
                     resourceId: event.workflowId,
                     calcWorkflowId: event.workflowId,
@@ -70,8 +67,7 @@ export class AuditListener {
                 return;
 
             case "session:cancelled":
-                await auditService.log(this.db, {
-                    actorId: event.actorId,
+                await this.logger.log({
                     resourceType: "WORKFLOW",
                     resourceId: event.workflowId,
                     calcWorkflowId: event.workflowId,

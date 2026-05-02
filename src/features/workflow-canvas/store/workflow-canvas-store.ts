@@ -404,10 +404,12 @@ export const useExecutionHighlightStore = create<ExecutionHighlightSlice>((set) 
         set({ nodeExecutionStatus: {}, activeExecutionNodeId: null }),
 
     syncExecutionHighlights: (executions) => {
-        const map: Record<string, NodeExecutionStatus> = {};
-        for (const e of executions) {
-            if (e.calcNodeId) map[e.calcNodeId] = e.status;
-        }
-        set({ nodeExecutionStatus: map });
+        set((s) => {
+            const map = { ...s.nodeExecutionStatus };
+            for (const e of executions) {
+                if (e.calcNodeId) map[e.calcNodeId] = e.status;
+            }
+            return { nodeExecutionStatus: map };
+        });
     },
 }));

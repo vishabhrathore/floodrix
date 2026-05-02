@@ -187,7 +187,7 @@ export async function saveCanvasOptimized(input: CanvasSaveInput) {
     // 4. Audit
     const hasChanges = addedNodes.length + removedNodes.length + modifiedNodes.length + movedNodes.length > 0;
     if (hasChanges) {
-        await auditService.logNodeChanges(db, actorId, workflowId, {
+        await auditService.logNodeChanges(db, existing.organizationId, actorId, workflowId, {
             added: addedNodes,
             removed: removedNodes,
             modified: modifiedNodes,
@@ -279,6 +279,7 @@ export async function publishWorkflow(input: {
     });
 
     await auditService.log(db, {
+        organizationId: workflow.organizationId,
         actorId,
         resourceType: "WORKFLOW",
         resourceId: workflowId,

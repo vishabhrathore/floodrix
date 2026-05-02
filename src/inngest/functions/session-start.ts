@@ -13,7 +13,7 @@
 
 import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
-import { createWorkflowExecutor } from "@/server/engine";
+import { createWorkflowExecutor, CalcContext } from "@/server/engine";
 
 /**
  * Event contract:
@@ -53,7 +53,17 @@ export const calcSessionStart = inngest.createFunction(
         }
 
         const result = await step.run("continue-execution", async () => {
-            const executor = createWorkflowExecutor(prisma, { liveUpdates: true });
+            const s = await prisma.calcSession.findUniqueOrThrow({
+                where: { id: sessionId },
+                select: { actorId: true, calcWorkflowId: true },
+            });
+            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
+                where: { id: s.calcWorkflowId },
+                select: { organizationId: true },
+            });
+
+            const calcCtx = new CalcContext(prisma, s.actorId, wf.organizationId);
+            const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
             return executor.continueExecution(sessionId, {
                 isBackgroundRun: true,
                 liveUpdates: true,

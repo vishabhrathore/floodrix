@@ -17,14 +17,11 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-    Plus,
-    Tag,
     Globe,
     Lock,
     CheckCircle2,
     Clock,
     BookOpen,
-    FunctionSquare,
     ChevronRight,
     Layers,
     Star,

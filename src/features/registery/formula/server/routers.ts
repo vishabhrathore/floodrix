@@ -1,14 +1,19 @@
-import prisma from "@/lib/db";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import z from "zod";
-import { PAGINATION } from "@/config/constants";
+import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { Visibility } from "@/generated/prisma";
+import { z } from "zod";
+
+import { loadContext } from "@/server/context/context.loader";
+import { assertPolicy } from "@/server/context/guards";
+import { isSuperAdmin, isOrgAdmin } from "@/server/context/permission";
+import { PAGINATION } from "@/config/constants";
 
 export const formulasRouter = createTRPCRouter({
-  getMany: protectedProcedure
+
+  getMany: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
         page: z.number().default(PAGINATION.DEFAULT_PAGE),
         pageSize: z
           .number()
@@ -21,42 +26,41 @@ export const formulasRouter = createTRPCRouter({
         isSystem: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const { page, pageSize, search, category, published, isSystem } = input;
+      const { reqCtx } = ctx;
 
-      const whereClause: any = {
+      const visibilityFilter = isOrgAdmin(reqCtx)
+        ? {}
+        : {
+          OR: [
+            { visibility: Visibility.PUBLIC },
+            { visibility: Visibility.PRIVATE, createdBy: reqCtx.actor?.id ?? "" },
+          ],
+        };
+
+      const whereClause = {
+        ...(input.organizationId ? { organizationId: input.organizationId } : {}),
         deletedAt: null,
+        ...visibilityFilter,
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },
           { slug: { contains: search, mode: "insensitive" as const } },
         ],
+        ...(category && category !== "all" ? { category } : {}),
+        ...(published !== undefined ? { isPublished: published } : {}),
+        ...(isSystem !== undefined ? { isSystem } : {}),
       };
 
-      if (category && category !== "all") {
-        whereClause.category = category;
-      }
-
-      if (published !== undefined) {
-        whereClause.isPublished = published;
-      }
-
-      if (isSystem !== undefined) {
-        whereClause.isSystem = isSystem;
-      }
-
       const [items, totalCount] = await Promise.all([
-        prisma.formulaRegistryItem.findMany({
+        ctx.db.formulaRegistryItem.findMany({
           skip: (page - 1) * pageSize,
           take: pageSize,
           where: whereClause,
           orderBy: { updatedAt: "desc" },
-          include: {
-            _count: {
-              select: { registryUsages: true }
-            }
-          }
+          include: { _count: { select: { registryUsages: true } } },
         }),
-        prisma.formulaRegistryItem.count({ where: whereClause }),
+        ctx.db.formulaRegistryItem.count({ where: whereClause }),
       ]);
 
       const totalPages = Math.ceil(totalCount / pageSize);
@@ -72,17 +76,32 @@ export const formulasRouter = createTRPCRouter({
       };
     }),
 
-  getOne: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return prisma.formulaRegistryItem.findUniqueOrThrow({
-        where: { id: input.id },
-      });
-    }),
-
-  create: protectedProcedure
+  getOne: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
+        id: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const reqCtx = await loadContext(ctx.db, ctx.userId, {
+        organizationId: input.organizationId,
+        formulaRegistryId: input.id,
+      });
+
+      if (!reqCtx.formulaItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Formula not found" });
+      }
+
+      assertPolicy(reqCtx, "view", "formula");
+
+      return reqCtx.formulaItem;
+    }),
+
+  create: orgProcedure
+    .input(
+      z.object({
+        organizationId: z.string().optional(),
         name: z.string().min(1),
         slug: z.string().min(1),
         category: z.string().min(1),
@@ -92,6 +111,7 @@ export const formulasRouter = createTRPCRouter({
         displayExpression: z.string().optional(),
         inputVariables: z.any(),
         outputVariable: z.any(),
+        intermediateSteps: z.array(z.any()).optional(),
         reference: z.string().optional(),
         sourceStandard: z.string().optional(),
         yearIntroduced: z.number().int().optional().nullable(),
@@ -100,36 +120,49 @@ export const formulasRouter = createTRPCRouter({
         limitations: z.string().optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.nativeEnum(Visibility).default(Visibility.PRIVATE),
+        isSystem: z.boolean().optional(),
+        isPublished: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Find the user's personal organization or a default one
-      // For now, let's assume we use the first organization they founder of
-      const personalOrg = await prisma.organization.findFirst({
-        where: { founderId: ctx.auth.user.id, isPersonal: true }
-      });
+      const { reqCtx } = ctx;
 
-      if (!personalOrg) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "User must have a personal organization." });
+      if (!reqCtx.actor) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No actor found for this user in the organization.",
+        });
       }
 
-      return prisma.formulaRegistryItem.create({
+      const { organizationId, ...formulaData } = input;
+      const finalOrgId = organizationId || reqCtx.organization?.id;
+
+      if (!finalOrgId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Organization ID is required.",
+        });
+      }
+
+      return ctx.db.formulaRegistryItem.create({
         data: {
-          ...input,
+          ...formulaData,
           displayExpression: input.displayExpression || input.expressionNotation,
-          organizationId: personalOrg.id,
-          createdBy: ctx.auth.user.id,
-          isSystem: false,
-          isPublished: false,
+          organizationId: finalOrgId,
+          createdBy: reqCtx.actor.id,
+          isSystem: input.isSystem && isSuperAdmin(reqCtx) ? true : false,
+          isPublished: input.isPublished ?? false,
         },
       });
     }),
 
-  update: protectedProcedure
+  update: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
         id: z.string(),
         name: z.string().optional(),
+        slug: z.string().optional(),
         category: z.string().optional(),
         subCategory: z.string().optional(),
         description: z.string().optional(),
@@ -137,6 +170,7 @@ export const formulasRouter = createTRPCRouter({
         displayExpression: z.string().optional(),
         inputVariables: z.any().optional(),
         outputVariable: z.any().optional(),
+        intermediateSteps: z.array(z.any()).optional(),
         reference: z.string().optional(),
         sourceStandard: z.string().optional(),
         yearIntroduced: z.number().int().optional().nullable(),
@@ -145,66 +179,106 @@ export const formulasRouter = createTRPCRouter({
         limitations: z.string().optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.nativeEnum(Visibility).optional(),
+        isSystem: z.boolean().optional(),
+        isPublished: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
-      const existing = await prisma.formulaRegistryItem.findUnique({
-        where: { id },
+      const { id, organizationId, ...data } = input;
+
+      const reqCtx = await loadContext(ctx.db, ctx.userId, {
+        organizationId,
+        formulaRegistryId: id,
       });
 
-      if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND" });
+      if (!reqCtx.formulaItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Formula not found" });
       }
 
-      // Only creator or super admin can update
-      if (existing.createdBy !== ctx.auth.user.id && ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN" });
+      assertPolicy(reqCtx, "edit", "formula");
+
+      const updateData = { ...data };
+      if (updateData.isSystem !== undefined && !isSuperAdmin(reqCtx)) {
+        delete updateData.isSystem;
       }
 
-      return prisma.formulaRegistryItem.update({
+      return ctx.db.formulaRegistryItem.update({
         where: { id },
-        data,
+        data: updateData,
       });
     }),
 
-  createSystemFormula: protectedProcedure
+  delete: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const reqCtx = await loadContext(ctx.db, ctx.userId, {
+        organizationId: input.organizationId,
+        formulaRegistryId: input.id,
+      });
+
+      if (!reqCtx.formulaItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Formula not found" });
+      }
+
+      assertPolicy(reqCtx, "delete", "formula");
+
+      return ctx.db.formulaRegistryItem.update({
+        where: { id: input.id },
+        data: { deletedAt: new Date() },
+      });
+    }),
+
+  createSystemFormula: orgProcedure
+    .input(
+      z.object({
+        organizationId: z.string().optional(),
         slug: z.string().min(1),
         name: z.string().min(1),
         description: z.string().optional(),
         category: z.string().min(1),
+        subCategory: z.string().optional(),
         expressionNotation: z.string().min(1),
         displayExpression: z.string().min(1),
         inputVariables: z.any(),
         outputVariable: z.any(),
+        intermediateSteps: z.array(z.any()).optional(),
+        tags: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only super admins can create system formulas." });
-      }
+      const { reqCtx } = ctx;
 
-      // System formulas belong to a special system organization or we can use a hardcoded one
-      // For now, find any organization where the user is an owner, or create a system one
-      let systemOrg = await prisma.organization.findFirst({
-        where: { name: "System Registry" }
-      });
-
-      if (!systemOrg) {
-        systemOrg = await prisma.organization.create({
-          data: {
-            name: "System Registry",
-            founderId: ctx.auth.user.id,
-            isPersonal: false,
-          }
+      if (!isSuperAdmin(reqCtx)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only super admins can create system formulas.",
         });
       }
 
-      return prisma.formulaRegistryItem.create({
+      const { organizationId, ...formulaData } = input;
+
+      let systemOrg = await ctx.db.organization.findFirst({
+        where: { name: "System Registry" },
+      });
+
+      if (!systemOrg) {
+        systemOrg = await ctx.db.organization.create({
+          data: {
+            name: "System Registry",
+            founderId: reqCtx.user.id,
+            isPersonal: false,
+          },
+        });
+      }
+
+      return ctx.db.formulaRegistryItem.create({
         data: {
-          ...input,
+          ...formulaData,
           organizationId: systemOrg.id,
           isSystem: true,
           isPublished: true,

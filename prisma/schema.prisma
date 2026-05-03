@@ -17,7 +17,6 @@ generator mermaid {
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
   extensions = [pgcrypto]
 }
 
@@ -1087,6 +1086,7 @@ enum AuditResourceType {
   WORKSPACE_NODE
   BATCH_JOB
   UPLOADED_DATASET
+  SESSION
 }
 
 enum AuditAction {

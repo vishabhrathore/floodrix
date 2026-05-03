@@ -1,6 +1,6 @@
 // hooks.ts
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFormulasParams } from "./use-formulas-params";
 
@@ -12,7 +12,7 @@ export const useSuspenseFormulas = () => {
 
 export const useFormula = (id?: string) => {
   const trpc = useTRPC();
-  return useSuspenseQuery(
+  return useQuery(
     trpc.formulas.getOne.queryOptions(
       { id: id! },
       { enabled: !!id }
@@ -67,6 +67,23 @@ export const useCreateSystemFormula = () => {
       },
       onError: (error: any) => {
         toast.error(`Failed to create system formula: ${error.message}`);
+      },
+    }),
+  );
+};
+
+export const useDeleteFormula = () => {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.formulas.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success(`Formula deleted successfully`);
+        queryClient.invalidateQueries(trpc.formulas.getMany.queryOptions({}));
+      },
+      onError: (error: any) => {
+        toast.error(`Failed to delete formula: ${error.message}`);
       },
     }),
   );

@@ -40,7 +40,7 @@ export const formulasRouter = createTRPCRouter({
         };
 
       const whereClause = {
-        ...(input.organizationId ? { organizationId: input.organizationId } : {}),
+        organizationId: input.organizationId || reqCtx.organization?.id,
         deletedAt: null,
         ...visibilityFilter,
         OR: [
@@ -136,13 +136,6 @@ export const formulasRouter = createTRPCRouter({
 
       const { organizationId, ...formulaData } = input;
       const finalOrgId = organizationId || reqCtx.organization?.id;
-
-      if (!finalOrgId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Organization ID is required.",
-        });
-      }
 
       return ctx.db.formulaRegistryItem.create({
         data: {

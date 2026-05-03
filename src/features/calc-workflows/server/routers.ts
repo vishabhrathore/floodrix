@@ -11,7 +11,7 @@ export const calcWorkflowsRouter = createTRPCRouter({
   getMany: protectedProcedure
     .input(
       z.object({
-        organizationId: z.string(),
+        organizationId: z.string().optional(),
         search: z.string().optional(),
         status: z.string().optional(),
         page: z.number().int().min(1).default(PAGINATION.DEFAULT_PAGE),
@@ -27,19 +27,26 @@ export const calcWorkflowsRouter = createTRPCRouter({
         select: { globalRole: true },
       });
 
-      if (user.globalRole !== "SUPER_ADMIN") {
-        const member = await prisma.organizationMember.findUnique({
-          where: {
-            userId_organizationId: { userId, organizationId },
-          },
-        });
-        if (!member) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+      if (organizationId) {
+        if (user.globalRole !== "SUPER_ADMIN") {
+          const member = await prisma.organizationMember.findUnique({
+            where: {
+              userId_organizationId: { userId, organizationId },
+            },
+          });
+          if (!member) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+          }
+        }
+      } else {
+        // If no organizationId provided, only SUPER_ADMIN can see all
+        if (user.globalRole !== "SUPER_ADMIN") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "organizationId is required" });
         }
       }
 
       const where: Prisma.CalcWorkflowWhereInput = {
-        organizationId,
+        ...(organizationId ? { organizationId } : {}),
         deletedAt: null,
         ...(status ? { status: status as any } : {}),
         ...(search

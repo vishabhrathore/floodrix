@@ -11,11 +11,15 @@ import db from "@/lib/db";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-async function assertWorkspaceAccess(workspaceId: string, userId: string) {
+async function assertWorkspaceAccess(workspaceId: string, user: any) {
+    const isSuperAdmin = user.role === "admin" || user.globalRole === "SUPER_ADMIN";
+
     const workspace = await db.workspace.findFirst({
         where: {
             id: workspaceId,
-            organization: { members: { some: { userId } } },
+            ...(isSuperAdmin ? {} : {
+                organization: { members: { some: { userId: user.id } } },
+            }),
         },
         select: { id: true, organizationId: true },
     });
@@ -36,8 +40,7 @@ export const workspaceCanvasRouter = createTRPCRouter({
     load: protectedProcedure
         .input(z.object({ workspaceId: z.string() }))
         .query(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
-            await assertWorkspaceAccess(input.workspaceId, userId);
+            await assertWorkspaceAccess(input.workspaceId, ctx.auth.user);
 
             const nodes = await db.workspaceNode.findMany({
                 where: { workspaceId: input.workspaceId },
@@ -78,8 +81,7 @@ export const workspaceCanvasRouter = createTRPCRouter({
             delete: z.array(z.string()),
         }))
         .mutation(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
-            await assertWorkspaceAccess(input.workspaceId, userId);
+            await assertWorkspaceAccess(input.workspaceId, ctx.auth.user);
 
             await db.$transaction(async (tx) => {
                 const queries: Promise<unknown>[] = [];
@@ -110,9 +112,10 @@ export const workspaceCanvasRouter = createTRPCRouter({
                                 sortOrder: n.sortOrder,
                                 canvasX: n.canvasX ?? null,
                                 canvasY: n.canvasY ?? null,
-                                linkedWorkflowId: n.linkedWorkflowId ?? null,
+                                linkedWorkflowId: (n.linkedWorkflowId && n.linkedWorkflowId !== "") ? n.linkedWorkflowId : null,
                                 metadata: (n.metadata as Prisma.InputJsonValue) ?? Prisma.JsonNull,
                             })),
+                            skipDuplicates: true,
                         })
                     );
                 }
@@ -136,10 +139,15 @@ export const workspaceCanvasRouter = createTRPCRouter({
                             ? (data.metadata as Prisma.InputJsonValue)
                             : Prisma.JsonNull;
                     }
+                    if ("linkedWorkflowId" in data) {
+                        allowed.linkedWorkflowId = (data.linkedWorkflowId && data.linkedWorkflowId !== "") 
+                            ? data.linkedWorkflowId 
+                            : null;
+                    }
 
                     queries.push(
-                        tx.workspaceNode.update({
-                            where: { id },
+                        tx.workspaceNode.updateMany({
+                            where: { id, workspaceId: input.workspaceId },
                             data: { ...allowed, updatedAt: new Date() },
                         })
                     );
@@ -161,8 +169,7 @@ export const workspaceCanvasRouter = createTRPCRouter({
     get: protectedProcedure
         .input(z.object({ workspaceId: z.string() }))
         .query(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
-            await assertWorkspaceAccess(input.workspaceId, userId);
+            await assertWorkspaceAccess(input.workspaceId, ctx.auth.user);
 
             return db.workspace.findUniqueOrThrow({
                 where: { id: input.workspaceId },
@@ -185,12 +192,15 @@ export const workspaceCanvasRouter = createTRPCRouter({
             cursor: z.string().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
+            const user = ctx.auth.user;
+            const isSuperAdmin = user.role === "admin" || user.globalRole === "SUPER_ADMIN";
 
             const items = await db.workspace.findMany({
                 where: {
                     organizationId: input.organizationId,
-                    organization: { members: { some: { userId } } },
+                    ...(isSuperAdmin ? {} : {
+                        organization: { members: { some: { userId: user.id } } },
+                    }),
                 },
                 orderBy: { updatedAt: "desc" },
                 take: input.limit + 1,
@@ -222,18 +232,21 @@ export const workspaceCanvasRouter = createTRPCRouter({
             icon: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
+            const user = ctx.auth.user;
+            const isSuperAdmin = user.role === "admin" || user.globalRole === "SUPER_ADMIN";
 
-            const member = await db.organizationMember.findUnique({
-                where: {
-                    userId_organizationId: {
-                        userId,
-                        organizationId: input.organizationId,
+            if (!isSuperAdmin) {
+                const member = await db.organizationMember.findUnique({
+                    where: {
+                        userId_organizationId: {
+                            userId: user.id,
+                            organizationId: input.organizationId,
+                        },
                     },
-                },
-            });
-            if (!member) {
-                throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+                });
+                if (!member) {
+                    throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+                }
             }
 
             return db.$transaction(async (tx) => {
@@ -273,8 +286,7 @@ export const workspaceCanvasRouter = createTRPCRouter({
             color: z.string().nullable().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
-            await assertWorkspaceAccess(input.workspaceId, userId);
+            await assertWorkspaceAccess(input.workspaceId, ctx.auth.user);
 
             const { workspaceId, ...data } = input;
             return db.workspace.update({
@@ -290,8 +302,7 @@ export const workspaceCanvasRouter = createTRPCRouter({
     delete: protectedProcedure
         .input(z.object({ workspaceId: z.string() }))
         .mutation(async ({ ctx, input }) => {
-            const userId = ctx.auth.user.id;
-            await assertWorkspaceAccess(input.workspaceId, userId);
+            await assertWorkspaceAccess(input.workspaceId, ctx.auth.user);
 
             await db.workspace.delete({ where: { id: input.workspaceId } });
             return { success: true };

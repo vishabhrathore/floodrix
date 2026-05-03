@@ -1,44 +1,68 @@
-import prisma from "@/lib/db";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import z from "zod";
-import { PAGINATION } from "@/config/constants";
+import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { Visibility, TableType } from "@/generated/prisma";
+import { z } from "zod";
+
+import { loadContext } from "@/server/context/context.loader";
+import { assertPolicy } from "@/server/context/guards";
+import { isOrgAdmin, isSuperAdmin } from "@/server/context/permission";
+import { PAGINATION } from "@/config/constants";
 
 export const tablesRouter = createTRPCRouter({
-  getMany: protectedProcedure
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // GET MANY
+  // ──────────────────────────────────────────────────────────────────────────
+  getMany: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
         page: z.number().default(PAGINATION.DEFAULT_PAGE),
-        pageSize: z
-          .number()
-          .min(PAGINATION.MIN_PAGE_SIZE)
-          .max(PAGINATION.MAX_PAGE_SIZE)
-          .default(PAGINATION.DEFAULT_PAGE_SIZE),
+        pageSize: z.number().default(PAGINATION.DEFAULT_PAGE_SIZE),
         search: z.string().default(""),
-        category: z.string().optional(),
+        category: z.string().nullish(),
+        tableType: z.nativeEnum(TableType).nullish(),
+        published: z.boolean().optional(),
+        isSystem: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
-      const { page, pageSize, search, category } = input;
+    .query(async ({ ctx, input }) => {
+      const { page, pageSize, search, category, tableType, published, isSystem } = input;
+      const { reqCtx } = ctx;
+
+      // Visibility filter logic matched to your permission file
+      const visibilityFilter = isOrgAdmin(reqCtx)
+        ? {}
+        : {
+          OR: [
+            { visibility: Visibility.PUBLIC },
+            { visibility: Visibility.PRIVATE, createdBy: reqCtx.actor?.id ?? "" },
+          ],
+        };
 
       const whereClause = {
+        organizationId: input.organizationId || reqCtx.organization?.id,
         deletedAt: null,
-        OR: [
+        ...visibilityFilter,
+        OR: search ? [
           { name: { contains: search, mode: "insensitive" as const } },
           { slug: { contains: search, mode: "insensitive" as const } },
-        ],
-        ...(category && { category }),
+        ] : undefined,
+        ...(category && category !== "all" ? { category } : {}),
+        ...(tableType ? { tableType } : {}),
+        ...(published !== undefined ? { isPublished: published } : {}),
+        ...(isSystem !== undefined ? { isSystem } : {}),
       };
 
       const [items, totalCount] = await Promise.all([
-        prisma.tableRegistryItem.findMany({
+        ctx.db.tableRegistryItem.findMany({
           skip: (page - 1) * pageSize,
           take: pageSize,
           where: whereClause,
           orderBy: { updatedAt: "desc" },
+          include: { _count: { select: { registryUsages: true } } }, // Show how many workflows use this table
         }),
-        prisma.tableRegistryItem.count({ where: whereClause }),
+        ctx.db.tableRegistryItem.count({ where: whereClause }),
       ]);
 
       const totalPages = Math.ceil(totalCount / pageSize);
@@ -54,143 +78,194 @@ export const tablesRouter = createTRPCRouter({
       };
     }),
 
-  getOne: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const item = await prisma.tableRegistryItem.findUnique({
-        where: { id: input.id, deletedAt: null },
+  // ──────────────────────────────────────────────────────────────────────────
+  // GET ONE
+  // ──────────────────────────────────────────────────────────────────────────
+  getOne: orgProcedure
+    .input(z.object({ organizationId: z.string().optional(), id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const reqCtx = await loadContext(ctx.db, ctx.userId, {
+        organizationId: input.organizationId,
+        tableRegistryId: input.id,
       });
 
-      if (!item) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
-      }
+      if (!reqCtx.tableItem) throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
 
-      return item;
+      assertPolicy(reqCtx, "view", "table");
+      return reqCtx.tableItem;
     }),
 
-  create: protectedProcedure
+  // ──────────────────────────────────────────────────────────────────────────
+  // CREATE (Standard Users)
+  // ──────────────────────────────────────────────────────────────────────────
+  create: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
         name: z.string().min(1),
         slug: z.string().min(1),
         category: z.string().min(1),
+        subCategory: z.string().optional(),
+        description: z.string().optional(),
         tableType: z.nativeEnum(TableType),
+        inputKeys: z.any(),
+        outputKey: z.any(),
         columns: z.any(),
         data: z.any(),
-        inputKeys: z.any().default([]),
-        outputKey: z.any().default({}),
-        description: z.string().optional(),
+        interpolationConfig: z.any().optional(),
+        fallbackMode: z.string().default("error"),
+        fallbackValue: z.any().optional(),
+        allowOverride: z.boolean().default(false),
+        showInOutput: z.boolean().default(true),
+        reference: z.string().optional(),
+        sourceStandard: z.string().optional(),
+        sourcePage: z.string().optional(),
+        sourceImage: z.string().optional(),
+        tags: z.array(z.string()).optional(),
         visibility: z.nativeEnum(Visibility).default(Visibility.PRIVATE),
-        isPublished: z.boolean().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const organizationId = ctx.auth.organizationId;
-      if (!organizationId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Organization required" });
-      }
+      const { reqCtx } = ctx;
+      if (!reqCtx.actor) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Actor not found." });
 
-      const existing = await prisma.tableRegistryItem.findUnique({
-        where: {
-          organizationId_slug: { organizationId, slug: input.slug },
-        },
-      });
+      const { organizationId, ...tableData } = input;
 
-      if (existing) {
-        throw new TRPCError({ code: "CONFLICT", message: "Slug already exists" });
-      }
-
-      return prisma.tableRegistryItem.create({
+      return ctx.db.tableRegistryItem.create({
         data: {
-          ...input,
-          organizationId,
-          isSystem: false,
+          ...tableData,
+          organizationId: organizationId || reqCtx.organization?.id,
+          createdBy: reqCtx.actor.id,
+          isSystem: false, // Strongly enforced
+          isPublished: false,
         },
       });
     }),
 
-  update: protectedProcedure
+  // ──────────────────────────────────────────────────────────────────────────
+  // UPDATE
+  // ──────────────────────────────────────────────────────────────────────────
+  update: orgProcedure
     .input(
       z.object({
+        organizationId: z.string().optional(),
         id: z.string(),
         name: z.string().optional(),
+        slug: z.string().optional(),
         category: z.string().optional(),
+        subCategory: z.string().optional(),
         description: z.string().optional(),
-        visibility: z.nativeEnum(Visibility).optional(),
-        isPublished: z.boolean().optional(),
-        columns: z.any().optional(),
-        data: z.any().optional(),
+        tableType: z.nativeEnum(TableType).optional(),
         inputKeys: z.any().optional(),
         outputKey: z.any().optional(),
+        columns: z.any().optional(),
+        data: z.any().optional(),
+        interpolationConfig: z.any().optional(),
+        fallbackMode: z.string().optional(),
+        fallbackValue: z.any().optional(),
+        allowOverride: z.boolean().optional(),
+        showInOutput: z.boolean().optional(),
+        reference: z.string().optional(),
+        sourceStandard: z.string().optional(),
+        sourcePage: z.string().optional(),
+        sourceImage: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        visibility: z.nativeEnum(Visibility).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
-      const organizationId = ctx.auth.organizationId;
+      const { id, organizationId, ...data } = input;
 
-      const item = await prisma.tableRegistryItem.findUnique({
-        where: { id, deletedAt: null },
+      const reqCtx = await loadContext(ctx.db, ctx.userId, {
+        organizationId,
+        tableRegistryId: id,
       });
 
-      if (!item) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
-      }
+      if (!reqCtx.tableItem) throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
 
-      // Only owner org or super admin can update
-      if (item.organizationId !== organizationId && ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions" });
-      }
+      assertPolicy(reqCtx, "edit", "table");
 
-      return prisma.tableRegistryItem.update({
+      return ctx.db.tableRegistryItem.update({
         where: { id },
         data,
       });
     }),
 
-  createSystemTable: protectedProcedure
+  // ──────────────────────────────────────────────────────────────────────────
+  // DELETE (Soft)
+  // ──────────────────────────────────────────────────────────────────────────
+  delete: orgProcedure
+    .input(z.object({ organizationId: z.string().optional(), id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const reqCtx = await loadContext(ctx.db, ctx.userId, {
+        organizationId: input.organizationId,
+        tableRegistryId: input.id,
+      });
+
+      if (!reqCtx.tableItem) throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
+
+      assertPolicy(reqCtx, "delete", "table");
+
+      return ctx.db.tableRegistryItem.update({
+        where: { id: input.id },
+        data: { deletedAt: new Date() },
+      });
+    }),
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // CREATE SYSTEM TABLE (SUPER_ADMIN ONLY)
+  // ──────────────────────────────────────────────────────────────────────────
+  createSystemTable: orgProcedure
     .input(
       z.object({
-        slug: z.string().min(1, "Slug is required"),
-        name: z.string().min(1, "Name is required"),
+        organizationId: z.string().optional(),
+        slug: z.string().min(1),
+        name: z.string().min(1),
         description: z.string().optional(),
-        category: z.string().min(1, "Category is required"),
+        category: z.string().min(1),
+        subCategory: z.string().optional(),
         tableType: z.nativeEnum(TableType),
-        columns: z.any(), // JSON
-        data: z.any(), // JSON
-        inputKeys: z.any(), // JSON
-        outputKey: z.any(), // JSON
+        inputKeys: z.any(),
+        outputKey: z.any(),
+        columns: z.any(),
+        data: z.any(),
+        interpolationConfig: z.any().optional(),
+        tags: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only super admins can create system tables." });
+      const { reqCtx } = ctx;
+
+      // 1. Immediate Authorization Check
+      if (!isSuperAdmin(reqCtx)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only super admins can create system tables.",
+        });
       }
 
-      // System organization fallback or specific ID
-      const systemOrg = await prisma.organization.findFirst({
+      const { organizationId, ...tableData } = input;
+
+      // 2. Resolve Global System Organization
+      let systemOrg = await ctx.db.organization.findFirst({
         where: { name: "System Registry" },
       });
 
-      const organizationId = systemOrg?.id || ctx.auth.organizationId;
-
-      if (!organizationId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Organization required for system tables" });
+      if (!systemOrg) {
+        systemOrg = await ctx.db.organization.create({
+          data: {
+            name: "System Registry",
+            founderId: reqCtx.user.id,
+            isPersonal: false,
+          },
+        });
       }
 
-      const existing = await prisma.tableRegistryItem.findUnique({
-        where: {
-          organizationId_slug: { organizationId, slug: input.slug },
-        },
-      });
-
-      if (existing) {
-        throw new TRPCError({ code: "CONFLICT", message: "Slug already exists in system registry." });
-      }
-
-      return prisma.tableRegistryItem.create({
+      // 3. Create Public System Record
+      return ctx.db.tableRegistryItem.create({
         data: {
-          ...input,
-          organizationId,
+          ...tableData,
+          organizationId: systemOrg.id,
           isSystem: true,
           isPublished: true,
           visibility: Visibility.PUBLIC,

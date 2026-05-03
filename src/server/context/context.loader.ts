@@ -49,30 +49,28 @@ export async function loadContext(
         // Initialize with empty arrays to prevent downstream mapping errors
         userWithRelations = { ...bareUser, organizationMembers: [], calcActors: [] };
 
-        // 2. If Super Admin, fetch default org and relations (Extra DB calls ONLY for this scenario)
-        if (bareUser.globalRole === GlobalRole.SUPER_ADMIN) {
-            const defaultOrg = await db.organization.findFirst({
-                where: {
-                    OR: [
-                        { founderId: bareUser.id },
-                        { members: { some: { userId: bareUser.id } } }
-                    ]
-                },
-                orderBy: { createdAt: 'asc' } // Default to their oldest/primary organization
-            });
+        // 2. Fetch default org and relations (Extra DB calls ONLY when organizationId is not provided)
+        const defaultOrg = await db.organization.findFirst({
+            where: {
+                OR: [
+                    { founderId: bareUser.id },
+                    { members: { some: { userId: bareUser.id } } }
+                ]
+            },
+            orderBy: { createdAt: 'asc' } // Default to their oldest/primary organization
+        });
 
-            if (defaultOrg) {
-                opts.organizationId = defaultOrg.id; // Mutate opts for downstream queries
+        if (defaultOrg) {
+            opts.organizationId = defaultOrg.id; // Mutate opts for downstream queries
 
-                // Fetch the relations for this newly discovered org in parallel
-                const [members, actors] = await Promise.all([
-                    db.organizationMember.findMany({ where: { userId: bareUser.id, organizationId: defaultOrg.id } }),
-                    db.calcActor.findMany({ where: { userId: bareUser.id, organizationId: defaultOrg.id } })
-                ]);
+            // Fetch the relations for this newly discovered org in parallel
+            const [members, actors] = await Promise.all([
+                db.organizationMember.findMany({ where: { userId: bareUser.id, organizationId: defaultOrg.id } }),
+                db.calcActor.findMany({ where: { userId: bareUser.id, organizationId: defaultOrg.id } })
+            ]);
 
-                userWithRelations.organizationMembers = members;
-                userWithRelations.calcActors = actors;
-            }
+            userWithRelations.organizationMembers = members;
+            userWithRelations.calcActors = actors;
         }
     }
 

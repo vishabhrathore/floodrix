@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -305,7 +304,7 @@ export const TableRegistryList = () => {
         return (
             <EmptyView
                 message={params.search ? `No tables match "${params.search}"` : "The table registry is empty."}
-                onNew={() => { }}
+                onNew={() => window.location.href = "/admin/registery/tables/new"}
             />
         );
     }

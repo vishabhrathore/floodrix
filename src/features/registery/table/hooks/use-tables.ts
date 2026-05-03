@@ -1,6 +1,6 @@
 // hooks.ts
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTablesParams } from "./use-tables-params";
 
@@ -12,7 +12,7 @@ export const useSuspenseTables = () => {
 
 export const useTable = (id?: string) => {
   const trpc = useTRPC();
-  return useSuspenseQuery(
+  return useQuery(
     trpc.tables.getOne.queryOptions(
       { id: id! },
       { enabled: !!id }
@@ -67,6 +67,23 @@ export const useCreateSystemTable = () => {
       },
       onError: (error: any) => {
         toast.error(`Failed to create system table: ${error.message}`);
+      },
+    }),
+  );
+};
+
+export const useDeleteTable = () => {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.tables.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success(`Table deleted successfully`);
+        queryClient.invalidateQueries(trpc.tables.getMany.queryOptions({}));
+      },
+      onError: (error: any) => {
+        toast.error(`Failed to delete table: ${error.message}`);
       },
     }),
   );

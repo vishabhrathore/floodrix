@@ -1,10 +1,11 @@
 import { formulaPolicies } from "@/features/registery/formula/server/policy";
 import { PolicyInput, PolicyResult, ResourceType, ResourcePolicyMap } from "./policy.types";
+import { tablePolicies } from "@/features/registery/table/server/policy";
 
 const policyRegistry: Record<ResourceType, ResourcePolicyMap> = {
   workflow: {}, // workflowPolicies,
   formula: formulaPolicies,
-  table: {}, // tablePolicies,
+  table: tablePolicies, // tablePolicies,
   workspace: {}, // Default empty, add workspacePolicies later
   batch: {}, // Default empty, add batchPolicies later
 };

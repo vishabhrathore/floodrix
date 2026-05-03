@@ -35,9 +35,14 @@ import {
     Settings2,
     Eye,
     EyeOff,
+    BookOpen,
+    Edit3,
 } from "lucide-react";
 import RegistryPicker, { type RegistryItem } from "@/features/registery/components/registery-picker";
 import { cn } from "@/lib/utils";
+import { TableDataEditor } from "./table-data-editor";
+import { TableRegistryAutocomplete } from "./table-registry-autocomplete";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 interface LookupInputBinding {
@@ -165,94 +170,7 @@ function KeyBindingRow({
     );
 }
 
-// ── Inline mini-table editor ──────────────────────────────────────────────
-function InlineTableEditor({
-    columns,
-    data,
-    onColumnsChange,
-    onDataChange,
-}: {
-    columns: { key: string; label: string; isKey?: boolean; isOutput?: boolean }[];
-    data: Record<string, unknown>[];
-    onColumnsChange: (cols: typeof columns) => void;
-    onDataChange: (rows: typeof data) => void;
-}) {
-    const addRow = () => {
-        const row: Record<string, unknown> = {};
-        columns.forEach((c) => (row[c.key] = ""));
-        onDataChange([...data, row]);
-    };
 
-    const updateCell = (rowIdx: number, key: string, value: string) => {
-        onDataChange(data.map((r, i) => (i === rowIdx ? { ...r, [key]: value } : r)));
-    };
-
-    if (columns.length === 0) {
-        return (
-            <div className="rounded-md border border-dashed border-border/40 p-4 text-center text-xs text-muted-foreground">
-                Select a table from the registry or add columns to define a custom table.
-            </div>
-        );
-    }
-
-    return (
-        <div className="overflow-x-auto rounded-md border border-border/40">
-            <table className="w-full min-w-max text-xs">
-                <thead>
-                    <tr className="border-b border-border/40 bg-muted/40">
-                        {columns.map((c) => (
-                            <th
-                                key={c.key}
-                                className={cn(
-                                    "px-2 py-1.5 text-left text-[10px] font-medium",
-                                    c.isOutput
-                                        ? "text-primary"
-                                        : "text-muted-foreground"
-                                )}
-                            >
-                                {c.label || c.key}
-                                {c.isOutput && (
-                                    <span className="ml-1 text-[9px] text-primary/60">↑</span>
-                                )}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.map((row, i) => (
-                        <tr
-                            key={i}
-                            className="group border-b border-border/20 last:border-0 hover:bg-muted/20"
-                        >
-                            {columns.map((c) => (
-                                <td key={c.key} className="px-1 py-0.5">
-                                    <input
-                                        type="text"
-                                        value={String(row[c.key] ?? "")}
-                                        onChange={(e) => updateCell(i, c.key, e.target.value)}
-                                        className="h-6 w-full min-w-[60px] rounded border-0 bg-transparent px-1 font-mono text-[11px] focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
-                                    />
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            {data.length === 0 && (
-                <div className="py-4 text-center text-[11px] text-muted-foreground">No rows</div>
-            )}
-            <div className="border-t border-border/30 p-2">
-                <button
-                    type="button"
-                    onClick={addRow}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                    + Add row
-                </button>
-            </div>
-        </div>
-    );
-}
 
 // ── Main panel ────────────────────────────────────────────────────────────
 export default function LookupConfigPanel({
@@ -268,7 +186,7 @@ export default function LookupConfigPanel({
     }, [config]);
 
     const update = (patch: Partial<LookupNodeConfig>) => {
-        const next = { ...localConfig, ...patch };
+        const next = { ...localConfig, ...patch } as LookupNodeConfig;
         setLocalConfig(next);
         onChange(next);
     };
@@ -295,11 +213,28 @@ export default function LookupConfigPanel({
 
         update({
             registryId: id,
+            mode: "registry",
             keyBindings,
             outputBinding,
             inlineColumns: cols,
             inlineData: (item.data as Record<string, unknown>[]) ?? [],
+            inlineTableType: item.tableType,
         });
+    };
+
+    const handleModeChange = (mode: "registry" | "inline") => {
+        if (mode === "inline") {
+            // Initialize inline bindings if missing
+            const keyBindings = localConfig.keyBindings.length > 0 ? localConfig.keyBindings :
+                [{ columnKey: "key", columnLabel: "Lookup Key", contextKey: "" }];
+
+            const outputBinding = localConfig.outputBinding ||
+                { columnKey: "value", contextKey: "", notation: "result", label: "Output" };
+
+            update({ mode, keyBindings, outputBinding });
+        } else {
+            update({ mode });
+        }
     };
 
     const updateKeyBinding = (index: number, binding: LookupInputBinding) => {
@@ -341,91 +276,88 @@ export default function LookupConfigPanel({
                 <Separator />
 
                 {/* Mode toggle */}
-                <div>
-                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Table Source
-                    </Label>
-                    <div className="mt-2 flex gap-2">
-                        {(["registry", "inline"] as const).map((m) => (
-                            <button
-                                key={m}
-                                type="button"
-                                onClick={() => update({ mode: m })}
-                                className={cn(
-                                    "flex flex-1 items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors",
-                                    localConfig.mode === m
-                                        ? "border-primary bg-primary/5 text-primary"
-                                        : "border-border/60 text-muted-foreground hover:bg-muted/30"
-                                )}
-                            >
-                                {m === "registry" ? (
-                                    <><Link2 className="h-3.5 w-3.5" />Registry</>
-                                ) : (
-                                    <><Link2Off className="h-3.5 w-3.5" />Custom</>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                <div className="px-0 py-2">
+                    <Tabs
+                        value={localConfig.mode}
+                        onValueChange={(v) => handleModeChange(v as "registry" | "inline")}
+                    >
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="registry" className="gap-1.5 text-xs font-semibold">
+                                <BookOpen className="h-3.5 w-3.5" />
+                                Registry
+                            </TabsTrigger>
+                            <TabsTrigger value="inline" className="gap-1.5 text-xs font-semibold">
+                                <Edit3 className="h-3.5 w-3.5" />
+                                Custom Table
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
                 {/* Registry mode */}
-                {localConfig.mode === "registry" && (
-                    <div className="space-y-3">
-                        <Section title="Table" icon={Table2}>
-                            <RegistryPicker
-                                type="table"
-                                value={localConfig.registryId}
-                                onChange={handleRegistrySelect}
-                                showVersionPin
-                                pinnedVersion={localConfig.pinnedVersion}
-                                onPinnedVersionChange={(v) => update({ pinnedVersion: v })}
-                            />
-                        </Section>
+                {
+                    localConfig.mode === "registry" && (
+                        <div className="space-y-3">
+                            <Section title="Table Selection" icon={Table2}>
+                                <div className="space-y-3">
+                                    <div>
+                                        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 block">
+                                            Autocomplete Search
+                                        </Label>
+                                        <TableRegistryAutocomplete
+                                            value={localConfig.registryId}
+                                            onSelect={handleRegistrySelect}
+                                        />
+                                    </div>
 
-                        {localConfig.registryId && localConfig.inlineColumns && (
-                            <Section title="Table Preview" icon={AlignJustify} defaultOpen={false}>
-                                <InlineTableEditor
-                                    columns={localConfig.inlineColumns ?? []}
-                                    data={localConfig.inlineData ?? []}
-                                    onColumnsChange={(cols) => update({ inlineColumns: cols })}
-                                    onDataChange={(data) => update({ inlineData: data })}
-                                />
+                                    <div className="relative">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <span className="w-full border-t border-border/40" />
+                                        </div>
+                                        <div className="relative flex justify-center text-[10px] uppercase font-semibold">
+                                            <span className="bg-background px-2 text-muted-foreground/60">Or Browse Registry</span>
+                                        </div>
+                                    </div>
+
+                                    <RegistryPicker
+                                        type="table"
+                                        value={localConfig.registryId}
+                                        onChange={handleRegistrySelect}
+                                        showVersionPin
+                                        pinnedVersion={localConfig.pinnedVersion}
+                                        onPinnedVersionChange={(v) => update({ pinnedVersion: v })}
+                                    />
+                                </div>
                             </Section>
-                        )}
-                    </div>
-                )}
+
+                            {localConfig.registryId && localConfig.inlineColumns && (
+                                <Section title="Table Preview" icon={AlignJustify} defaultOpen={false}>
+                                    <TableDataEditor
+                                        type={(localConfig.inlineTableType as any) || "RANGE_LOOKUP"}
+                                        data={localConfig.inlineData ?? []}
+                                        readOnly={true}
+                                    />
+                                </Section>
+                            )}
+                        </div>
+                    )
+                }
 
                 {/* Custom / inline mode */}
-                {localConfig.mode === "inline" && (
-                    <Section title="Custom Table" icon={Settings2}>
-                        <div className="space-y-3">
-                            <div>
-                                <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                    Match Mode
-                                </Label>
-                                <Select
-                                    value={localConfig.inlineTableType ?? "RANGE_LOOKUP"}
-                                    onValueChange={(v) => update({ inlineTableType: v })}
-                                >
-                                    <SelectTrigger className="mt-1 h-8 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="RANGE_LOOKUP">Range Lookup</SelectItem>
-                                        <SelectItem value="EXACT_LOOKUP">Exact Lookup</SelectItem>
-                                        <SelectItem value="INTERPOLATION_1D">1D Interpolation</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                {
+                    localConfig.mode === "inline" && (
+                        <Section title="Custom Table" icon={Settings2}>
+                            <div className="space-y-3">
+                                <TableDataEditor
+                                    type={(localConfig.inlineTableType as any) || "RANGE_LOOKUP"}
+                                    data={localConfig.inlineData ?? []}
+                                    onTypeChange={(v) => update({ inlineTableType: v })}
+                                    onDataChange={(data) => update({ inlineData: data })}
+                                />
                             </div>
-                            <InlineTableEditor
-                                columns={localConfig.inlineColumns ?? []}
-                                data={localConfig.inlineData ?? []}
-                                onColumnsChange={(cols) => update({ inlineColumns: cols })}
-                                onDataChange={(data) => update({ inlineData: data })}
-                            />
-                        </div>
-                    </Section>
-                )}
+                        </Section>
+                    )
+                }
 
                 {/* Variable bindings */}
                 {(localConfig.keyBindings.length > 0 || localConfig.registryId) && (
@@ -448,66 +380,57 @@ export default function LookupConfigPanel({
                                         ))}
                                     </>
                                 ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        Select a table to configure key bindings.
-                                    </p>
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-xs text-muted-foreground italic">
+                                            No lookup variables configured.
+                                        </p>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 text-[10px]"
+                                            onClick={() => update({
+                                                keyBindings: [{ columnKey: "key", columnLabel: "Lookup Key", contextKey: "" }]
+                                            })}
+                                        >
+                                            + Add Lookup Key
+                                        </Button>
+                                    </div>
                                 )}
 
                                 {localConfig.outputBinding && (
                                     <>
                                         <p className="pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                            Output
+                                            Outcome
                                         </p>
                                         <div className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/10 p-2.5">
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-[10px] font-medium text-muted-foreground">
-                                                    {localConfig.outputBinding.label} → store as
-                                                </p>
-                                                <div className="mt-1 grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <Label className="text-[10px] text-muted-foreground">Notation</Label>
-                                                        <Input
-                                                            value={localConfig.outputBinding.notation}
-                                                            onChange={(e) =>
-                                                                update({
-                                                                    outputBinding: {
-                                                                        ...localConfig.outputBinding!,
-                                                                        notation: e.target.value,
-                                                                    },
-                                                                })
-                                                            }
-                                                            placeholder="f_s"
-                                                            className="mt-0.5 h-6 font-mono text-[11px]"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label className="text-[10px] text-muted-foreground">Variable</Label>
-                                                        <Select
-                                                            value={localConfig.outputBinding.contextKey ?? ""}
-                                                            onValueChange={(v) =>
-                                                                update({
-                                                                    outputBinding: {
-                                                                        ...localConfig.outputBinding!,
-                                                                        contextKey: v,
-                                                                    },
-                                                                })
-                                                            }
-                                                        >
-                                                            <SelectTrigger className="mt-0.5 h-6 text-[11px]">
-                                                                <SelectValue placeholder="Select…" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="__new__">
-                                                                    + Create new variable
-                                                                </SelectItem>
-                                                                {availableVariables.map((v) => (
-                                                                    <SelectItem key={v.contextKey} value={v.contextKey}>
-                                                                        <span className="font-mono">{v.notation}</span>
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
+                                                <div className="flex items-baseline justify-between gap-2">
+                                                    <p className="text-[10px] font-medium text-muted-foreground">
+                                                        Store {localConfig.outputBinding.label} as:
+                                                    </p>
+                                                    <span className="text-[9px] font-mono text-muted-foreground bg-muted/30 px-1 rounded">
+                                                        Workflow Variable
+                                                    </span>
+                                                </div>
+                                                <div className="mt-1.5">
+                                                    <Input
+                                                        value={localConfig.outputBinding.contextKey ?? localConfig.outputBinding.notation ?? ""}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            update({
+                                                                outputBinding: {
+                                                                    ...localConfig.outputBinding!,
+                                                                    contextKey: val,
+                                                                    notation: val,
+                                                                },
+                                                            });
+                                                        }}
+                                                        placeholder="e.g. scour_depth"
+                                                        className="h-8 text-[12px] font-mono font-semibold"
+                                                    />
+                                                    <p className="mt-1 text-[9px] text-muted-foreground">
+                                                        This name will be available to other nodes in the workflow.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>

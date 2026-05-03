@@ -67,15 +67,6 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
 export const orgProcedure = protectedProcedure
   .input(z.object({ organizationId: z.string().optional() }))
   .use(async ({ ctx, input, next }) => {
-    const isSuper = ctx.auth.user.globalRole === "SUPER_ADMIN";
-
-    if (!input.organizationId && !isSuper) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "organizationId is required for non-superadmin users",
-      });
-    }
-
     const reqCtx = await loadContext(ctx.db, ctx.userId, {
       organizationId: input.organizationId,
     });

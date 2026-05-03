@@ -4,9 +4,19 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
+generator erd {
+  provider        = "prisma-erd-generator"
+  output          = "./ERD.svg"
+  puppeteerConfig = "./prisma/puppeteer.config.json"
+}
+
+generator mermaid {
+  provider = "prisma-erd-generator"
+  output   = "./ERD.md"
+}
+
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
   extensions = [pgcrypto]
 }
 
@@ -92,6 +102,7 @@ model Organization {
   founder       User                  @relation("OrgFounder", fields: [founderId], references: [id], onDelete: Cascade)
   tableItems    TableRegistryItem[]
   workspaces    Workspace[]
+  auditLogs     AuditLog[]
 
   @@index([founderId])
   @@map("organizations")
@@ -267,6 +278,7 @@ model CalcWorkflow {
   category         String?
   tags             Json                   @default("[]")
   metadata         Json                   @default("{}")
+  canvasState      Json                   @default("{}")
   status           WorkflowStatus         @default(DRAFT)
   visibility       Visibility             @default(PRIVATE)
   currentVersionId String?                @unique
@@ -645,6 +657,7 @@ model CalcSession {
   error          Json?
   runMode        RunMode               @default(SINGLE)
   metadata       Json                  @default("{}")
+  idempotencyKey String?
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   nodeExecutions CalcNodeExecution[]
@@ -653,6 +666,7 @@ model CalcSession {
   version        CalcVersion?          @relation(fields: [versionId], references: [id])
   workspaceRuns  WorkspaceSessionRun[]
 
+  @@unique([calcWorkflowId, idempotencyKey])
   @@index([calcWorkflowId, status])
   @@index([calcWorkflowId, actorId])
   @@index([actorId, calcWorkflowId, status])
@@ -680,6 +694,7 @@ model CalcNodeExecution {
   node        CalcNode?           @relation(fields: [calcNodeId], references: [id])
   session     CalcSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@unique([sessionId, calcNodeId])
   @@index([sessionId])
   @@map("calc_node_executions")
 }
@@ -852,6 +867,7 @@ model NodeTemplate {
 
 model AuditLog {
   id             String            @id @default(cuid())
+  organizationId String
   actorId        String?
   resourceType   AuditResourceType
   resourceId     String
@@ -868,7 +884,9 @@ model AuditLog {
   createdAt      DateTime          @default(now())
   actor          CalcActor?        @relation(fields: [actorId], references: [id])
   calcWorkflow   CalcWorkflow?     @relation(fields: [calcWorkflowId], references: [id])
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId, createdAt])
   @@index([resourceId])
   @@index([calcWorkflowId])
   @@index([createdAt])
@@ -1068,6 +1086,7 @@ enum AuditResourceType {
   WORKSPACE_NODE
   BATCH_JOB
   UPLOADED_DATASET
+  SESSION
 }
 
 enum AuditAction {

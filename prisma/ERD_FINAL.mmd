@@ -1,0 +1,720 @@
+erDiagram
+
+%% Enum Placeholders
+GlobalRole {
+    string enum_value
+}
+
+Visibility {
+    string enum_value
+}
+
+OrgRole {
+    string enum_value
+}
+
+WorkflowStatus {
+    string enum_value
+}
+
+LibraryStatus {
+    string enum_value
+}
+
+CollaboratorPermission {
+    string enum_value
+}
+
+SessionStatus {
+    string enum_value
+}
+
+RunMode {
+    string enum_value
+}
+
+NodeExecutionStatus {
+    string enum_value
+}
+
+CalcNodeType {
+    string enum_value
+}
+
+VariableDataType {
+    string enum_value
+}
+
+VariableSourceType {
+    string enum_value
+}
+
+VariableScope {
+    string enum_value
+}
+
+TableType {
+    string enum_value
+}
+
+WorkspaceNodeType {
+    string enum_value
+}
+
+BatchStatus {
+    string enum_value
+}
+
+BatchRowStatus {
+    string enum_value
+}
+
+SubmissionStatus {
+    string enum_value
+}
+
+ExecutionStatus {
+    string enum_value
+}
+
+CredentialType {
+    string enum_value
+}
+
+NodeType {
+    string enum_value
+}
+
+BillingType {
+    string enum_value
+}
+
+BillingStatus {
+    string enum_value
+}
+
+AuditResourceType {
+    string enum_value
+}
+
+AuditAction {
+    string enum_value
+}
+
+%% Entities
+user {
+    string id PK
+    string name
+    string email
+    boolean emailVerified
+    string image Nullable
+    GlobalRole globalRole
+    datetime createdAt
+    datetime updatedAt
+}
+
+session {
+    string id PK
+    datetime expiresAt
+    string token
+    datetime createdAt
+    datetime updatedAt
+    string ipAddress Nullable
+    string userAgent Nullable
+}
+
+account {
+    string id PK
+    string accountId
+    string providerId
+    string accessToken Nullable
+    string refreshToken Nullable
+    string idToken Nullable
+    datetime accessTokenExpiresAt Nullable
+    datetime refreshTokenExpiresAt Nullable
+    string scope Nullable
+    string password Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+verification {
+    string id PK
+    string identifier
+    string value
+    datetime expiresAt
+    datetime createdAt
+    datetime updatedAt
+}
+
+organizations {
+    string id PK
+    string name
+    boolean isPersonal
+    datetime createdAt
+    datetime updatedAt
+}
+
+organization_members {
+    string id PK
+    OrgRole role
+    datetime createdAt
+}
+
+calc_actors {
+    string id PK
+    string displayName
+    datetime createdAt
+}
+
+billing_plans {
+    string id PK
+    string name
+    int maxRunsPerMonth
+    int maxRunsPerWorkflow Nullable
+    int priceMonthly Nullable
+    int priceOneTime Nullable
+    string currency
+    boolean isActive
+    datetime createdAt
+    datetime updatedAt
+}
+
+org_billing {
+    string id PK
+    BillingType billingType
+    int remainingRuns Nullable
+    BillingStatus status
+    datetime startedAt
+    datetime expiresAt Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+org_usage {
+    string id PK
+    datetime periodStart
+    datetime periodEnd
+    int totalRuns
+    datetime createdAt
+    datetime updatedAt
+}
+
+Workflow {
+    string id PK
+    string name
+    WorkflowStatus status
+    datetime createdAt
+    datetime updatedAt
+}
+
+Credential {
+    string id PK
+    string name
+    string value
+    CredentialType type
+    datetime createdAt
+    datetime updatedAt
+}
+
+Node {
+    string id PK
+    string name
+    NodeType type
+    json position
+    json data
+    datetime createdAt
+    datetime updatedAt
+}
+
+Connection {
+    string id PK
+    string fromOutput
+    string toInput
+    datetime createdAt
+    datetime updatedAt
+}
+
+Execution {
+    string id PK
+    ExecutionStatus status
+    string error Nullable
+    string errorStack Nullable
+    datetime startedAt
+    datetime completedAt Nullable
+    string inngestEventId
+    json output Nullable
+}
+
+calc_workflows {
+    string id PK
+    string name
+    string slug
+    string description Nullable
+    string category Nullable
+    json tags
+    json metadata
+    json canvasState
+    WorkflowStatus status
+    Visibility visibility
+    string publicSlug Nullable
+    LibraryStatus libraryStatus
+    int maxRunsPerUser Nullable
+    int windowSizeMin Nullable
+    int maxRunsTotal Nullable
+    datetime deletedAt Nullable
+    datetime publishedAt Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_versions {
+    string id PK
+    int version
+    json snapshot
+    string changelog Nullable
+    datetime publishedAt
+}
+
+calc_drafts {
+    string id PK
+    json canvasState
+    datetime savedAt
+}
+
+calc_nodes {
+    string id PK
+    CalcNodeType type
+    string label
+    string description Nullable
+    float positionX
+    float positionY
+    json config
+    json style
+    int sortOrder
+    datetime deletedAt Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_edges {
+    string id PK
+    string sourceHandle
+    string targetHandle
+    json condition Nullable
+    string label Nullable
+    json style
+    int sortOrder
+    datetime deletedAt Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_variables {
+    string id PK
+    string contextKey
+    string displayLabel
+    string notation
+    VariableDataType dataType
+    string unit Nullable
+    json defaultValue Nullable
+    json constraints Nullable
+    VariableSourceType sourceType Nullable
+    VariableScope scope
+    string scopeGroupId Nullable
+    string description Nullable
+    int sortOrder
+    datetime deletedAt Nullable
+}
+
+calc_collaborators {
+    string id PK
+    CollaboratorPermission permission
+    datetime createdAt
+}
+
+formula_registry {
+    string id PK
+    string slug
+    string name
+    string description Nullable
+    string category
+    string subCategory Nullable
+    json tags
+    string expressionNotation
+    string displayExpression
+    json inputVariables
+    json outputVariable
+    json intermediateSteps
+    string reference Nullable
+    string sourceStandard Nullable
+    int yearIntroduced Nullable
+    string region Nullable
+    string applicability Nullable
+    string limitations Nullable
+    int currentVersion
+    boolean isPublished
+    boolean isSystem
+    Visibility visibility
+    datetime createdAt
+    datetime updatedAt
+    datetime deletedAt Nullable
+}
+
+formula_registry_versions {
+    string id PK
+    int version
+    json snapshot
+    string changelog Nullable
+    datetime createdAt
+}
+
+table_registry {
+    string id PK
+    string slug
+    string name
+    string description Nullable
+    string category
+    string subCategory Nullable
+    json tags
+    TableType tableType
+    json inputKeys
+    json outputKey
+    json columns
+    json data
+    json interpolationConfig Nullable
+    string fallbackMode
+    json fallbackValue Nullable
+    boolean allowOverride
+    boolean showInOutput
+    string reference Nullable
+    string sourceStandard Nullable
+    string sourcePage Nullable
+    string sourceImage Nullable
+    int currentVersion
+    boolean isPublished
+    boolean isSystem
+    Visibility visibility
+    datetime createdAt
+    datetime updatedAt
+    datetime deletedAt Nullable
+}
+
+table_registry_versions {
+    string id PK
+    int version
+    json snapshot
+    string changelog Nullable
+    datetime createdAt
+}
+
+formula_registry_usages {
+    string id PK
+    int pinnedVersion Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+table_registry_usages {
+    string id PK
+    int pinnedVersion Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+workspaces {
+    string id PK
+    string name
+    string description Nullable
+    string icon Nullable
+    string color Nullable
+    Visibility visibility
+    boolean isTemplate
+    json metadata
+    datetime createdAt
+    datetime updatedAt
+}
+
+workspace_nodes {
+    string id PK
+    WorkspaceNodeType nodeType
+    string name
+    string description Nullable
+    string icon Nullable
+    string color Nullable
+    int linkedVersion Nullable
+    string externalUrl Nullable
+    string noteContent Nullable
+    int sortOrder
+    boolean isExpanded
+    boolean isLocked
+    float canvasX Nullable
+    float canvasY Nullable
+    json metadata
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_sessions {
+    string id PK
+    int versionNum
+    SessionStatus status
+    json variables
+    string currentNodeId Nullable
+    datetime pausedAt Nullable
+    string pauseReason Nullable
+    json executionOrder
+    int currentIndex
+    json inputSnapshot Nullable
+    datetime startedAt Nullable
+    datetime completedAt Nullable
+    int duration Nullable
+    json error Nullable
+    RunMode runMode
+    json metadata
+    string idempotencyKey Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_node_executions {
+    string id PK
+    NodeExecutionStatus status
+    int stepNumber
+    json inputVars Nullable
+    json outputVars Nullable
+    json result Nullable
+    string error Nullable
+    string errorType Nullable
+    json userInput Nullable
+    datetime userInputAt Nullable
+    datetime startedAt Nullable
+    datetime completedAt Nullable
+    int durationMs Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+workspace_sessions {
+    string id PK
+    json sharedVariables
+    SessionStatus status
+    datetime startedAt
+    datetime completedAt Nullable
+}
+
+workspace_session_runs {
+    string id PK
+    int sortOrder
+    SessionStatus status
+    datetime createdAt
+}
+
+library_submissions {
+    string id PK
+    SubmissionStatus status
+    string adminFeedback Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_ratings {
+    string id PK
+    int score
+    string review Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+calc_rating_aggregates {
+    string id PK
+    float averageRating
+    int ratingCount
+    datetime updatedAt
+}
+
+batch_jobs {
+    string id PK
+    string fileName
+    string fileUrl Nullable
+    int totalRows
+    json columns
+    json columnMapping
+    BatchStatus status
+    int processedRows
+    int successRows
+    int errorRows
+    string errorSummary Nullable
+    string resultFileUrl Nullable
+    datetime startedAt Nullable
+    datetime completedAt Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+batch_row_executions {
+    string id PK
+    int rowNumber
+    json inputData
+    BatchRowStatus status
+    json outputData Nullable
+    json variables Nullable
+    string error Nullable
+    int durationMs Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+uploaded_datasets {
+    string id PK
+    string fileName
+    string fileType
+    int fileSize
+    string storageUrl
+    int rowCount
+    json columns
+    json columnMapping Nullable
+    datetime createdAt
+    datetime updatedAt
+}
+
+node_templates {
+    string id PK
+    CalcNodeType type
+    string label
+    string description Nullable
+    json config
+    json style
+    string category Nullable
+    json tags
+    Visibility visibility
+    boolean isSystem
+    datetime createdAt
+    datetime updatedAt
+}
+
+audit_logs {
+    string id PK
+    AuditResourceType resourceType
+    string resourceId
+    AuditAction action
+    json changes Nullable
+    json beforeSnapshot Nullable
+    json afterSnapshot Nullable
+    string ipAddress Nullable
+    string userAgent Nullable
+    string sessionId Nullable
+    string batchId Nullable
+    datetime expiresAt Nullable
+    datetime createdAt
+}
+
+%% Relationships
+user |o--|| GlobalRole : enum:globalRole
+session }o--|| user : user
+account }o--|| user : user
+organizations }o--|| user : founder
+organization_members |o--|| OrgRole : enum:role
+organization_members }o--|| organizations : organization
+organization_members }o--|| user : user
+calc_actors }o--|| organizations : organization
+calc_actors }o--|o user : user
+org_billing |o--|| BillingType : enum:billingType
+org_billing |o--|| BillingStatus : enum:status
+org_billing }o--|| organizations : organization
+org_billing }o--|| billing_plans : plan
+org_usage }o--|| organizations : organization
+Workflow |o--|| WorkflowStatus : enum:status
+Workflow }o--|| user : user
+Credential |o--|| CredentialType : enum:type
+Credential }o--|| user : user
+Node |o--|| NodeType : enum:type
+Node }o--|o Credential : credential
+Node }o--|| Workflow : workflow
+Connection }o--|| Node : fromNode
+Connection }o--|| Node : toNode
+Connection }o--|| Workflow : workflow
+Execution |o--|| ExecutionStatus : enum:status
+Execution }o--|| Workflow : workflow
+calc_workflows |o--|| WorkflowStatus : enum:status
+calc_workflows |o--|| Visibility : enum:visibility
+calc_workflows |o--|| LibraryStatus : enum:libraryStatus
+calc_workflows |o--|o calc_versions : currentVersion
+calc_workflows }o--|| organizations : organization
+calc_versions }o--|| calc_workflows : calcWorkflow
+calc_versions }o--|| calc_actors : publisher
+calc_drafts }o--|| calc_actors : actor
+calc_drafts }o--|| calc_workflows : calcWorkflow
+calc_nodes |o--|| CalcNodeType : enum:type
+calc_nodes }o--|| calc_workflows : calcWorkflow
+calc_edges }o--|| calc_workflows : calcWorkflow
+calc_edges }o--|| calc_nodes : sourceNode
+calc_edges }o--|| calc_nodes : targetNode
+calc_variables |o--|| VariableDataType : enum:dataType
+calc_variables |o--|o VariableSourceType : enum:sourceType
+calc_variables |o--|| VariableScope : enum:scope
+calc_variables }o--|| calc_workflows : calcWorkflow
+calc_variables }o--|o calc_nodes : sourceNode
+calc_collaborators |o--|| CollaboratorPermission : enum:permission
+calc_collaborators }o--|| calc_actors : actor
+calc_collaborators }o--|| calc_workflows : calcWorkflow
+formula_registry |o--|| Visibility : enum:visibility
+formula_registry }o--|o calc_actors : creator
+formula_registry }o--|| organizations : organization
+formula_registry_versions }o--|o calc_actors : changer
+formula_registry_versions }o--|| formula_registry : formulaRegistry
+table_registry |o--|| TableType : enum:tableType
+table_registry |o--|| Visibility : enum:visibility
+table_registry }o--|o calc_actors : creator
+table_registry }o--|| organizations : organization
+table_registry_versions }o--|o calc_actors : changer
+table_registry_versions }o--|| table_registry : tableRegistry
+formula_registry_usages }o--|| calc_nodes : calcNode
+formula_registry_usages }o--|| calc_workflows : calcWorkflow
+formula_registry_usages }o--|| formula_registry : formulaRegistry
+table_registry_usages }o--|| calc_nodes : calcNode
+table_registry_usages }o--|| calc_workflows : calcWorkflow
+table_registry_usages }o--|| table_registry : tableRegistry
+workspaces |o--|| Visibility : enum:visibility
+workspaces }o--|| organizations : organization
+workspace_nodes |o--|| WorkspaceNodeType : enum:nodeType
+workspace_nodes }o--|o calc_workflows : linkedWorkflow
+workspace_nodes |o--|o workspace_nodes : parent
+workspace_nodes }o--|| workspaces : workspace
+calc_sessions |o--|| SessionStatus : enum:status
+calc_sessions |o--|| RunMode : enum:runMode
+calc_sessions }o--|| calc_actors : actor
+calc_sessions }o--|| calc_workflows : calcWorkflow
+calc_sessions }o--|o calc_versions : version
+calc_node_executions |o--|| NodeExecutionStatus : enum:status
+calc_node_executions }o--|o calc_nodes : node
+calc_node_executions }o--|| calc_sessions : session
+workspace_sessions |o--|| SessionStatus : enum:status
+workspace_sessions }o--|| calc_actors : actor
+workspace_sessions }o--|| workspaces : workspace
+workspace_session_runs |o--|| SessionStatus : enum:status
+workspace_session_runs }o--|| calc_sessions : calcSession
+workspace_session_runs }o--|| workspace_nodes : workspaceNode
+workspace_session_runs }o--|| workspace_sessions : workspaceSession
+library_submissions |o--|| SubmissionStatus : enum:status
+library_submissions }o--|| calc_versions : calcVersion
+library_submissions }o--|o calc_actors : reviewer
+library_submissions }o--|| calc_actors : submitter
+calc_ratings }o--|| calc_actors : actor
+calc_ratings }o--|| calc_workflows : calcWorkflow
+calc_ratings }o--|o calc_versions : version
+calc_rating_aggregates |o--|| calc_workflows : calcWorkflow
+batch_jobs |o--|| BatchStatus : enum:status
+batch_jobs }o--|| calc_actors : actor
+batch_jobs }o--|| calc_workflows : calcWorkflow
+batch_row_executions |o--|| BatchRowStatus : enum:status
+batch_row_executions }o--|| batch_jobs : batchJob
+uploaded_datasets }o--|| calc_actors : actor
+uploaded_datasets }o--|o calc_workflows : workflow
+node_templates |o--|| CalcNodeType : enum:type
+node_templates |o--|| Visibility : enum:visibility
+node_templates }o--|| organizations : organization
+audit_logs |o--|| AuditResourceType : enum:resourceType
+audit_logs |o--|| AuditAction : enum:action
+audit_logs }o--|o calc_actors : actor
+audit_logs }o--|o calc_workflows : calcWorkflow

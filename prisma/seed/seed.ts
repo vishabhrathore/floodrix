@@ -7,6 +7,23 @@
 // items + audit events so the admin dashboard has real-looking data to show.
 //
 // Safe to re-run — every upsert is idempotent on a stable identifier.
+//
+// ─── CHUNK 2.5 COMPATIBILITY ──────────────────────────────────────────────
+//   This seed is compatible with the schema changes from chunk 2.5:
+//     - CalcSession.idempotencyKey String?   (with @@unique on
+//                                             [calcWorkflowId, idempotencyKey])
+//     - CalcNodeExecution @@unique([sessionId, calcNodeId])
+//
+//   What changed in this version of the seed:
+//     1. Two example sessions now carry an idempotencyKey so you can see
+//        the field populated in the admin dashboard. The other sessions
+//        leave it NULL (Postgres permits multiple NULLs in the unique index).
+//     2. CalcNodeExecution upserts now use the new (sessionId, calcNodeId)
+//        compound key instead of the synthetic `id` field. This makes the
+//        seed correct under the new constraint AND idempotent in a more
+//        meaningful way — re-running won't try to insert a duplicate
+//        (sessionId, calcNodeId) pair.
+//     3. No other behavior changes; same data, same login.
 
 import {
     PrismaClient,
@@ -33,8 +50,6 @@ import {
 } from "../../src/generated/prisma";
 
 // ─── Better Auth requires bcrypt-compatible password hashes ──────────────────
-// If you use a different hasher (argon2, etc.) swap this helper out.
-// For seeding we just store a bcrypt hash of "password123" so you can log in.
 const SEED_PASSWORD_HASH =
     "5e7359a729b35ae4fa9cfaef75b2c9f1:eaf63c0df16524467ec4c61ffc6af14056735741057ef120ed2736f129392b658af14f9f58381bb61e39e947c39d7971f3414cea4c476a9f40c5f5834ea2722e"; // password123
 
@@ -88,7 +103,7 @@ async function main() {
             id: "plan-pro",
             name: "Pro",
             maxRunsPerMonth: 1000,
-            priceMonthly: 400000, // ₹4,000 in paise
+            priceMonthly: 400000,
             currency: "INR",
             isActive: true,
         },
@@ -101,7 +116,7 @@ async function main() {
             id: "plan-enterprise",
             name: "Enterprise",
             maxRunsPerMonth: 50000,
-            priceMonthly: 4900000, // ₹49,000 in paise
+            priceMonthly: 4900000,
             currency: "INR",
             isActive: true,
         },
@@ -110,7 +125,6 @@ async function main() {
     console.log("✅  Billing plans");
 
     // ── 2. USERS ────────────────────────────────────────────────────────────────
-    // User IDs use the "user_" prefix that Better Auth expects.
 
     const superAdminUser = await db.user.upsert({
         where: { email: "admin@floodrix.com" },
@@ -125,7 +139,6 @@ async function main() {
         },
     });
 
-    // Better Auth account row so email+password login works
     await db.account.upsert({
         where: { providerId_accountId: { providerId: "credential", accountId: "admin@floodrix.com" } },
         update: { password: SEED_PASSWORD_HASH },
@@ -228,7 +241,6 @@ async function main() {
                 updatedAt: daysAgo(10),
             },
         }),
-        // Super admin gets a personal org (isPersonal = true per D-01)
         db.organization.upsert({
             where: { id: "org_admin_personal" },
             update: {},
@@ -243,7 +255,6 @@ async function main() {
         }),
     ]);
 
-    // OrganizationMember rows — each founder is also OWNER member
     await Promise.all(
         orgs.slice(0, 5).map((org, i) =>
             db.organizationMember.upsert({
@@ -327,7 +338,6 @@ async function main() {
         }),
     ]);
 
-    // Usage records (current month)
     await Promise.all(
         [
             { orgId: orgs[0].id, id: "usage_bh", runs: 820 },
@@ -366,7 +376,6 @@ async function main() {
         )
     );
 
-    // Admin actor in their personal org
     const adminActor = await db.calcActor.upsert({
         where: { userId_organizationId: { userId: superAdminUser.id, organizationId: orgs[5].id } },
         update: {},
@@ -494,7 +503,6 @@ async function main() {
         });
         workflows.push(wf);
 
-        // Rating aggregate row — MUST exist per D-08
         await db.calcRatingAggregate.upsert({
             where: { calcWorkflowId: wf.id },
             update: {},
@@ -749,7 +757,6 @@ async function main() {
 
     // ── 10. LIBRARY SUBMISSIONS ──────────────────────────────────────────────────
 
-    // Approved submissions
     await db.librarySubmission.upsert({
         where: { id: "sub_dicken" },
         update: {},
@@ -780,7 +787,6 @@ async function main() {
         },
     });
 
-    // Pending submissions (what the admin sees in review queue)
     await db.librarySubmission.upsert({
         where: { id: "sub_ryves" },
         update: {},
@@ -810,7 +816,6 @@ async function main() {
     console.log("✅  Library submissions (2 approved, 2 pending)");
 
     // ── 11. FORMULA REGISTRY ─────────────────────────────────────────────────────
-    // isSystem = true items live in admin's personal org and are visible to all orgs.
 
     await db.formulaRegistryItem.upsert({
         where: { id: "freg_dicken" },
@@ -1000,15 +1005,33 @@ async function main() {
     console.log("✅  Table registry (2 system tables)");
 
     // ── 13. EXECUTION SESSIONS ────────────────────────────────────────────────────
+    //
+    // CHUNK 2.5 NOTE:
+    //   sess_1 and sess_2 carry an idempotencyKey to demonstrate the new column.
+    //   Other sessions leave it NULL. Postgres permits multiple NULLs in a
+    //   unique index so this is safe.
+    //
+    //   The idempotencyKey value is a UUID-like string the client would normally
+    //   generate per POST. Real clients should use crypto.randomUUID().
 
-    const sessionDefs = [
-        { id: "sess_1", wfId: "wf_dicken", actorId: actors[0].id, vId: dickenVersion.id, status: SessionStatus.COMPLETED, M: 84.5, Q: 152.06, daysBack: 2 },
-        { id: "sess_2", wfId: "wf_dicken", actorId: actors[1].id, vId: dickenVersion.id, status: SessionStatus.COMPLETED, M: 120.0, Q: 198.40, daysBack: 3 },
-        { id: "sess_3", wfId: "wf_dicken", actorId: actors[2].id, vId: dickenVersion.id, status: SessionStatus.COMPLETED, M: 55.0, Q: 109.22, daysBack: 5 },
-        { id: "sess_4", wfId: "wf_dicken", actorId: actors[0].id, vId: dickenVersion.id, status: SessionStatus.PAUSED, M: null, Q: null, daysBack: 0 },
-        { id: "sess_5", wfId: "wf_scour", actorId: actors[1].id, vId: scourVersion.id, status: SessionStatus.COMPLETED, M: null, Q: null, daysBack: 1 },
-        { id: "sess_6", wfId: "wf_scour", actorId: actors[3].id, vId: scourVersion.id, status: SessionStatus.ERRORED, M: null, Q: null, daysBack: 1 },
-    ];
+    const sessionDefs: Array<{
+        id: string;
+        wfId: string;
+        actorId: string;
+        vId: string;
+        status: SessionStatus;
+        M: number | null;
+        Q: number | null;
+        daysBack: number;
+        idempotencyKey?: string;
+    }> = [
+            { id: "sess_1", wfId: "wf_dicken", actorId: actors[0].id, vId: dickenVersion.id, status: SessionStatus.COMPLETED, M: 84.5, Q: 152.06, daysBack: 2, idempotencyKey: "seed-idem-priya-001" },
+            { id: "sess_2", wfId: "wf_dicken", actorId: actors[1].id, vId: dickenVersion.id, status: SessionStatus.COMPLETED, M: 120.0, Q: 198.40, daysBack: 3, idempotencyKey: "seed-idem-arjun-001" },
+            { id: "sess_3", wfId: "wf_dicken", actorId: actors[2].id, vId: dickenVersion.id, status: SessionStatus.COMPLETED, M: 55.0, Q: 109.22, daysBack: 5 },
+            { id: "sess_4", wfId: "wf_dicken", actorId: actors[0].id, vId: dickenVersion.id, status: SessionStatus.PAUSED, M: null, Q: null, daysBack: 0 },
+            { id: "sess_5", wfId: "wf_scour", actorId: actors[1].id, vId: scourVersion.id, status: SessionStatus.COMPLETED, M: null, Q: null, daysBack: 1 },
+            { id: "sess_6", wfId: "wf_scour", actorId: actors[3].id, vId: scourVersion.id, status: SessionStatus.ERRORED, M: null, Q: null, daysBack: 1 },
+        ];
 
     for (const s of sessionDefs) {
         const started = daysAgo(s.daysBack);
@@ -1016,6 +1039,10 @@ async function main() {
             s.status === SessionStatus.COMPLETED ? new Date(started.getTime() + 45_000) : null;
         const vars = s.M ? { catchment_area: s.M, dicken_c: 11.4, Q_dicken: s.Q } : {};
 
+        // CHUNK 2.5 NOTE:
+        //   The metadata JSON also carries a copy of idempotencyKey (set by
+        //   SessionRepository.createSession). For the seed we only set the
+        //   column — real runs will populate both.
         await db.calcSession.upsert({
             where: { id: s.id },
             update: {},
@@ -1033,6 +1060,7 @@ async function main() {
                 executionOrder: [inputNode.id, formulaNode.id, displayNode.id],
                 currentIndex: s.status === SessionStatus.PAUSED ? 0 : 3,
                 runMode: RunMode.SINGLE,
+                idempotencyKey: s.idempotencyKey ?? null,
                 startedAt: started,
                 completedAt: completed,
                 duration: completed ? 45 : null,
@@ -1045,11 +1073,21 @@ async function main() {
             },
         });
 
-        // NodeExecution rows for completed sessions
+        // CHUNK 2.5 NOTE:
+        //   CalcNodeExecution upserts now key on the new compound unique
+        //   constraint @@unique([sessionId, calcNodeId]) instead of the
+        //   synthetic `id`. This is the more semantically correct lookup —
+        //   re-running the seed won't try to insert duplicate
+        //   (sessionId, calcNodeId) pairs even if the synthetic id changes.
         if (s.status === SessionStatus.COMPLETED && s.Q) {
             for (const [i, node] of [inputNode, formulaNode, displayNode].entries()) {
                 await db.calcNodeExecution.upsert({
-                    where: { id: `ne_${s.id}_${i}` },
+                    where: {
+                        sessionId_calcNodeId: {
+                            sessionId: s.id,
+                            calcNodeId: node.id,
+                        },
+                    },
                     update: {},
                     create: {
                         id: `ne_${s.id}_${i}`,
@@ -1069,7 +1107,7 @@ async function main() {
         }
     }
 
-    console.log("✅  Execution sessions + node executions");
+    console.log("✅  Execution sessions + node executions (sess_1, sess_2 have idempotencyKey)");
 
     // ── 14. WORKSPACES ────────────────────────────────────────────────────────────
 
@@ -1134,6 +1172,7 @@ async function main() {
     const auditEvents = [
         {
             id: "audit_1",
+            organizationId: orgs[0].id,
             actorId: actors[0].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_dicken",
@@ -1144,6 +1183,7 @@ async function main() {
         },
         {
             id: "audit_2",
+            organizationId: orgs[1].id,
             actorId: actors[1].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_scour",
@@ -1154,16 +1194,18 @@ async function main() {
         },
         {
             id: "audit_3",
+            organizationId: orgs[0].id,
             actorId: actors[0].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_dicken",
             calcWorkflowId: "wf_dicken",
             action: AuditAction.WORKFLOW_RUN_STARTED,
-            changes: { sessionId: "sess_1" },
+            changes: { sessionId: "sess_1", idempotencyKey: "seed-idem-priya-001" },
             createdAt: daysAgo(2),
         },
         {
             id: "audit_4",
+            organizationId: orgs[0].id,
             actorId: actors[0].id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "wf_dicken",
@@ -1174,6 +1216,7 @@ async function main() {
         },
         {
             id: "audit_5",
+            organizationId: orgs[0].id,
             actorId: actors[2].id,
             resourceType: AuditResourceType.NODE,
             resourceId: "node_dicken_formula",
@@ -1184,6 +1227,7 @@ async function main() {
         },
         {
             id: "audit_6",
+            organizationId: orgs[4].id,
             actorId: adminActor.id,
             resourceType: AuditResourceType.WORKFLOW,
             resourceId: "org_waterflow",
@@ -1194,6 +1238,7 @@ async function main() {
         },
         {
             id: "audit_7",
+            organizationId: orgs[5].id,
             actorId: adminActor.id,
             resourceType: AuditResourceType.FORMULA_REGISTRY,
             resourceId: "freg_dicken",
@@ -1210,6 +1255,7 @@ async function main() {
             update: {},
             create: {
                 id: a.id,
+                organizationId: a.organizationId,
                 actorId: a.actorId,
                 resourceType: a.resourceType,
                 resourceId: a.resourceId,
@@ -1290,6 +1336,7 @@ async function main() {
 │    2  formula registry items  (system)                   │
 │    2  table registry items    (system)                   │
 │    6  execution sessions      (3 complete, 1 paused, 1 err)│
+│       └ sess_1 + sess_2 carry an idempotencyKey          │
 │    1  workspace + folder tree                            │
 │    7  audit log entries                                  │
 │    1  batch job (12 rows, 11 success, 1 error)           │

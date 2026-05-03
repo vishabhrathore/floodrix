@@ -13,6 +13,7 @@ import {
     ExternalLink,
     ChevronRight,
     StickyNote,
+    Trash2,
 } from "lucide-react";
 
 // ─── Folder Node ─────────────────────────────────────────────────────────
@@ -27,13 +28,14 @@ function WorkspaceFolderInner({ data, selected }: NodeProps) {
         childCount: number;
         workflowCount: number;
         isExpanded: boolean;
+        onDelete?: () => void;
     };
 
     const badge = (d.dbNode.metadata?.badge as string) || null;
 
     return (
         <div
-            className="relative"
+            className="relative group"
             style={{
                 minWidth: 180,
                 maxWidth: 240,
@@ -93,6 +95,19 @@ function WorkspaceFolderInner({ data, selected }: NodeProps) {
                         {badge}
                     </span>
                 )}
+
+                {/* Delete Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Are you sure you want to delete this folder?")) {
+                            d.onDelete?.();
+                        }
+                    }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                >
+                    <Trash2 size={12} />
+                </button>
             </div>
         </div>
     );
@@ -112,6 +127,7 @@ function WorkflowLinkInner({ data, selected }: NodeProps) {
         };
         linkedWorkflow: { id: string; name: string; status: string } | null;
         status: string;
+        onDelete?: () => void;
     };
 
     const isAttached = !!d.dbNode.linkedWorkflowId;
@@ -119,6 +135,7 @@ function WorkflowLinkInner({ data, selected }: NodeProps) {
 
     return (
         <div
+            className="relative group"
             style={{
                 minWidth: 160,
                 maxWidth: 220,
@@ -174,8 +191,23 @@ function WorkflowLinkInner({ data, selected }: NodeProps) {
                 ) : isAttached ? (
                     <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
                 ) : (
-                    <ChevronRight size={12} className="text-gray-300 flex-shrink-0" />
+                    <div className="px-2 py-0.5 rounded bg-blue-500 text-white text-[9px] font-bold shadow-sm hover:bg-blue-600 cursor-pointer">
+                        Link
+                    </div>
                 )}
+
+                {/* Delete Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Are you sure you want to delete this link?")) {
+                            d.onDelete?.();
+                        }
+                    }}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                >
+                    <Trash2 size={10} />
+                </button>
             </div>
         </div>
     );
@@ -188,10 +220,12 @@ export const WorkflowLinkNode = memo(WorkflowLinkInner);
 function WorkspaceNoteInner({ data, selected }: NodeProps) {
     const d = data as {
         dbNode: { noteContent: string | null; color: string | null };
+        onDelete?: () => void;
     };
 
     return (
         <div
+            className="relative group"
             style={{
                 minWidth: 140,
                 maxWidth: 220,
@@ -206,6 +240,19 @@ function WorkspaceNoteInner({ data, selected }: NodeProps) {
             }}
         >
             {d.dbNode.noteContent || "Add a note..."}
+
+            {/* Delete Button */}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm("Are you sure you want to delete this note?")) {
+                        d.onDelete?.();
+                    }
+                }}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+            >
+                <Trash2 size={10} />
+            </button>
         </div>
     );
 }

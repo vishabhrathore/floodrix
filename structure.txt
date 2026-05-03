@@ -1,0 +1,574 @@
+.
+├── structure.txt
+├── scripts
+│   ├── ui-files.txt
+│   ├── export-ui-files.js
+├── postcss.config.mjs
+├── tsconfig.json
+├── seed_output.log
+├── src
+│   ├── config
+│   │   ├── calc-node-components.ts
+│   │   ├── node-components.ts
+│   │   ├── constants.ts
+│   ├── features
+│   │   ├── calc-workflows
+│   │   │   ├── components
+│   │   │   │   ├── calc-workflows.tsx
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── audit.md
+│   │   │   ├── hooks
+│   │   │   │   ├── use-calc-workflows.ts
+│   │   │   │   ├── use-organization-params.ts
+│   │   │   │   ├── use-calc-workflows-params.ts
+│   │   ├── executions
+│   │   │   ├── components
+│   │   │   │   ├── gemini
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── executions.tsx
+│   │   │   │   ├── slack
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── base-execution-node.tsx
+│   │   │   │   ├── anthropic
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── execution.tsx
+│   │   │   │   ├── discord
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── http-request
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── openai
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── lib
+│   │   │   │   ├── executor-registry.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-node-status.ts
+│   │   │   │   ├── use-executions-params.ts
+│   │   │   │   ├── use-executions.ts
+│   │   │   ├── types.ts
+│   │   ├── subscriptions
+│   │   │   ├── hooks
+│   │   │   │   ├── use-subscription.ts
+│   │   ├── workspace
+│   │   │   ├── components
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-workspace.ts
+│   │   │   │   ├── use-workspace-params.ts
+│   │   ├── output.txt
+│   │   ├── organizations
+│   │   │   ├── components
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-organization-params.ts
+│   │   │   │   ├── use-organization.ts
+│   │   ├── workflows
+│   │   │   ├── components
+│   │   │   │   ├── workflows.tsx
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-workflows-params.ts
+│   │   │   │   ├── use-workflows.ts
+│   │   ├── registery
+│   │   │   ├── components
+│   │   │   │   ├── registery-picker.tsx
+│   │   │   ├── table
+│   │   │   │   ├── components
+│   │   │   │   │   ├── table-page.tsx
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── lookup-config-panel.tsx
+│   │   │   │   │   ├── table-editor.tsx
+│   │   │   │   ├── server
+│   │   │   │   │   ├── params-loader.ts
+│   │   │   │   │   ├── prefetch.ts
+│   │   │   │   │   ├── routers.ts
+│   │   │   │   ├── params.ts
+│   │   │   │   ├── hooks
+│   │   │   │   │   ├── use-tables.ts
+│   │   │   │   │   ├── use-tables-params.ts
+│   │   │   ├── formula
+│   │   │   │   ├── components
+│   │   │   │   │   ├── formula-config-panel.tsx
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── formula-editor.tsx
+│   │   │   │   │   ├── formula-page.tsx
+│   │   │   │   ├── server
+│   │   │   │   │   ├── params-loader.ts
+│   │   │   │   │   ├── prefetch.ts
+│   │   │   │   │   ├── routers.ts
+│   │   │   │   ├── params.ts
+│   │   │   │   ├── hooks
+│   │   │   │   │   ├── use-formulas.ts
+│   │   │   │   │   ├── use-formulas-params.ts
+│   │   ├── file.sh
+│   │   ├── triggers
+│   │   │   ├── components
+│   │   │   │   ├── manual-trigger
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── stripe-trigger
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   ├── base-trigger-node.tsx
+│   │   │   │   ├── google-form-trigger
+│   │   │   │   │   ├── executor.ts
+│   │   │   │   │   ├── dialog.tsx
+│   │   │   │   │   ├── node.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   │   ├── utils.ts
+│   │   ├── credentials
+│   │   │   ├── components
+│   │   │   │   ├── credential.tsx
+│   │   │   │   ├── credentials.tsx
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-credentials-params.ts
+│   │   │   │   ├── use-credentials.ts
+│   │   ├── library
+│   │   │   ├── components
+│   │   │   ├── server
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   │   ├── routers.ts
+│   │   │   ├── params.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-library.ts
+│   │   │   │   ├── use-library-params.ts
+│   │   ├── admin
+│   │   │   ├── dashboard
+│   │   │   │   ├── components
+│   │   │   │   │   ├── index.ts
+│   │   │   │   │   ├── dashboard.tsx
+│   │   │   │   ├── server
+│   │   │   │   │   ├── prefetch.ts
+│   │   │   │   │   ├── routers.ts
+│   │   │   │   ├── params.ts
+│   │   │   │   ├── hooks
+│   │   │   │   │   ├── use-admin-stats.ts
+│   │   ├── workspace-canvas
+│   │   │   ├── store
+│   │   │   │   ├── workspace-canvas-store.ts
+│   │   │   ├── components
+│   │   │   │   ├── dialogs
+│   │   │   │   │   ├── create-folder-dialog.tsx
+│   │   │   │   │   ├── folder-context-menu.tsx
+│   │   │   │   │   ├── attach-workflow-dialog.tsx
+│   │   │   │   ├── workspace-canvas.tsx
+│   │   │   │   ├── workspace-tree-panel.tsx
+│   │   │   │   ├── workspace-toolbar.tsx
+│   │   │   ├── server
+│   │   │   │   ├── router.ts
+│   │   │   │   ├── params-loader.ts
+│   │   │   │   ├── prefetch.ts
+│   │   │   ├── params.ts
+│   │   │   ├── nodes
+│   │   │   │   ├── workspace-nodes.tsx
+│   │   │   ├── hooks
+│   │   │   │   ├── use-workspace-canvas.ts
+│   │   │   │   ├── use-workspace-params.ts
+│   │   │   ├── mock-data.ts
+│   │   │   ├── page.tsx
+│   │   ├── workflow-canvas
+│   │   │   ├── config
+│   │   │   │   ├── decision-config.tsx
+│   │   │   │   ├── formula-config.tsx
+│   │   │   │   ├── display-config.tsx
+│   │   │   │   ├── config-drawer.tsx
+│   │   │   │   ├── index.tsx
+│   │   │   │   ├── lookup-config.tsx
+│   │   │   │   ├── input-config.tsx
+│   │   │   ├── store
+│   │   │   │   ├── workflow-canvas-store.ts
+│   │   │   ├── components
+│   │   │   │   ├── workflow-sidebar.tsx
+│   │   │   │   ├── workflow-toolbar.tsx
+│   │   │   │   ├── edges
+│   │   │   │   │   ├── default-edge.tsx
+│   │   │   │   │   ├── conditional-edge.tsx
+│   │   │   │   │   ├── index.tsx
+│   │   │   │   ├── workflow-canvas.tsx
+│   │   │   │   ├── workflow-runner.tsx
+│   │   │   │   ├── workflow-inspector.tsx
+│   │   │   │   ├── workflow-minimap.tsx
+│   │   │   ├── server
+│   │   │   │   ├── execution-router.ts
+│   │   │   │   ├── router.ts
+│   │   │   │   ├── canvas-queries.ts
+│   │   │   ├── nodes
+│   │   │   │   ├── core-nodes.tsx
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── node-palette.tsx
+│   │   │   │   ├── extended-nodes.tsx
+│   │   │   ├── engine
+│   │   │   │   ├── workflow-executor.ts
+│   │   │   │   ├── units.ts
+│   │   │   │   ├── interpolation.ts
+│   │   │   │   ├── formula-validator.ts
+│   │   │   │   ├── batch-executor.ts
+│   │   │   │   ├── canvas-save.ts
+│   │   │   │   ├── registry-resolver.ts
+│   │   │   │   ├── audit-service.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── use-node-config.ts
+│   │   │   │   ├── use-keyboard-shortcuts.ts
+│   │   │   │   ├── use-execution.ts
+│   │   │   │   ├── use-auto-save.ts
+│   │   ├── output1.txt
+│   │   ├── editor
+│   │   │   ├── store
+│   │   │   │   ├── atoms.ts
+│   │   │   ├── components
+│   │   │   │   ├── editor.tsx
+│   │   │   │   ├── editor-header.tsx
+│   │   │   │   ├── add-node-button.tsx
+│   │   │   │   ├── execute-workflow-button.tsx
+│   │   ├── auth
+│   │   │   ├── components
+│   │   │   │   ├── auth-layout.tsx
+│   │   │   │   ├── register-form.tsx
+│   │   │   │   ├── login-form.tsx
+│   ├── components
+│   │   ├── initial-node.tsx
+│   │   ├── upgrade-modal.tsx
+│   │   ├── app-sidebar.tsx
+│   │   ├── entity-components.tsx
+│   │   ├── react-flow
+│   │   │   ├── base-handle.tsx
+│   │   │   ├── node-status-indicator.tsx
+│   │   │   ├── placeholder-node.tsx
+│   │   │   ├── calculator
+│   │   │   │   ├── calc-node-fields.tsx
+│   │   │   │   ├── calc-base-handle.tsx
+│   │   │   │   ├── calc-base-node.tsx
+│   │   │   ├── base-node.tsx
+│   │   ├── app-header.tsx
+│   │   ├── node-selector.tsx
+│   │   ├── ui
+│   │   │   ├── spinner.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── input-group.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── sonner.tsx
+│   │   │   ├── kbd.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── toggle-group.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── breadcrumb.tsx
+│   │   │   ├── aspect-ratio.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   ├── empty.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── pagination.tsx
+│   │   │   ├── button-group.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── accordion.tsx
+│   │   │   ├── item.tsx
+│   │   │   ├── toggle.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── navigation-menu.tsx
+│   │   │   ├── field.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── hover-card.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── resizable.tsx
+│   │   │   ├── drawer.tsx
+│   │   │   ├── context-menu.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── input-otp.tsx
+│   │   ├── admin
+│   │   │   ├── admin-sidebar.tsx
+│   │   ├── workflow-node.tsx
+│   ├── theme
+│   │   ├── calc-theme.ts
+│   ├── server
+│   │   ├── engine
+│   │   │   ├── listeners
+│   │   │   │   ├── AuditListener.ts
+│   │   │   │   ├── DatabaseListener.ts
+│   │   │   ├── index.ts
+│   │   │   ├── VariableStore.ts
+│   │   │   ├── NodeHandlerRegistry.ts
+│   │   │   ├── handlers
+│   │   │   │   ├── DecisionHandler.ts
+│   │   │   │   ├── UnitConversionHandler.ts
+│   │   │   │   ├── LookupTableHandler.ts
+│   │   │   │   ├── FormulaHandler.ts
+│   │   │   │   ├── MultiFormulaHandler.ts
+│   │   │   │   ├── InterpolationHandler.ts
+│   │   │   │   ├── ValidationHandler.ts
+│   │   │   │   ├──  InputHandler.ts
+│   │   │   │   ├── DisplayHandler.ts
+│   │   │   │   ├── CustomCodeHandler.ts
+│   │   │   ├── NodeHandler.ts
+│   │   │   ├── bootstrap.ts
+│   │   │   ├── types.ts
+│   │   │   ├── ExecutionEventEmitter.ts
+│   │   │   ├── WorkflowExecutor.ts
+│   │   │   ├── SessionRepository.ts
+│   ├── inngest
+│   │   ├── functions.ts
+│   │   ├── channels
+│   │   │   ├── anthropic.ts
+│   │   │   ├── manual-trigger.ts
+│   │   │   ├── stripe-trigger.ts
+│   │   │   ├── gemini.ts
+│   │   │   ├── slack.ts
+│   │   │   ├── discord.ts
+│   │   │   ├── google-form-trigger.ts
+│   │   │   ├── http-request.ts
+│   │   │   ├── openai.ts
+│   │   ├── client.ts
+│   │   ├── utils.ts
+│   ├── generated
+│   │   ├── prisma
+│   │   │   ├── libquery_engine-debian-openssl-3.0.x.so.node
+│   │   │   ├── runtime
+│   │   │   │   ├── index-browser.js
+│   │   │   │   ├── index-browser.d.ts
+│   │   │   │   ├── react-native.js
+│   │   │   │   ├── library.d.ts
+│   │   │   │   ├── wasm-compiler-edge.js
+│   │   │   │   ├── edge.js
+│   │   │   │   ├── library.js
+│   │   │   │   ├── edge-esm.js
+│   │   │   │   ├── wasm-engine-edge.js
+│   │   │   ├── index-browser.js
+│   │   │   ├── query_engine_bg.js
+│   │   │   ├── schema.prisma
+│   │   │   ├── query_engine_bg.wasm
+│   │   │   ├── wasm.js
+│   │   │   ├── client.js
+│   │   │   ├── default.d.ts
+│   │   │   ├── wasm.d.ts
+│   │   │   ├── client.d.ts
+│   │   │   ├── edge.js
+│   │   │   ├── wasm-edge-light-loader.mjs
+│   │   │   ├── index.js
+│   │   │   ├── package.json
+│   │   │   ├── index.d.ts
+│   │   │   ├── edge.d.ts
+│   │   │   ├── default.js
+│   │   │   ├── wasm-worker-loader.mjs
+│   ├── app
+│   │   ├── api
+│   │   │   ├── webhooks
+│   │   │   │   ├── google-form
+│   │   │   │   │   ├── route.ts
+│   │   │   │   ├── stripe
+│   │   │   │   │   ├── route.ts
+│   │   │   ├── inngest
+│   │   │   │   ├── route.ts
+│   │   │   ├── sentry-example-api
+│   │   │   │   ├── route.ts
+│   │   │   ├── trpc
+│   │   │   │   ├── [trpc]
+│   │   │   │   │   ├── route.ts
+│   │   │   ├── auth
+│   │   │   │   ├── [...all]
+│   │   │   │   │   ├── route.ts
+│   │   ├── globals.css
+│   │   ├── global-error.tsx
+│   │   ├── layout.tsx
+│   │   ├── test
+│   │   │   ├── page.tsx
+│   │   ├── calc-workflows
+│   │   │   ├── [workflowId]
+│   │   │   │   ├── run
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   ├── page.tsx
+│   │   ├── (dashboard)
+│   │   │   ├── layout.tsx
+│   │   │   ├── (editor)
+│   │   │   │   ├── workflows
+│   │   │   │   │   ├── [workflowId]
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   ├── (rest)
+│   │   │   │   ├── layout.tsx
+│   │   │   │   ├── executions
+│   │   │   │   │   ├── [executionId]
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── workflows
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── credentials
+│   │   │   │   │   ├── new
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── [credentialId]
+│   │   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── page.tsx
+│   │   ├── (auth)
+│   │   │   ├── layout.tsx
+│   │   │   ├── signup
+│   │   │   │   ├── page.tsx
+│   │   │   ├── login
+│   │   │   │   ├── page.tsx
+│   │   ├── admin
+│   │   │   ├── layout.tsx
+│   │   │   ├── organizations
+│   │   │   │   ├── page.tsx
+│   │   │   ├── workflows
+│   │   │   │   ├── automation
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── workspaces
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── calc
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── registery
+│   │   │   │   ├── tables
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── formulas
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── users
+│   │   │   │   ├── page.tsx
+│   │   │   ├── library
+│   │   │   │   ├── tables
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── review-queue
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── formulas
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── system
+│   │   │   │   ├── audit-log
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── jobs
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   ├── billing
+│   │   │   │   │   ├── page.tsx
+│   │   │   ├── page.tsx
+│   │   ├── demo-workflow
+│   │   │   ├── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── sentry-example-page
+│   │   │   ├── page.tsx
+│   ├── instrumentation-client.ts
+│   ├── lib
+│   │   ├── db.ts
+│   │   ├── encryption.ts
+│   │   ├── polar.ts
+│   │   ├── auth-utils.ts
+│   │   ├── auth.ts
+│   │   ├── utils.ts
+│   │   ├── auth-client.ts
+│   ├── trpc
+│   │   ├── client.tsx
+│   │   ├── server.tsx
+│   │   ├── init.ts
+│   │   ├── query-client.ts
+│   │   ├── routers
+│   │   │   ├── _app.ts
+│   ├── hooks
+│   │   ├── use-entity-search.tsx
+│   │   ├── use-mobile.ts
+│   │   ├── use-upgrade-modal.tsx
+│   ├── instrumentation.ts
+├── mprocs.yaml
+├── sentry.edge.config.ts
+├── next.config.ts
+├── mprocs.log
+├── .env.sample
+├── log.md
+├── generate-structure.sh
+├── components.json
+├── public
+│   ├── globe.svg
+│   ├── vercel.svg
+│   ├── next.svg
+│   ├── window.svg
+│   ├── logos
+│   │   ├── googleform.svg
+│   │   ├── openai.svg
+│   │   ├── slack.svg
+│   │   ├── google.svg
+│   │   ├── discord.svg
+│   │   ├── stripe.svg
+│   │   ├── anthropic.svg
+│   │   ├── gemini.svg
+│   │   ├── github.svg
+│   │   ├── logo.svg
+│   ├── logo.png
+│   ├── file.svg
+├── proposeProject.md
+├── package-lock.json
+├── tsconfig.tsbuildinfo
+├── biome.json
+├── prisma
+│   ├── schema.prisma
+│   ├── seed
+│   │   ├── seed-calc-workflows.ts
+│   │   ├── seed.ts
+│   ├── schema.prisma.backup
+├── package.json
+├── .gitignore
+├── next-env.d.ts
+├── sentry.server.config.ts
+├── .env
+├── README.md

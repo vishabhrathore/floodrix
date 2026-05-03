@@ -1,38 +1,57 @@
+// ═══════════════════════════════════════════════════════════════════════════
+//  src/features/workspace-canvas/page.tsx
+//  Real data workspace page — replaces the old mock-data demo
+// ═══════════════════════════════════════════════════════════════════════════
+
 "use client";
 
-import { useEffect, useState } from "react";
-// Adjust these imports based on where your feature folder is located!
-import { useWorkspaceCanvas } from "@/features/workspace-canvas/store/workspace-canvas-store";
-// import { WorkspaceCanvas } from "@/features/workspace-canvas/components/workspace-canvas";
-import { mockWorkspaceNodes } from "./mock-data";
+import { useWorkspaceCanvasData } from "./hooks/use-workspace-canvas";
 import { WorkspaceCanvasEditor } from "./components/workspace-canvas";
+import { Loader2 } from "lucide-react";
 
-export default function LocalWorkspaceDryRunPage() {
-    const initialize = useWorkspaceCanvas((s) => s.initialize);
-    const [isReady, setIsReady] = useState(false);
+interface WorkspaceCanvasPageProps {
+    workspaceId: string;
+    onBack?: () => void;
+    onOpenWorkflow?: (workflowId: string) => void;
+}
 
-    useEffect(() => {
-        // 1. Inject the mock data into the Zustand store on mount
-        initialize("ws_local_dev_123", mockWorkspaceNodes);
-        setIsReady(true);
-    }, [initialize]);
+export function WorkspaceCanvasPage({
+    workspaceId,
+    onBack,
+    onOpenWorkflow,
+}: WorkspaceCanvasPageProps) {
+    const { isLoading, error } = useWorkspaceCanvasData(workspaceId);
 
-    // Prevent rendering the canvas until the store is hydrated with our mock data
-    if (!isReady) {
+    if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
-                Loading local workspace...
+            <div className="flex h-screen items-center justify-center bg-gray-50">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 size={16} className="animate-spin" />
+                    Loading workspace...
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="text-sm font-medium text-red-600 mb-1">
+                        Failed to load workspace
+                    </div>
+                    <div className="text-xs text-gray-400">{error.message}</div>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="h-screen w-full overflow-hidden">
-            {/* This mounts your main canvas wrapper. 
-        I am assuming your main exported component in workspace-canvas.tsx is called WorkspaceCanvas 
-      */}
             <WorkspaceCanvasEditor
-                workspaceId="ws_local_dev_123"
+                workspaceId={workspaceId}
+                onBack={onBack}
+                onOpenWorkflow={onOpenWorkflow}
             />
         </div>
     );

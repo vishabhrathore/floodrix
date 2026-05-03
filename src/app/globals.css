@@ -168,7 +168,7 @@
   --font-sans: Inter, system-ui, sans-serif;
   --font-serif: Inter, ui-sans-serif, sans-serif, system-ui;
   --font-mono: JetBrains Mono, monospace;
-  --radius: 0rem;
+  --radius: 0.5rem;
 
   --shadow-x: 0px;
   --shadow-y: 4px;

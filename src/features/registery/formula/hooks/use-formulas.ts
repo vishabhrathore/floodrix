@@ -10,6 +10,11 @@ export const useSuspenseFormulas = () => {
   return useSuspenseQuery(trpc.formulas.getMany.queryOptions(params));
 };
 
+export const useFormulas = (params: any = {}) => {
+  const trpc = useTRPC();
+  return useQuery(trpc.formulas.getMany.queryOptions(params));
+};
+
 export const useFormula = (id?: string) => {
   const trpc = useTRPC();
   return useQuery(

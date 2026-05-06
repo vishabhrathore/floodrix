@@ -72,10 +72,7 @@ export class FormulaHandler implements NodeHandler {
                     evalScope[inputVar.notation] = value;
                 }
 
-                outputKey = bindings[registry.outputVariable.notation] ?? registry.outputVariable.key;
-                if (config.overrides?.result_variable) {
-                    outputKey = config.overrides.result_variable;
-                }
+                outputKey = config.result_variable ?? bindings[registry.outputVariable.notation] ?? registry.outputVariable.key ?? "result";
             } else {
                 expression = config.expression ?? "";
                 displayExpression = config.display_expression ?? expression;

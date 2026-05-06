@@ -66,9 +66,9 @@ export function ConfigDrawer({
                 </SheetHeader>
 
                 {/* Body */}
-                <ScrollArea className="flex-1">
-                    <div className="p-5">{children}</div>
-                </ScrollArea>
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 custom-scrollbar">
+                    {children}
+                </div>
 
                 {/* Footer */}
                 <div className="flex-shrink-0 border-t border-slate-100 px-5 py-3">

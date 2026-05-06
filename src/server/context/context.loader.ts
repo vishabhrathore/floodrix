@@ -22,12 +22,8 @@ export async function loadContext(
     opts: LoadOptions
 ): Promise<RequestContext> {
 
-    // We use a flexible type here to represent the user with conditional relations included
     let userWithRelations: any;
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // OPTIMIZED PATH: If organizationId is provided, do it all in ONE database call
-    // ─────────────────────────────────────────────────────────────────────────────
     if (opts.organizationId) {
         userWithRelations = await db.user.findUnique({
             where: { id: userId },
@@ -37,9 +33,6 @@ export async function loadContext(
             },
         });
     }
-    // ─────────────────────────────────────────────────────────────────────────────
-    // SUPER ADMIN FALLBACK PATH: No organizationId provided
-    // ─────────────────────────────────────────────────────────────────────────────
     else {
         // 1. Fetch bare user (1 DB call)
         const bareUser = await db.user.findUnique({ where: { id: userId } });

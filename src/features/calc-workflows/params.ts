@@ -1,24 +1,26 @@
-// src/features/calc-workflows/params.ts
-
-import { parseAsInteger, parseAsString, createLoader } from "nuqs/server";
+import {
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
+  parseAsArrayOf,
+  createLoader
+} from "nuqs/server";
 import { PAGINATION } from "@/config/constants";
+import { WorkflowStatus, Visibility, LibraryStatus } from "@/generated/prisma";
 
 export const calcWorkflowParams = {
-  page: parseAsInteger
-    .withDefault(PAGINATION.DEFAULT_PAGE)
-    .withOptions({ clearOnDefault: true }),
-  pageSize: parseAsInteger
-    .withDefault(PAGINATION.DEFAULT_PAGE_SIZE)
-    .withOptions({ clearOnDefault: true }),
-  search: parseAsString
-    .withDefault("")
-    .withOptions({ clearOnDefault: true }),
-  organizationId: parseAsString
-    .withDefault("")
-    .withOptions({ clearOnDefault: true }),
-  status: parseAsString
-    .withDefault("")
-    .withOptions({ clearOnDefault: true }),
-};
+  page: parseAsInteger.withDefault(PAGINATION.DEFAULT_PAGE).withOptions({ clearOnDefault: true }),
+  pageSize: parseAsInteger.withDefault(PAGINATION.DEFAULT_PAGE_SIZE).withOptions({ clearOnDefault: true }),
+  search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
+  organizationId: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
 
-export const calcWorkflowParamsLoader = createLoader(calcWorkflowParams);
+  sortBy: parseAsStringEnum(['createdAt', 'updatedAt', 'name']).withDefault('updatedAt').withOptions({ clearOnDefault: true }),
+  sortOrder: parseAsStringEnum(['asc', 'desc']).withDefault('desc').withOptions({ clearOnDefault: true }),
+
+  status: parseAsStringEnum(Object.values(WorkflowStatus)).withOptions({ clearOnDefault: true }),
+  visibility: parseAsStringEnum(Object.values(Visibility)).withOptions({ clearOnDefault: true }),
+  libraryStatus: parseAsStringEnum(Object.values(LibraryStatus)).withOptions({ clearOnDefault: true }),
+
+  category: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
+  tags: parseAsArrayOf(parseAsString).withDefault([]).withOptions({ clearOnDefault: true }),
+};

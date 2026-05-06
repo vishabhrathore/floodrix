@@ -16,11 +16,13 @@ export function useSuspenseCalcWorkflows() {
 
   return useSuspenseQuery(
     trpc.calcWorkflows.getMany.queryOptions({
-      organizationId: params.organizationId,
+      ...params,
       search: params.search || undefined,
       status: params.status || undefined,
-      page: params.page,
-      pageSize: params.pageSize,
+      visibility: params.visibility || undefined,
+      libraryStatus: params.libraryStatus || undefined,
+      category: params.category || undefined,
+      organizationId: params.organizationId || undefined,
     })
   );
 }

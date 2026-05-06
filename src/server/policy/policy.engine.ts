@@ -1,9 +1,10 @@
 import { formulaPolicies } from "@/features/registery/formula/server/policy";
 import { PolicyInput, PolicyResult, ResourceType, ResourcePolicyMap } from "./policy.types";
 import { tablePolicies } from "@/features/registery/table/server/policy";
+import { workflowPolicies } from "@/features/calc-workflows/server/policy";
 
 const policyRegistry: Record<ResourceType, ResourcePolicyMap> = {
-  workflow: {}, // workflowPolicies,
+  workflow: workflowPolicies, // workflowPolicies,
   formula: formulaPolicies,
   table: tablePolicies, // tablePolicies,
   workspace: {}, // Default empty, add workspacePolicies later

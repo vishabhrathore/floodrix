@@ -37,9 +37,15 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-brand-red: var(--brand-red);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-teal: var(--brand-teal);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  --font-display: var(--font-serif);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -70,11 +76,24 @@
   --shadow-blur: var(--shadow-blur);
   --shadow-opacity: var(--shadow-opacity);
   --color-shadow-color: var(--shadow-color);
+
+  --font-size-display: var(--fs-display);
+  --font-size-h1: var(--fs-h1);
+  --font-size-h2: var(--fs-h2);
+  --font-size-h3: var(--fs-h3);
+  --font-size-h4: var(--fs-h4);
+  --font-size-body: var(--fs-body);
+  --font-size-caption: var(--fs-caption);
 }
 
 :root {
-  --background: #f7f7f8;
+  --background: #fcfcfc;
   --foreground: #171717;
+
+  --brand-red: #fb3640;
+  --brand-blue: #247ba0;
+  --brand-dark: #191919;
+  --brand-teal: #0d9488;
 
   --card: #ffffff;
   --card-foreground: #171717;
@@ -123,9 +142,9 @@
   --sidebar-ring: #fb3640;
 
   /* fonts */
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
-  --font-mono: "DM Mono", monospace;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-serif: var(--font-playfair), serif;
+  --font-mono: var(--font-dm-mono), monospace;
 
   --radius: 6px;
   --shadow-x: 0px;
@@ -147,6 +166,15 @@
 
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* Fluid Typography */
+  --fs-display: clamp(2.25rem, 3.44vw + 1.44rem, 4.5rem);
+  --fs-h1: clamp(1.875rem, 2.11vw + 1.38rem, 3.25rem);
+  --fs-h2: clamp(1.5rem, 1.34vw + 1.19rem, 2.375rem);
+  --fs-h3: clamp(1.25rem, 0.77vw + 1.07rem, 1.75rem);
+  --fs-h4: clamp(1.125rem, 0.38vw + 1.04rem, 1.375rem);
+  --fs-body: clamp(1rem, 0.19vw + 0.96rem, 1.125rem);
+  --fs-caption: clamp(0.875rem, 0.0vw + 0.88rem, 0.875rem);
 }
 
 /* ================= DARK ================= */

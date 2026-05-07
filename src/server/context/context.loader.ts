@@ -16,12 +16,39 @@ export interface LoadOptions {
     loadBilling?: boolean;
 }
 
+/**
+ * Robust Context Loader
+ * 1. Resolves organizationId (either from opts or by looking up the resource)
+ * 2. Fetches user membership/actor for that organization
+ * 3. Loads all requested resources within that organization boundary
+ */
 export async function loadContext(
     db: PrismaClient,
     userId: string,
     opts: LoadOptions
 ): Promise<RequestContext> {
 
+    // ─── 1. Resolve Organization Boundary ──────────────────────────────────
+    
+    // If organizationId is missing, try to resolve it from the resource itself
+    if (!opts.organizationId) {
+        if (opts.workflowId) {
+            const wf = await db.calcWorkflow.findUnique({ where: { id: opts.workflowId }, select: { organizationId: true } });
+            if (wf) opts.organizationId = wf.organizationId;
+        } else if (opts.sessionId) {
+            const sess = await db.calcSession.findUnique({ 
+                where: { id: opts.sessionId }, 
+                select: { calcWorkflow: { select: { organizationId: true } } } 
+            });
+            if (sess) opts.organizationId = sess.calcWorkflow.organizationId;
+        } else if (opts.workspaceId) {
+            const ws = await db.workspace.findUnique({ where: { id: opts.workspaceId }, select: { organizationId: true } });
+            if (ws) opts.organizationId = ws.organizationId;
+        }
+    }
+
+    // ─── 2. Fetch User & Organization Relations ─────────────────────────────
+    
     let userWithRelations: any;
 
     if (opts.organizationId) {
@@ -32,17 +59,13 @@ export async function loadContext(
                 calcActors: { where: { organizationId: opts.organizationId } },
             },
         });
-    }
-    else {
-        // 1. Fetch bare user (1 DB call)
+    } else {
+        // Fallback to default/primary org if still no ID resolved
         const bareUser = await db.user.findUnique({ where: { id: userId } });
-
         if (!bareUser) throw new TRPCError({ code: "UNAUTHORIZED", message: "User not found" });
 
-        // Initialize with empty arrays to prevent downstream mapping errors
         userWithRelations = { ...bareUser, organizationMembers: [], calcActors: [] };
 
-        // 2. Fetch default org and relations (Extra DB calls ONLY when organizationId is not provided)
         const defaultOrg = await db.organization.findFirst({
             where: {
                 OR: [
@@ -50,18 +73,15 @@ export async function loadContext(
                     { members: { some: { userId: bareUser.id } } }
                 ]
             },
-            orderBy: { createdAt: 'asc' } // Default to their oldest/primary organization
+            orderBy: { createdAt: 'asc' }
         });
 
         if (defaultOrg) {
-            opts.organizationId = defaultOrg.id; // Mutate opts for downstream queries
-
-            // Fetch the relations for this newly discovered org in parallel
+            opts.organizationId = defaultOrg.id;
             const [members, actors] = await Promise.all([
                 db.organizationMember.findMany({ where: { userId: bareUser.id, organizationId: defaultOrg.id } }),
                 db.calcActor.findMany({ where: { userId: bareUser.id, organizationId: defaultOrg.id } })
             ]);
-
             userWithRelations.organizationMembers = members;
             userWithRelations.calcActors = actors;
         }
@@ -84,21 +104,32 @@ export async function loadContext(
         throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
     }
 
-    // Strict Actor Validation with Org Boundary
-    const actor = opts.actorId
+    // ─── 3. Actor Validation ────────────────────────────────────────────────
+    
+    let actor = opts.actorId
         ? userWithRelations.calcActors?.find((a: any) => a.id === opts.actorId && (!opts.organizationId || a.organizationId === opts.organizationId)) ?? null
         : userWithRelations.calcActors?.[0] ?? null;
+
+    // Super Admin Fallback: If no actor is found for this specific org, but the user is a Super Admin,
+    // we allow them to use their global identity.
+    if (!actor && userWithRelations.globalRole === GlobalRole.SUPER_ADMIN) {
+        // Try to find ANY actor for this user
+        const globalActor = await db.calcActor.findFirst({
+            where: { userId },
+            orderBy: { createdAt: 'asc' }
+        });
+        actor = globalActor ?? null;
+    }
 
     if (opts.actorId && !actor) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Invalid actor or actor does not belong to organization." });
     }
 
     const isSuperAdmin = userWithRelations.globalRole === GlobalRole.SUPER_ADMIN;
-    const isOrgAdmin =
-        isSuperAdmin ||
-        membership?.role === "ADMIN" ||
-        membership?.role === "OWNER";
+    const isOrgAdmin = isSuperAdmin || membership?.role === "ADMIN" || membership?.role === "OWNER";
 
+    // ─── 4. Parallel Resource Loading ───────────────────────────────────────
+    
     const [
         workflow,
         session,
@@ -117,9 +148,7 @@ export async function loadContext(
                     ...(opts.organizationId ? { organizationId: opts.organizationId } : {}),
                     deletedAt: null,
                 },
-                include: {
-                    collaborators: { select: { actorId: true, permission: true } },
-                },
+                include: { collaborators: { select: { actorId: true, permission: true } } },
             })
             : Promise.resolve(undefined),
 

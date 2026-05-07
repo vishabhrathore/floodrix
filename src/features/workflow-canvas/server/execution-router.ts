@@ -1,210 +1,179 @@
-// ═══════════════════════════════════════════════════════════════════════════
-//  src/features/workflow-canvas/server/execution-router.ts
-//
-//  CHUNK 4 CHANGES vs Chunk 3:
-//    1. startRun now goes through RunOrchestrator instead of the executor
-//       directly. The orchestrator picks strategy and handles INLINE_ASYNC
-//       / BACKGROUND_BATCH handoffs to Inngest.
-//    2. New `poll` query — used by the client while a session is running
-//       async. Returns PollResult with adaptive backoff hint.
-//    3. getSession is kept (used by the step-mode UI); poll is a new,
-//       purpose-built endpoint for async polling.
-// ═══════════════════════════════════════════════════════════════════════════
-
 import z from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 import { createWorkflowExecutor, createRunOrchestrator, createSessionPoller, CalcContext } from "@/server/engine";
 import { Prisma } from "@/generated/prisma";
-import prisma from "@/lib/db";
-
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-async function resolveActorId(userId: string, orgId: string): Promise<string> {
-    const [user, actor] = await Promise.all([
-        prisma.user.findUnique({ where: { id: userId }, select: { globalRole: true } }),
-        prisma.calcActor.findFirst({
-            where: { userId, organizationId: orgId },
-            select: { id: true },
-        })
-    ]);
-
-    if (actor) return actor.id;
-
-    if (user?.globalRole === "SUPER_ADMIN") {
-        // Fallback for Super Admin: use their seeded actor_superadmin or any actor they have
-        const fallbackActor = await prisma.calcActor.findFirst({
-            where: { userId },
-            select: { id: true }
-        });
-        return fallbackActor?.id ?? "actor_superadmin";
-    }
-
-    throw new TRPCError({ code: "FORBIDDEN", message: "Actor not found for this organization" });
-}
-
-async function getWorkflowOrgId(workflowId: string): Promise<string> {
-    const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: workflowId },
-        select: { organizationId: true },
-    });
-    return wf.organizationId;
-}
-
-async function assertSessionAccess(sessionId: string, userId: string) {
-    const session = await prisma.calcSession.findUniqueOrThrow({
-        where: { id: sessionId },
-        select: { id: true, actorId: true, calcWorkflowId: true, currentNodeId: true, status: true },
-    });
-
-    const [user, actor] = await Promise.all([
-        prisma.user.findUnique({ where: { id: userId }, select: { globalRole: true } }),
-        prisma.calcActor.findFirst({
-            where: { id: session.actorId, userId },
-            select: { id: true },
-        }),
-    ]);
-
-    if (user?.globalRole === "SUPER_ADMIN") return session;
-    if (!actor) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Not your session" });
-    }
-    return session;
-}
-
-// ─── Router ────────────────────────────────────────────────────────────────
+import { loadContext } from "@/server/context/context.loader";
+import { assertPolicy } from "@/server/context/guards";
+import { isOrgAdmin } from "@/server/context/permission";
 
 export const calcExecutionRouter = createTRPCRouter({
 
-    startRun: protectedProcedure
+    // ─────────────────────────────────────────────────────────────────────────
+    // START RUN
+    // ─────────────────────────────────────────────────────────────────────────
+    startRun: orgProcedure
         .input(z.object({
+            organizationId: z.string().optional(),
             workflowId: z.string(),
             initialValues: z.record(z.string(), z.unknown()).optional(),
             stepMode: z.boolean().optional(),
-            liveUpdates: z.boolean().optional(),
+            liveUpdates: z.boolean().optional(), // Restored
             idempotencyKey: z.string().optional(),
-            batchSize: z.number().int().min(1).optional(),
+            batchSize: z.number().int().min(1).optional(), // Restored
         }))
         .mutation(async ({ ctx, input }) => {
-            const orgId = await getWorkflowOrgId(input.workflowId);
-            const actorId = await resolveActorId(ctx.auth.user.id, orgId);
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                workflowId: input.workflowId,
+            });
 
-            // CHUNK 4: go through the orchestrator. It picks strategy and
-            // handles INLINE_ASYNC / BACKGROUND_BATCH handoffs automatically.
-            const calcCtx = new CalcContext(prisma, actorId, orgId);
+            if (!reqCtx.workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+            if (!reqCtx.actor) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Actor not found." });
+
+            assertPolicy(reqCtx, "run", "workflow");
+
+            const calcCtx = new CalcContext(ctx.db, reqCtx.actor.id, reqCtx.organization!.id);
             const orchestrator = createRunOrchestrator(calcCtx);
 
             return orchestrator.start({
-                calcWorkflowId: input.workflowId,
-                actorId,
+                calcWorkflowId: reqCtx.workflow.id,
+                actorId: reqCtx.actor.id,
                 initialValues: (input.initialValues as Record<string, never>) ?? {},
                 stepMode: input.stepMode ?? false,
                 idempotencyKey: input.idempotencyKey,
-                batchSize: input.batchSize ?? 1,
+                batchSize: input.batchSize ?? 1, // Restored default
             });
         }),
 
-    // ── CHUNK 4: async polling ────────────────────────────────────────────
-
-    poll: protectedProcedure
-        .input(z.object({ sessionId: z.string() }))
+    // ─────────────────────────────────────────────────────────────────────────
+    // ASYNC POLLING
+    // ─────────────────────────────────────────────────────────────────────────
+    poll: orgProcedure
+        .input(z.object({
+            organizationId: z.string().optional(),
+            sessionId: z.string()
+        }))
         .query(async ({ ctx, input }) => {
-            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-                where: { id: session.calcWorkflowId },
-                select: { organizationId: true },
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
             });
-            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND", message: "Session not found or access denied" });
+
+            const calcCtx = new CalcContext(ctx.db, reqCtx.session.actorId, reqCtx.organization!.id);
             const poller = createSessionPoller(calcCtx);
             return poller.poll(input.sessionId);
         }),
 
-    // ── Existing endpoints (unchanged from Chunk 3) ───────────────────────
-
-    submitInput: protectedProcedure
+    // ─────────────────────────────────────────────────────────────────────────
+    // INTERACTIVE EXECUTION
+    // ─────────────────────────────────────────────────────────────────────────
+    submitInput: orgProcedure
         .input(z.object({
+            organizationId: z.string().optional(),
             sessionId: z.string(),
             values: z.record(z.string(), z.unknown()),
         }))
         .mutation(async ({ ctx, input }) => {
-            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-
-            if (session.status !== "PAUSED") {
-                throw new TRPCError({
-                    code: "BAD_REQUEST",
-                    message: `Session is not paused (status: ${session.status})`,
-                });
-            }
-            if (!session.currentNodeId) {
-                throw new TRPCError({
-                    code: "BAD_REQUEST",
-                    message: "Session has no current node to resume from",
-                });
-            }
-
-            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-                where: { id: session.calcWorkflowId },
-                select: { organizationId: true },
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
             });
 
-            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND" });
+            const session = reqCtx.session;
+
+            if (session.status !== "PAUSED") {
+                throw new TRPCError({ code: "BAD_REQUEST", message: `Session is not paused (status: ${session.status})` });
+            }
+            if (!session.currentNodeId) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Session has no current node to resume from" });
+            }
+
+            const calcCtx = new CalcContext(ctx.db, session.actorId, reqCtx.organization!.id);
             const executor = createWorkflowExecutor(calcCtx);
+            
+            // Fixed: Restored currentNodeId as second argument
             return executor.resumeWithInput(
                 input.sessionId,
                 session.currentNodeId,
-                input.values as Record<string, unknown>
+                input.values as Record<string, any>
             );
         }),
 
-    stepForward: protectedProcedure
-        .input(z.object({ sessionId: z.string() }))
+    stepForward: orgProcedure
+        .input(z.object({
+            organizationId: z.string().optional(),
+            sessionId: z.string()
+        }))
         .mutation(async ({ ctx, input }) => {
-            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-                where: { id: session.calcWorkflowId },
-                select: { organizationId: true },
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
             });
-            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND" });
+
+            const calcCtx = new CalcContext(ctx.db, reqCtx.session.actorId, reqCtx.organization!.id);
             const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
             return executor.stepForward(input.sessionId);
         }),
 
-    stepBack: protectedProcedure
+    stepBack: orgProcedure
         .input(z.object({
+            organizationId: z.string().optional(),
             sessionId: z.string(),
             targetNodeId: z.string(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-                where: { id: session.calcWorkflowId },
-                select: { organizationId: true },
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
             });
-            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND" });
+
+            const calcCtx = new CalcContext(ctx.db, reqCtx.session.actorId, reqCtx.organization!.id);
             const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
             return executor.stepBack(input.sessionId, input.targetNodeId);
         }),
 
-    cancelRun: protectedProcedure
-        .input(z.object({ sessionId: z.string() }))
+    cancelRun: orgProcedure
+        .input(z.object({
+            organizationId: z.string().optional(),
+            sessionId: z.string()
+        }))
         .mutation(async ({ ctx, input }) => {
-            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-                where: { id: session.calcWorkflowId },
-                select: { organizationId: true },
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
             });
-            const calcCtx = new CalcContext(prisma, session.actorId, wf.organizationId);
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND" });
+
+            const calcCtx = new CalcContext(ctx.db, reqCtx.session.actorId, reqCtx.organization!.id);
             const executor = createWorkflowExecutor(calcCtx);
-            await executor.cancelExecution(input.sessionId, session.actorId);
+            await executor.cancelExecution(input.sessionId, reqCtx.session.actorId);
             return { success: true };
         }),
 
-    getSession: protectedProcedure
-        .input(z.object({ sessionId: z.string() }))
+    // ─────────────────────────────────────────────────────────────────────────
+    // DATA RETRIEVAL
+    // ─────────────────────────────────────────────────────────────────────────
+    getSession: orgProcedure
+        .input(z.object({
+            organizationId: z.string().optional(),
+            sessionId: z.string()
+        }))
         .query(async ({ ctx, input }) => {
-            await assertSessionAccess(input.sessionId, ctx.auth.user.id);
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
+            });
 
-            const session = await prisma.calcSession.findUniqueOrThrow({
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND" });
+
+            // Fetch with specific field selection as per original code
+            const session = await ctx.db.calcSession.findUniqueOrThrow({
                 where: { id: input.sessionId },
                 include: {
                     nodeExecutions: {
@@ -234,9 +203,9 @@ export const calcExecutionRouter = createTRPCRouter({
                 stepMode: (session.metadata as { stepMode?: boolean } | null)?.stepMode ?? false,
             };
 
-            // Hydrate paused node info if needed
+            // Hydrate paused node info if needed (INPUT node specific labels/fields)
             if (session.status === "PAUSED" && session.currentNodeId) {
-                const wf = await prisma.calcWorkflow.findUnique({
+                const wf = await ctx.db.calcWorkflow.findUnique({
                     where: { id: session.calcWorkflowId },
                     include: { nodes: true },
                 });
@@ -255,32 +224,32 @@ export const calcExecutionRouter = createTRPCRouter({
             return result;
         }),
 
-    getHistory: protectedProcedure
+    getHistory: orgProcedure
         .input(z.object({
+            organizationId: z.string().optional(),
             workflowId: z.string().optional(),
             status: z.string().optional(),
             limit: z.number().int().min(1).max(100).default(20),
             offset: z.number().int().min(0).default(0),
         }))
         .query(async ({ ctx, input }) => {
-            const isAdmin = ctx.auth.user.globalRole === "SUPER_ADMIN";
-            const where: Prisma.CalcSessionWhereInput = {};
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId
+            });
+            const orgId = reqCtx.organization!.id;
 
-            if (!isAdmin) {
-                const actors = await prisma.calcActor.findMany({
-                    where: { userId: ctx.auth.user.id },
-                    select: { id: true },
-                });
-                const actorIds = actors.map((a) => a.id);
-                if (actorIds.length === 0) return { sessions: [], total: 0, hasMore: false };
-                where.actorId = { in: actorIds };
-            }
-
-            if (input.workflowId) where.calcWorkflowId = input.workflowId;
-            if (input.status) where.status = input.status as any;
+            const where: Prisma.CalcSessionWhereInput = {
+                calcWorkflow: {
+                    organizationId: orgId,
+                    deletedAt: null
+                },
+                ...(input.workflowId ? { calcWorkflowId: input.workflowId } : {}),
+                ...(input.status ? { status: input.status as any } : {}),
+                ...(isOrgAdmin(reqCtx) ? {} : { actorId: reqCtx.actor?.id })
+            };
 
             const [sessions, total] = await Promise.all([
-                prisma.calcSession.findMany({
+                ctx.db.calcSession.findMany({
                     where,
                     include: {
                         calcWorkflow: { select: { id: true, name: true, category: true } },
@@ -290,15 +259,19 @@ export const calcExecutionRouter = createTRPCRouter({
                     take: input.limit,
                     skip: input.offset,
                 }),
-                prisma.calcSession.count({ where }),
+                ctx.db.calcSession.count({ where }),
             ]);
 
             return {
                 sessions: sessions.map((s) => ({
-                    id: s.id, workflow: s.calcWorkflow, status: s.status, runMode: s.runMode,
+                    id: s.id, 
+                    workflow: s.calcWorkflow, 
+                    status: s.status, 
+                    runMode: s.runMode,
                     startedAt: s.startedAt?.toISOString() ?? null,
                     completedAt: s.completedAt?.toISOString() ?? null,
-                    duration: s.duration, error: s.error,
+                    duration: s.duration, 
+                    error: s.error,
                     nodeCount: s._count.nodeExecutions,
                 })),
                 total,
@@ -306,20 +279,22 @@ export const calcExecutionRouter = createTRPCRouter({
             };
         }),
 
-    rerun: protectedProcedure
-        .input(z.object({ sessionId: z.string() }))
+    rerun: orgProcedure
+        .input(z.object({
+            organizationId: z.string().optional(),
+            sessionId: z.string()
+        }))
         .mutation(async ({ ctx, input }) => {
-            const session = await assertSessionAccess(input.sessionId, ctx.auth.user.id);
-            const old = await prisma.calcSession.findUniqueOrThrow({
-                where: { id: input.sessionId },
-                select: { calcWorkflowId: true, actorId: true, inputSnapshot: true },
+            const reqCtx = await loadContext(ctx.db, ctx.userId, {
+                organizationId: input.organizationId,
+                sessionId: input.sessionId
             });
-            const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-                where: { id: old.calcWorkflowId },
-                select: { organizationId: true },
-            });
-            const calcCtx = new CalcContext(prisma, old.actorId, wf.organizationId);
+            if (!reqCtx.session) throw new TRPCError({ code: "NOT_FOUND" });
+
+            const old = reqCtx.session;
+            const calcCtx = new CalcContext(ctx.db, old.actorId, reqCtx.organization!.id);
             const orchestrator = createRunOrchestrator(calcCtx);
+            
             return orchestrator.start({
                 calcWorkflowId: old.calcWorkflowId,
                 actorId: old.actorId,

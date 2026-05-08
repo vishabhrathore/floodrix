@@ -77,13 +77,13 @@
   --shadow-opacity: var(--shadow-opacity);
   --color-shadow-color: var(--shadow-color);
 
-  --font-size-display: var(--fs-display);
-  --font-size-h1: var(--fs-h1);
-  --font-size-h2: var(--fs-h2);
-  --font-size-h3: var(--fs-h3);
-  --font-size-h4: var(--fs-h4);
-  --font-size-body: var(--fs-body);
-  --font-size-caption: var(--fs-caption);
+  --text-display: var(--fs-display);
+  --text-h1: var(--fs-h1);
+  --text-h2: var(--fs-h2);
+  --text-h3: var(--fs-h3);
+  --text-h4: var(--fs-h4);
+  --text-body: var(--fs-body);
+  --text-caption: var(--fs-caption);
 }
 
 :root {

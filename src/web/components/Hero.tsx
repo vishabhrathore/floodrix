@@ -10,10 +10,10 @@ const Hero: React.FC = () => {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
-  const envelopeRef = useRef<HTMLDivElement>(null);
+
   const revolvingTextRef = useRef<HTMLSpanElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
-  
+
   const bgLayer1Ref = useRef<HTMLImageElement>(null);
   const bgLayer2Ref = useRef<HTMLImageElement>(null);
 
@@ -30,8 +30,7 @@ const Hero: React.FC = () => {
     const tl = gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => setIsEntryComplete(true) });
     gsap.set([bgLayer1Ref.current, bgLayer2Ref.current], { scale: 1.15 });
 
-    tl.fromTo(envelopeRef.current, { xPercent: -100, opacity: 0 }, { xPercent: 0, opacity: 1, duration: 1.8 })
-      .fromTo(titleRef.current, { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, "-=1.2")
+    tl.fromTo(titleRef.current, { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 1 })
       .fromTo(subtitleRef.current, { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, "-=0.9")
       .fromTo(ctaRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, "-=0.8")
       .fromTo(hudRef.current, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 1 }, "-=0.5");
@@ -58,7 +57,8 @@ const Hero: React.FC = () => {
       if (nextLayer) gsap.set(nextLayer, { opacity: 0, scale: 1.25, zIndex: 2 });
       if (currentLayer) gsap.set(currentLayer, { zIndex: 1 });
 
-      tl.to(revolvingTextRef.current, { y: -40, opacity: 0, filter: "blur(8px)", duration: 0.6, ease: "power2.in", onComplete: () => {
+      tl.to(revolvingTextRef.current, {
+        y: -40, opacity: 0, filter: "blur(8px)", duration: 0.6, ease: "power2.in", onComplete: () => {
           setIndex(nextIndex);
           gsap.fromTo(revolvingTextRef.current, { y: 40, opacity: 0, filter: "blur(8px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "back.out(1.4)" });
         }
@@ -83,24 +83,10 @@ const Hero: React.FC = () => {
           </div>
           <img ref={bgLayer1Ref} src={slides[0].image} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 1, zIndex: 5 }} />
           <img ref={bgLayer2Ref} src={slides[1].image} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0, zIndex: 4 }} />
-          <div className="absolute inset-0 bg-black/40 z-10" />
+          <div className="absolute inset-0 bg-black/30 z-[6] pointer-events-none" />
         </div>
 
-        {/* HUD Telemetry Overlay */}
-        <div ref={hudRef} className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center opacity-40">
-          <div className="relative h-full w-full">
-            <div className="absolute top-1/4 right-10 flex flex-col gap-1 items-end animate-pulse">
-                <span className="text-brand-red font-mono text-[8px] tracking-widest uppercase">Flow_Rate_Monitor</span>
-                <div className="w-32 h-[1px] bg-brand-red/50" />
-                <span className="text-white font-mono text-xl">1.428 m³/s</span>
-            </div>
 
-          </div>
-        </div>
-
-        {/* Tilted Backdrop Scrim */}
-        <div ref={envelopeRef} className="absolute inset-0 z-20 w-full lg:w-[60%] bg-gradient-to-r from-brand-dark/60 via-brand-dark/30 to-transparent transition-all duration-700 pointer-events-none shadow-[40px_0_100px_rgba(0,0,0,0.6)]"
-            style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0 100%)' }} />
 
         <div className="relative z-30 w-full px-10 md:px-20 lg:px-32">
           <div className="max-w-6xl text-left">
@@ -125,24 +111,11 @@ const Hero: React.FC = () => {
           <p ref={subtitleRef} className="text-white text-lg md:text-2xl font-light leading-relaxed max-w-xl opacity-95 drop-shadow-lg">
             Architecting <span className="text-white font-medium bg-black/10 px-2 py-0.5 rounded">future-proof hydraulics</span> with proprietary algorithm-driven water resource planning.
           </p>
-          
-            <div className="flex flex-wrap items-center gap-12 border-t border-white/20 pt-10">
-            <div className="flex items-center gap-4 group/chip transition-all">
-              <Globe className="w-4 h-4 text-white/70 group-hover/chip:text-white group-hover/chip:rotate-12 transition-all" />
-              <span className="text-[9px] font-bold uppercase tracking-[0.5em] text-white/80 group-hover/chip:text-white">Global_Operations</span>
-            </div>
-            <div className="flex items-center gap-4 group/chip transition-all">
-              <Shield className="w-4 h-4 text-white/70 group-hover/chip:text-white group-hover/chip:scale-110 transition-all" />
-              <span className="text-[9px] font-bold uppercase tracking-[0.5em] text-white/80 group-hover/chip:text-white">Resilient_Engineering</span>
-            </div>
-            <div className="flex items-center gap-4 group/chip transition-all">
-              <Activity className="w-4 h-4 text-white/70 group-hover/chip:text-white group-hover/chip:scale-110 transition-all" />
-              <span className="text-[9px] font-bold uppercase tracking-[0.5em] text-white/80 group-hover/chip:text-white">Advanced_Modelling</span>
-            </div>
-          </div>
+
+
         </div>
       </div>
-    </section>
+    </section >
   );
 };
 

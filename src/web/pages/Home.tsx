@@ -41,7 +41,6 @@ const Home: React.FC = () => {
         },
         scale: 0.85,
         opacity: 0,
-        filter: "blur(10px)",
         ease: "none"
       });
     }
@@ -72,26 +71,6 @@ const Home: React.FC = () => {
     };
 
     window.addEventListener('mousemove', onMouseMove);
-
-    // 4. Magnetic Button Effect
-    const magneticElements = document.querySelectorAll('.magnetic-target');
-    magneticElements.forEach((el) => {
-      el.addEventListener('mousemove', (e: any) => {
-        const rect = el.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-        gsap.to(el, { x: x * 0.3, y: y * 0.3, duration: 0.4, ease: "power2.out" });
-        if (cursorFollowerRef.current) {
-          cursorFollowerRef.current.classList.add('cursor-active');
-        }
-      });
-      el.addEventListener('mouseleave', () => {
-        gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-        if (cursorFollowerRef.current) {
-          cursorFollowerRef.current.classList.remove('cursor-active');
-        }
-      });
-    });
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
@@ -126,17 +105,16 @@ const Home: React.FC = () => {
                 />
                 <div className="absolute -bottom-6 -left-6 bg-brand-dark p-10 rounded-[2rem] shadow-2xl hidden md:block border border-white/5">
                   <div className="text-6xl font-bold text-brand-red mb-1">15+</div>
-                  <div className="text-white/40 uppercase tracking-[0.3em] text-[9px] font-bold">Years of Excellence</div>
+                  <div className="text-white/40 uppercase tracking-[0.3em] text-caption font-bold">Years of Excellence</div>
                 </div>
               </div>
 
               <div className="space-y-10">
-                <h2 className="text-gray-400 text-label-caps font-sans tracking-[0.2em] text-[10px]">A LEGACY OF CONSULTANCY</h2>
-                <h3 className="text-section-title text-brand-dark font-serif lowercase first-letter:uppercase leading-[1.1]">
+                <h3 className="text-h1 text-brand-dark font-serif lowercase first-letter:uppercase leading-[1.1]">
                   Engineering <span className="italic text-brand-red">resilience</span> <br />in every drop.
                 </h3>
 
-                <div className="space-y-6 text-gray-600 font-sans text-lg leading-relaxed max-w-xl">
+                <div className="space-y-6 text-gray-600 font-sans text-body leading-relaxed max-w-xl">
                   <p>
                     FloodRix specialises in three critical water engineering domains: Highway Drainage, Urban Infrastructure Modelling, and Subsurface Groundwater Services.
                   </p>
@@ -149,7 +127,7 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="pt-8">
-                  <a href="#contact" className="group inline-flex items-center gap-2 text-brand-dark font-medium border-b border-brand-dark/20 pb-1 hover:border-brand-red transition-all">
+                  <a href="#contact" className="group inline-flex items-center gap-2 text-brand-dark font-body border-b border-brand-dark/20 pb-1 hover:border-brand-red transition-all">
                     Request an Engineering Audit <span className="group-hover:translate-x-1 transition-transform">→</span>
                   </a>
                 </div>
@@ -168,7 +146,9 @@ const Home: React.FC = () => {
 
       <style jsx global>{`
         .reveal-on-scroll {
-          will-change: transform, opacity;
+          /* Optimized for performance */
+          transform: translate3d(0, 0, 0);
+          backface-visibility: hidden;
         }
         .cursor-active {
           width: 80px !important;

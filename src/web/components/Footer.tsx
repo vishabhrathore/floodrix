@@ -92,12 +92,12 @@ const Footer: React.FC = () => {
 
             {/* Company */}
             <div className="footer-stagger">
-              <h4 className="text-[10px] font-mono font-bold uppercase tracking-[0.5em] mb-10 text-brand-red">Expertise</h4>
+              <h4 className="text-[10px] font-mono font-bold uppercase tracking-[0.5em] mb-10 text-brand-red">Practice Areas</h4>
               <ul className="space-y-6 text-white/50 font-light text-base">
-                <li><a href="/works" className="hover:text-white hover:pl-2 transition-all">Our Works</a></li>
-                <li><a href="/team" className="hover:text-white hover:pl-2 transition-all">Engineering Team</a></li>
+                <li><a href="/works" className="hover:text-white hover:pl-2 transition-all">Projects</a></li>
+                <li><a href="/team" className="hover:text-white hover:pl-2 transition-all">Leadership</a></li>
                 <li><a href="/capabilities" className="hover:text-white hover:pl-2 transition-all">Capabilities</a></li>
-                <li><a href="/blog" className="hover:text-white hover:pl-2 transition-all">Research Blog</a></li>
+                <li><a href="/blog" className="hover:text-white hover:pl-2 transition-all">Insights</a></li>
                 <li><a href="#" className="hover:text-white hover:pl-2 transition-all">Sustainability</a></li>
               </ul>
             </div>
@@ -124,11 +124,11 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-white/10 pt-16 flex flex-col md:flex-row justify-between items-center text-white/30 text-[10px] font-mono uppercase tracking-widest leading-none gap-8 footer-stagger">
-          <p className="order-2 md:order-1 opacity-60">© 2024 floodRIx Global Resources — All Rights Engineered.</p>
+          <p className="order-2 md:order-1 opacity-60">© 2026 FloodRix Global Engineering. All Rights Reserved.</p>
           <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 order-1 md:order-2">
             <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white transition-colors">Terms of Engineering</a>
-            <a href="#" className="hover:text-white transition-colors">Cookie Vault</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
         </div>
       </div>

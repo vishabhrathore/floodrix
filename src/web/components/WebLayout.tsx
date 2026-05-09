@@ -3,7 +3,6 @@
 import React, { useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
-import AIChatbot from './AIChatbot';
 import CookieConsent from './CookieConsent';
 import ScrollToTop from './ScrollToTop';
 import { gsap } from 'gsap';
@@ -40,7 +39,7 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     window.addEventListener('resize', handleResize);
-    
+
     // Optional: Add class to html for CSS integration
     document.documentElement.classList.add('lenis');
     (window as any).lenis = lenis;
@@ -65,7 +64,6 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Header />
       {children}
       <Footer />
-      <AIChatbot />
       <CookieConsent />
     </>
   );

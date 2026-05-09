@@ -30,6 +30,12 @@ export const SERVICES: ServiceCardProps[] = [
     description: "Scientific assessments and sustainable management of subsurface water resources using numerical simulation of aquifer behavior.",
     icon: <Map className="w-8 h-8" />,
     category: "Groundwater"
+  },
+  {
+    title: "Technical Advisory & Dispute Resolution",
+    description: "Expert witness services and technical audits for complex infrastructure litigation. We provide data-backed forensic engineering and independent peer reviews.",
+    icon: <ShieldCheck className="w-8 h-8" />,
+    category: "Advisory"
   }
 ];
 

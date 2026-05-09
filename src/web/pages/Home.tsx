@@ -4,11 +4,13 @@ import React, { useEffect, useRef } from 'react';
 import Hero from '../components/Hero';
 import RunoffCalculator from '../components/RunoffCalculator';
 import WorkStorytelling from '../components/WorkStorytelling';
+import TechnicalAssurance from '../components/TechnicalAssurance';
 import Services from '../components/Services';
 import ImpactMetrics from '../components/ImpactMetrics';
 import WorksGist from '../components/WorksGist';
 import TeamGist from '../components/TeamGist';
 import Contact from '../components/Contact';
+import SmoothReveal from '../components/SmoothReveal';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -45,24 +47,7 @@ const Home: React.FC = () => {
       });
     }
 
-    // 2. Reveal animations for other sections
-    const reveals = document.querySelectorAll('.reveal-on-scroll');
-    reveals.forEach((el) => {
-      gsap.fromTo(el,
-        { y: 60, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1.2,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 90%",
-            toggleActions: "play none none none"
-          }
-        }
-      );
-    });
+    // 2. Reveal animations handled by SmoothReveal component
 
     // 3. Custom Cursor Logic
     const onMouseMove = (e: MouseEvent) => {
@@ -92,55 +77,86 @@ const Home: React.FC = () => {
         <Hero />
 
         <div className="relative z-10 bg-[#fcfcfc] shadow-[0_-50px_100px_rgba(0,0,0,0.1)]">
-          <RunoffCalculator />
-
-          <section id="about" className="py-32 w-full px-6 md:px-20 lg:px-32 reveal-on-scroll">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-              <div className="relative group">
-                <div className="absolute -inset-6 bg-brand-red/5 rounded-[3rem] blur-3xl group-hover:bg-brand-red/10 transition-all duration-700" />
-                <img
-                  src="https://picsum.photos/seed/eng1/1200/800"
-                  alt="Water Engineering"
-                  className="relative w-full h-[650px] object-cover rounded-[2.5rem] shadow-2xl grayscale hover:grayscale-0 transition-all duration-1000"
-                />
-                <div className="absolute -bottom-6 -left-6 bg-brand-dark p-10 rounded-[2rem] shadow-2xl hidden md:block border border-white/5">
-                  <div className="text-6xl font-bold text-brand-red mb-1">15+</div>
-                  <div className="text-white/40 uppercase tracking-[0.3em] text-caption font-bold">Years of Excellence</div>
-                </div>
-              </div>
-
-              <div className="space-y-10">
-                <h3 className="text-h1 text-brand-dark font-serif lowercase first-letter:uppercase leading-[1.1]">
-                  Engineering <span className="italic text-brand-red">resilience</span> <br />in every drop.
-                </h3>
-
-                <div className="space-y-6 text-gray-600 font-sans text-body leading-relaxed max-w-xl">
-                  <p>
-                    FloodRix specialises in three critical water engineering domains: Highway Drainage, Urban Infrastructure Modelling, and Subsurface Groundwater Services.
-                  </p>
-                  <p>
-                    Our multidisciplinary team of hydrologists, hydraulic engineers, and GIS specialists work at the intersection of environmental science and infrastructure engineering — delivering outcomes that withstand regulatory scrutiny and extreme climate events.
-                  </p>
-                  <p>
-                    From initial catchment analysis through to construction-ready documentation, FloodRix provides end-to-end technical assurance for complex water infrastructure projects across 38 countries.
-                  </p>
-                </div>
-
-                <div className="pt-8">
-                  <a href="#contact" className="group inline-flex items-center gap-2 text-brand-dark font-body border-b border-brand-dark/20 pb-1 hover:border-brand-red transition-all">
-                    Request an Engineering Audit <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </a>
-                </div>
-              </div>
+          <SmoothReveal delay={0.1}>
+            <div id="calculator">
+              <RunoffCalculator />
             </div>
+          </SmoothReveal>
+
+          <section id="about" className="py-32 w-full px-6 md:px-20 lg:px-32">
+            {/* ... */}
+            <SmoothReveal direction="up" distance={60}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+                <div className="relative group">
+                  <div className="absolute -inset-6 bg-brand-red/5 rounded-[3rem] blur-3xl group-hover:bg-brand-red/10 transition-all duration-700" />
+                  <img
+                    src="/about.png"
+                    alt="Water Engineering"
+                    className="relative w-full h-[650px] object-cover rounded-[2.5rem] shadow-2xl transition-all duration-1000"
+                  />
+                  <div className="absolute -bottom-6 -left-6 bg-brand-dark p-10 rounded-[2rem] shadow-2xl hidden md:block border border-white/5">
+                    <div className="text-h1 font-bold text-brand-red mb-1">15+</div>
+                    <div className="text-white/40 uppercase tracking-[0.3em] text-caption font-bold">Engineering Excellence</div>
+                  </div>
+                </div>
+
+                <div className="space-y-10">
+                  <h3 className="ml-[-4px] text-h1 text-brand-dark font-serif lowercase first-letter:uppercase leading-[1.1]">
+                    Building climate <span className="italic text-brand-red">resilience</span> <br />into critical infrastructure.
+                  </h3>
+
+                  <div className="space-y-6 text-gray-600 font-sans text-body-large leading-relaxed max-w-xl">
+                    <p>
+                      FloodRix is a specialized engineering consultancy operating across three core water domains: Highway Drainage, Urban Stormwater Management, and Geohydrology.
+                    </p>
+                    <p>
+                      Our multidisciplinary team of hydrologists, hydraulic engineers, and GIS specialists operates at the intersection of environmental science and civil engineering. We deliver robust, data-driven solutions designed to withstand intense regulatory scrutiny and extreme climate events.
+                    </p>
+                    <p>
+                      From initial catchment analysis to construction-ready documentation, FloodRix provides absolute technical assurance for complex infrastructure projects across 38 countries.
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+            </SmoothReveal>
           </section>
 
-          <WorkStorytelling />
-          <Services />
-          <ImpactMetrics />
-          <WorksGist />
-          <TeamGist />
-          <Contact />
+          <div id="expertise">
+            <SmoothReveal direction="up" distance={40}>
+              <WorkStorytelling />
+            </SmoothReveal>
+          </div>
+
+          <div id="assurance">
+            <SmoothReveal direction="up" distance={40}>
+              <TechnicalAssurance />
+            </SmoothReveal>
+          </div>
+
+          <div id="impact">
+            <SmoothReveal direction="up" distance={40}>
+              <ImpactMetrics />
+            </SmoothReveal>
+          </div>
+
+          <div id="portfolio">
+            <SmoothReveal direction="up" distance={40}>
+              <WorksGist />
+            </SmoothReveal>
+          </div>
+
+          <div id="team">
+            <SmoothReveal direction="up" distance={40}>
+              <TeamGist />
+            </SmoothReveal>
+          </div>
+
+          <div id="contact">
+            <SmoothReveal direction="up" distance={40}>
+              <Contact />
+            </SmoothReveal>
+          </div>
         </div>
       </main>
 

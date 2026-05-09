@@ -1,196 +1,276 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { PROJECTS as BASE_PROJECTS } from '../constants';
-import { ArrowUpRight, Globe, CheckCircle2, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowUpRight, Globe, ArrowLeft, ArrowRight, Activity } from 'lucide-react';
 import Link from 'next/link';
 
-// Mosaic layout configuration based on a 12-column grid
-const MOSAIC_CONFIG = [
-  { col: '1 / span 5', row: '1 / span 6' },
-  { col: '6 / span 4', row: '1 / span 4' },
-  { col: '10 / span 3', row: '1 / span 3' },
-  { col: '10 / span 3', row: '4 / span 4' },
-  { col: '6 / span 2', row: '5 / span 3' },
-  { col: '8 / span 2', row: '5 / span 3' },
-  { col: '1 / span 3', row: '7 / span 4' },
-  { col: '4 / span 3', row: '7 / span 4' },
-  { col: '7 / span 3', row: '8 / span 3' },
-  { col: '10 / span 3', row: '8 / span 3' },
+const SAMPLE_PROJECTS = [
+  {
+    id: 'project-kinetic',
+    title: 'Offshore Turbine Scour Protection',
+    category: 'Renewable Infrastructure',
+    challenge: 'Securing offshore wind infrastructure against catastrophic scour events.',
+    description: 'Implemented advanced hydrodynamic modeling to prevent subsea erosion, extending the asset lifecycle of offshore wind infrastructure by over a decade.',
+    image: 'https://images.unsplash.com/photo-1509395176047-4a66953fd231?auto=format&fit=crop&q=80&w=1200',
+    location: 'North Sea',
+    impact: ['12yr Life Extension', '99.9% Asset Integrity']
+  },
+  {
+    id: 'project-catalyst',
+    title: 'Urban Catchment & Stormwater Masterplan',
+    category: 'Municipal Infrastructure',
+    challenge: 'Resolving legacy drainage bottlenecks in dense metropolitan corridors.',
+    description: 'A citywide flood mitigation strategy using high-fidelity hydraulic modeling to protect high-value urban assets and align with long-term climate adaptation mandates.',
+    image: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&q=80&w=1200',
+    location: 'Singapore',
+    impact: ['60% Faster Response', 'Zero Inundation Events']
+  },
+  {
+    id: 'project-alpine',
+    title: 'Alpine Watershed Runoff Analysis',
+    category: 'Resource Management',
+    challenge: 'Developing high-fidelity runoff simulations for high-altitude hydroelectric catchments.',
+    description: 'We deployed advanced numerical models to optimize water retention strategies in the Alpine range, increasing energy yield by 15% through precision forecasting.',
+    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=1200',
+    location: 'Swiss Alps',
+    impact: ['15% Energy Gain', '85M Data Points']
+  },
+  {
+    id: 'project-azure',
+    title: 'Coastal Flood Mitigation Strategy',
+    category: 'Marine Engineering',
+    challenge: 'Designing scalable flood defenses for high-value coastal infrastructure.',
+    description: 'A comprehensive coastal protection framework integrating natural breakwaters and sensor-driven surge gates to protect urban settlements from rising sea levels.',
+    image: 'https://images.unsplash.com/photo-1473773508845-188df298d2d1?auto=format&fit=crop&q=80&w=1200',
+    location: 'Mediterranean Coast',
+    impact: ['3.2k km² Protected', 'ISO 14001 Compliant']
+  }
 ];
 
 const WorksGist: React.FC = () => {
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-  
-  // Extend Projects to 5 items for the collage
-  const displayProjects = [
-    { ...BASE_PROJECTS[0], id: '1-0', uniqueKey: 0 },
-    { ...BASE_PROJECTS[1], id: '2-0', uniqueKey: 1 },
-    { ...BASE_PROJECTS[2], id: '3-0', uniqueKey: 2 },
-    { ...BASE_PROJECTS[0], id: '1-1', uniqueKey: 3, title: "Urban Drainage Network", category: "Infrastructure" },
-    { ...BASE_PROJECTS[1], id: '2-1', uniqueKey: 4, title: "Coastal Surge Protection", category: "Coastal" },
-  ];
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const projects = SAMPLE_PROJECTS;
+  const activeProject = projects[currentIndex];
 
-  const gridClasses = [
-    "md:col-span-8 md:row-span-2 min-h-[400px]",
-    "md:col-span-4 md:row-span-1 min-h-[292px]",
-    "md:col-span-4 md:row-span-1 min-h-[292px]",
-    "md:col-span-7 md:row-span-1 min-h-[240px]",
-    "md:col-span-5 md:row-span-1 min-h-[240px]"
-  ];
+  useEffect(() => {
+    setIsMounted(true);
+    setWindowWidth(window.innerWidth);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const getDimensions = (isActive: boolean) => {
+    if (!isMounted || windowWidth === 0) return { width: 0, height: 0 };
+    if (windowWidth >= 1280) {
+      return { width: isActive ? 920 : 380, height: isActive ? 640 : 540 };
+    } else if (windowWidth >= 1024) {
+      return { width: isActive ? 800 : 320, height: isActive ? 600 : 500 };
+    } else if (windowWidth >= 768) {
+      const w = windowWidth - 160;
+      return { width: isActive ? w : 280, height: isActive ? 500 : 420 };
+    } else {
+      const w = windowWidth - 48;
+      return { width: isActive ? w : 80, height: isActive ? 480 : 400 };
+    }
+  };
+
+  const handleNext = () => setCurrentIndex((prev) => (prev + 1) % projects.length);
+  const handlePrev = () => setCurrentIndex((prev) => (prev === 0 ? projects.length - 1 : prev - 1));
+
+  useEffect(() => {
+    const timer = setInterval(handleNext, 8000);
+    return () => clearInterval(timer);
+  }, [currentIndex]);
+
+  const smoothTransition = {
+    duration: 0.9,
+    ease: [0.22, 1, 0.36, 1] as const
+  };
 
   return (
-    <section id="projects" className="py-32 bg-brand-dark overflow-hidden">
-      <div className="px-6 md:px-20 lg:px-32">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-20">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-8 h-[1px] bg-brand-red" />
-              <span className="text-sm font-mono font-bold tracking-[0.4em] text-brand-red uppercase">Engineering Portfolio</span>
-            </div>
-            <h2 className="text-5xl md:text-7xl font-serif text-white tracking-tighter leading-tight">
-              Selected <span className="italic text-white/40">Benchmarks.</span>
-            </h2>
-          </div>
-          <Link 
-            href="/works" 
-            className="group flex items-center gap-4 text-white hover:text-brand-red transition-colors mb-4"
-          >
-            <span className="text-sm font-bold uppercase tracking-[0.3em]">Full Portfolio [12]</span>
-            <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-brand-red transition-all">
-              <ArrowUpRight className="w-5 h-5" />
-            </div>
-          </Link>
-        </div>
+    <section id="projects" className="py-24 lg:py-32 bg-white border-t border-gray-200 overflow-hidden flex flex-col justify-center">
+      <div className="w-full overflow-x-hidden">
 
-        {/* Collage Grid */}
-        <div className="relative grid grid-cols-1 md:grid-cols-12 gap-4 mb-24 min-h-[600px]">
-          {displayProjects.map((project, idx) => {
-            const isExpanded = expandedIdx === idx;
-            const isAnyExpanded = expandedIdx !== null;
-            
-            return (
+        {/* Top Section - Cleaner and Seamless */}
+        <div className="px-6 md:px-12 lg:px-24 mb-12">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end">
+
+            <div style={{ width: isMounted ? getDimensions(true).width : 'auto' }}>
               <motion.div
-                key={project.id}
-                layout
-                transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
-                onClick={() => setExpandedIdx(isExpanded ? null : idx)}
-                className={`relative group cursor-pointer overflow-hidden rounded-[2rem] border border-white/5 ${
-                  isExpanded 
-                    ? 'md:col-span-12 md:row-span-2 z-50 h-[600px]' 
-                    : gridClasses[idx]
-                } ${
-                  isAnyExpanded && !isExpanded ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100'
-                } transition-all duration-500`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={smoothTransition}
               >
-                <motion.img 
-                  layout
-                  src={project.image} 
-                  alt={project.title} 
-                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ${
-                    isExpanded ? 'brightness-[0.4] scale-100' : 'group-hover:scale-110'
-                  }`}
-                />
-                
-                {/* Close Button when expanded */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.5 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedIdx(null);
-                      }}
-                      className="absolute top-8 right-8 z-50 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-brand-red transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-
-                {/* Content Overlay */}
-                <div className={`absolute inset-0 flex flex-col transition-all duration-500 ${
-                  isExpanded ? 'p-12 md:p-20 justify-center' : 'p-8 justify-end bg-gradient-to-t from-brand-dark/80 to-transparent'
-                }`}>
-                  <motion.div layout className="relative z-10">
-                    <div className={`font-bold text-brand-red uppercase tracking-[0.3em] mb-4 ${isExpanded ? 'text-sm' : 'text-xs'}`}>
-                      {project.category}
-                    </div>
-                    
-                    <h4 className={`text-white font-serif leading-tight mb-4 ${
-                      isExpanded ? 'text-4xl md:text-6xl max-w-3xl' : 'text-xl md:text-2xl'
-                    }`}>
-                      {project.title}
-                    </h4>
-
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          transition={{ delay: 0.2 }}
-                          className="space-y-8"
-                        >
-                          <div className="flex items-center gap-3 text-sm font-mono text-white/50 uppercase tracking-[0.3em]">
-                            <Globe className="w-4 h-4 text-brand-red" /> {project.location}
-                          </div>
-                          
-                          <p className="text-lg md:text-xl text-white/60 font-light leading-relaxed italic border-l-2 border-brand-red/30 pl-6 max-w-2xl">
-                             "{project.challenge}"
-                          </p>
-
-                          <div className="flex flex-wrap gap-8">
-                             {project.impact?.map((item, i) => (
-                               <div key={i} className="flex gap-3 items-center group">
-                                 <CheckCircle2 className="w-4 h-4 text-brand-red shrink-0" />
-                                 <span className="text-sm font-light text-white/40 group-hover:text-white transition-colors">
-                                   {item}
-                                 </span>
-                               </div>
-                             ))}
-                          </div>
-
-                          <Link 
-                            href={`/project/${project.id.split('-')[0]}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-4 px-10 py-4 bg-brand-red text-white text-sm font-bold uppercase tracking-[0.3em] rounded-full hover:bg-white hover:text-brand-dark transition-all"
-                          >
-                             Analysis Report <ArrowUpRight className="w-4 h-4" />
-                          </Link>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
+                <div className="text-brand-red text-xs font-bold uppercase tracking-widest mb-4">
+                  Global Portfolio
                 </div>
+                {/* Utilizing fluid typography scales */}
+                <h2 className="text-h1 font-serif text-brand-dark leading-none mb-6">
+                  Engineering the <br className="hidden md:block" /> built environment.
+                </h2>
               </motion.div>
-            );
-          })}
+
+              <div className="overflow-hidden h-[3.25em]">
+                <motion.p
+                  key={currentIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="text-gray-600 text-body-large font-light leading-relaxed border-l-2 border-brand-red pl-6 line-clamp-2"
+                >
+                  {activeProject.challenge}
+                </motion.p>
+              </div>
+            </div>
+
+            {/* Navigation Controls - Minimal and Sharp */}
+            <div className="flex flex-col items-end gap-6 shrink-0 mt-8 lg:mt-0">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePrev}
+                  className="w-14 h-14 rounded-full border border-gray-200 flex items-center justify-center text-brand-dark hover:bg-brand-red hover:text-white hover:border-brand-red transition-all duration-500 shadow-sm"
+                  aria-label="Previous Project"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="w-14 h-14 rounded-full border border-gray-200 flex items-center justify-center text-brand-dark hover:bg-brand-red hover:text-white hover:border-brand-red transition-all duration-500 shadow-sm"
+                  aria-label="Next Project"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Progress Line */}
+              <div className="flex gap-2 w-full justify-end">
+                {projects.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-[6px] rounded-full transition-all duration-500 ${i === currentIndex ? 'w-12 bg-brand-dark' : 'w-4 bg-gray-200'}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Advisory Box Below */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-           <div className="md:col-span-8">
-              <div className="flex items-center gap-6">
-                 <div className="w-16 h-[1px] bg-white/10" />
-                 <p className="text-sm font-mono text-white/40 uppercase tracking-[0.5em]">Global Hydraulic Verification Partners</p>
-              </div>
-           </div>
-           <div className="md:col-span-4 translate-y-4">
-              <div className="bg-white/5 rounded-3xl p-8 border border-white/10 relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Globe className="w-24 h-24 text-brand-red" />
-                 </div>
-                 <h4 className="text-white font-serif mb-4">Strategic Advisory</h4>
-                 <Link href="/contact" className="inline-flex items-center gap-2 text-brand-red text-sm font-bold uppercase tracking-widest hover:translate-x-2 transition-transform">
-                    Request Briefing <ArrowUpRight className="w-4 h-4" />
-                 </Link>
-              </div>
-           </div>
+        {/* Carousel Content */}
+        <div
+          className="relative flex items-end overflow-hidden"
+          style={{ height: getDimensions(true).height }}
+        >
+          <div className="px-6 md:px-12 lg:px-24 w-full h-full">
+            <motion.div
+              className="flex gap-6 items-end h-full w-full"
+              animate={{ x: -currentIndex * (getDimensions(false).width + 24) }}
+              transition={smoothTransition}
+            >
+              {projects.map((project, idx) => {
+                const isActive = idx === currentIndex;
+                const dims = getDimensions(isActive);
+
+                return (
+                  <motion.div
+                    key={project.id}
+                    initial={false}
+                    animate={{ width: dims.width, height: dims.height }}
+                    transition={smoothTransition}
+                    className="shrink-0 relative overflow-hidden group cursor-pointer bg-brand-dark rounded-3xl md:rounded-[2.5rem]"
+                    onClick={() => setCurrentIndex(idx)}
+                  >
+                    {/* Image Layer */}
+                    <div className="absolute inset-0 z-0">
+                      <motion.img
+                        src={project.image}
+                        alt={project.title}
+                        animate={{
+                          scale: isActive ? 1 : 1.05,
+                          opacity: 1,
+                          filter: 'grayscale(0%)'
+                        }}
+                        transition={smoothTransition}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Gradient Overlay focused at the bottom text area - Only for active slide */}
+                      <motion.div
+                        animate={{ opacity: isActive ? 1 : 0 }}
+                        transition={smoothTransition}
+                        className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"
+                      />
+                    </div>
+
+                    {/* Meta Top Tag */}
+                    <div className="absolute top-6 left-6 md:left-10 z-10">
+                      <motion.div
+                        animate={{ opacity: isActive ? 1 : 0 }}
+                        transition={smoothTransition}
+                        className="bg-white text-brand-dark px-4 py-2 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 rounded-full"
+                      >
+                        <Globe className="w-3 h-3 text-brand-red" />
+                        {project.location}
+                      </motion.div>
+                    </div>
+
+                    {/* Content Block */}
+                    <div className="absolute bottom-0 left-0 w-full z-10 p-6 md:p-10 flex flex-col justify-end">
+
+                      <motion.div
+                        animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
+                        transition={{ ...smoothTransition, delay: isActive ? 0.2 : 0 }}
+                        className="w-full max-w-2xl"
+                      >
+                        <div className="text-white/60 text-xs font-bold uppercase tracking-widest mb-3">
+                          {project.category}
+                        </div>
+                        {/* Utilizing fluid typography scales */}
+                        <h4 className="text-white font-serif text-h2 leading-tight mb-4">
+                          {project.title}
+                        </h4>
+
+                        <p className="text-white/80 text-body leading-relaxed font-light hidden md:block mb-6 max-w-xl">
+                          {project.description}
+                        </p>
+
+                        {/* Impact Metrics - Seamless without dividers */}
+                        <div className="flex flex-wrap gap-x-8 gap-y-3">
+                          {project.impact.map((metric, i) => (
+                            <div key={i} className="flex items-start gap-3">
+                              <Activity className="w-4 h-4 text-brand-red shrink-0 mt-1" />
+                              <span className="text-white text-[var(--fs-caption)] font-medium tracking-wide">
+                                {metric}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+
+                      {/* Read More Link */}
+                      <motion.div
+                        animate={{ opacity: isActive ? 1 : 0 }}
+                        className="absolute bottom-6 md:bottom-10 right-6 md:right-10 hidden lg:block"
+                      >
+                        <Link
+                          href={`/project/${project.id}`}
+                          // Link button also rounded to match card
+                          className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-brand-dark hover:bg-brand-red hover:text-white transition-colors group shadow-lg"
+                        >
+                          <ArrowUpRight className="w-6 h-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+                        </Link>
+                      </motion.div>
+
+                    </div>
+                  </motion.div>
+                );
+              })}
+              <div className="shrink-0 w-[20vw] h-1" />
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>

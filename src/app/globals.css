@@ -82,6 +82,7 @@
   --text-h2: var(--fs-h2);
   --text-h3: var(--fs-h3);
   --text-h4: var(--fs-h4);
+  --text-body-large: var(--fs-body-large);
   --text-body: var(--fs-body);
   --text-caption: var(--fs-caption);
 }
@@ -173,6 +174,8 @@
   --fs-h2: clamp(1.5rem, 1.34vw + 1.19rem, 2.375rem);
   --fs-h3: clamp(1.25rem, 0.77vw + 1.07rem, 1.75rem);
   --fs-h4: clamp(1.125rem, 0.38vw + 1.04rem, 1.375rem);
+  --fs-body-large: clamp(1.0625rem, 0.28vw + 1rem, 1.25rem);
+  /* Added: Scales from 17px to 20px */
   --fs-body: clamp(1rem, 0.19vw + 0.96rem, 1.125rem);
   --fs-caption: clamp(0.875rem, 0.0vw + 0.88rem, 0.875rem);
 }
@@ -250,8 +253,12 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     letter-spacing: var(--tracking-normal);
+  }
+
+  html {
+    @apply overflow-x-hidden;
   }
 }
 

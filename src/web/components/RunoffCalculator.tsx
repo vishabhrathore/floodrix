@@ -52,20 +52,19 @@ const RunoffCalculator: React.FC = () => {
             <div className="space-y-6">
 
               <h3 className="text-h1 text-white font-serif lowercase first-letter:uppercase leading-[1.1]">
-                Scientific <span className="text-brand-red">Calculation</span> Suite.
+                Advanced Hydrological <span className="text-brand-red">Solutions.</span>
               </h3>
-              <p className="text-xl text-white/40 font-light leading-relaxed max-w-xl">
-                We offer a comprehensive library of specialized calculators for water engineering.
-                Our tools cover every critical phase of hydrological analysis and hydraulic design.
+              <p className="text-h4 text-white/40 font-light leading-relaxed max-w-2xl">
+                FloodRix pairs deep engineering expertise with proprietary digital tools to solve complex water infrastructure challenges. Our end-to-end capabilities cover every critical phase of hydrological analysis, hydraulic design, and flood risk mitigation.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
               {[
-                { icon: Waves, color: 'text-brand-teal', border: 'group-hover:border-brand-teal/30', title: 'Flood Models', desc: 'Rational Method, Unit Hydrograph, and empirical flood frequency analysis.' },
-                { icon: Activity, color: 'text-brand-red', border: 'group-hover:border-brand-red/30', title: 'Scour Analysis', desc: 'Detailed bridge scour and pier protection modeling per HEC-18 standards.' },
-                { icon: Calculator, color: 'text-brand-teal', border: 'group-hover:border-brand-teal/30', title: 'Rainfall Data', desc: 'Intensity-Duration-Frequency (IDF) curves and return period estimations.' },
-                { icon: Zap, color: 'text-brand-red', border: 'group-hover:border-brand-red/30', title: 'Energy Mapping', desc: 'Hydraulic jump and energy dissipator calculations for spillway design.' }
+                { icon: Waves, color: 'text-brand-teal', border: 'group-hover:border-brand-teal/30', title: 'Flood Modeling', desc: 'Empirical flood frequency analysis and advanced catchment simulations.' },
+                { icon: Activity, color: 'text-brand-red', border: 'group-hover:border-brand-red/30', title: 'Scour Analysis', desc: 'Complex bridge scour and pier protection modeling (HEC-18 compliant).' },
+                { icon: Calculator, color: 'text-brand-teal', border: 'group-hover:border-brand-teal/30', title: 'Precipitation Analytics', desc: 'High-fidelity IDF curves and return period estimations.' },
+                { icon: Zap, color: 'text-brand-red', border: 'group-hover:border-brand-red/30', title: 'Hydraulic Structures', desc: 'Energy dissipator and spillway design calculations.' }
               ].map((item, i) => (
                 <motion.div
                   key={i}
@@ -78,7 +77,7 @@ const RunoffCalculator: React.FC = () => {
                   <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 ${item.border} transition-colors`}>
                     <item.icon className={`w-6 h-6 ${item.color}`} />
                   </div>
-                  <h4 className="text-white text-xl font-medium tracking-tight">{item.title}</h4>
+                  <h4 className="text-white text-h4 font-medium tracking-tight">{item.title}</h4>
                   <p className="text-base text-white/50 leading-relaxed">{item.desc}</p>
                 </motion.div>
               ))}
@@ -86,7 +85,7 @@ const RunoffCalculator: React.FC = () => {
 
             <div className="pt-8">
               <button className="bg-white/5 hover:bg-brand-red text-white border border-white/10 hover:border-brand-red px-10 py-5 rounded-2xl font-bold transition-all flex items-center gap-4 group shadow-lg hover:shadow-[0_0_30px_rgba(251,54,64,0.3)]">
-                Access All Calculators
+                Access Digital Tools
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
               </button>
             </div>
@@ -175,7 +174,7 @@ const RunoffCalculator: React.FC = () => {
 
                     <div className="relative z-10 space-y-4">
                       <h4 className="text-[10px] font-mono tracking-[0.4em] uppercase text-white/20">Peak Discharge</h4>
-                      <motion.div className={`text-6xl md:text-7xl font-bold tracking-tighter ${getSeverityColor(q)}`}>
+                      <motion.div className={`text-h1 font-bold tracking-tighter ${getSeverityColor(q)}`}>
                         {displayResult}
                       </motion.div>
                       <div className="text-white/40 text-xs font-bold tracking-widest uppercase">m³/sec</div>

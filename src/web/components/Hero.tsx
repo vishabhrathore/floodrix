@@ -9,10 +9,7 @@ const Hero: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-
   const revolvingTextRef = useRef<HTMLSpanElement>(null);
-  const hudRef = useRef<HTMLDivElement>(null);
 
   const bgLayer1Ref = useRef<HTMLImageElement>(null);
   const bgLayer2Ref = useRef<HTMLImageElement>(null);
@@ -31,18 +28,7 @@ const Hero: React.FC = () => {
     gsap.set([bgLayer1Ref.current, bgLayer2Ref.current], { scale: 1.15 });
 
     tl.fromTo(titleRef.current, { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 1 })
-      .fromTo(subtitleRef.current, { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, "-=0.9")
-      .fromTo(ctaRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, "-=0.8")
-      .fromTo(hudRef.current, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 1 }, "-=0.5");
-
-    // HUD Hover Parallax
-    const handleMove = (e: MouseEvent) => {
-      const x = (e.clientX - window.innerWidth / 2) / 50;
-      const y = (e.clientY - window.innerHeight / 2) / 50;
-      gsap.to(hudRef.current, { x, y, duration: 0.5 });
-    };
-    window.addEventListener('mousemove', handleMove);
-    return () => window.removeEventListener('mousemove', handleMove);
+      .fromTo(subtitleRef.current, { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, "-=0.9");
   }, []);
 
   useEffect(() => {
@@ -57,12 +43,16 @@ const Hero: React.FC = () => {
       if (nextLayer) gsap.set(nextLayer, { opacity: 0, scale: 1.25, zIndex: 2 });
       if (currentLayer) gsap.set(currentLayer, { zIndex: 1 });
 
-      tl.to(revolvingTextRef.current, {
-        y: -40, opacity: 0, filter: "blur(8px)", duration: 0.6, ease: "power2.in", onComplete: () => {
-          setIndex(nextIndex);
-          gsap.fromTo(revolvingTextRef.current, { y: 40, opacity: 0, filter: "blur(8px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "back.out(1.4)" });
-        }
-      }, 0.2);
+      if (revolvingTextRef.current) {
+        tl.to(revolvingTextRef.current, {
+          y: -40, opacity: 0, filter: "blur(8px)", duration: 0.6, ease: "power2.in", onComplete: () => {
+            setIndex(nextIndex);
+            if (revolvingTextRef.current) {
+              gsap.fromTo(revolvingTextRef.current, { y: 40, opacity: 0, filter: "blur(8px)" }, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "back.out(1.4)" });
+            }
+          }
+        }, 0.2);
+      }
 
       tl.to(nextLayer, { opacity: 1, scale: 1.1, duration: 2.5, ease: "power2.inOut" }, 0);
       tl.to(currentLayer, { opacity: 0, scale: 1.05, duration: 2.5, ease: "power2.inOut" }, 0);
@@ -90,7 +80,6 @@ const Hero: React.FC = () => {
 
         <div className="relative z-30 w-full px-10 md:px-20 lg:px-32">
           <div className="max-w-6xl text-left">
-            {/* 
             <h1 ref={titleRef} className="text-hero text-white mb-8 tracking-tighter drop-shadow-2xl">
               Engineering <br />
               <span className="relative inline-block overflow-hidden align-bottom h-[1.25em] min-w-[220px] md:min-w-[420px]">
@@ -100,7 +89,6 @@ const Hero: React.FC = () => {
               </span>
               <br /> Infrastructure.
             </h1>
-            */}
 
 
           </div>
@@ -108,8 +96,8 @@ const Hero: React.FC = () => {
 
         {/* Global Stats Red Footer Block */}
         <div className="absolute bottom-0 left-0 z-40 bg-brand-red w-full lg:w-auto min-w-[35%] px-10 py-12 md:px-20 lg:px-32 flex flex-col gap-10 shadow-[0_-20px_100px_rgba(251,54,64,0.2)]">
-          <p ref={subtitleRef} className="text-white text-lg md:text-2xl font-light leading-relaxed max-w-xl opacity-95 drop-shadow-lg">
-            Architecting <span className="text-white font-medium bg-black/10 px-2 py-0.5 rounded">future-proof hydraulics</span> with proprietary algorithm-driven water resource planning.
+          <p ref={subtitleRef} className="text-white text-h3 font-light leading-relaxed max-w-xl opacity-95 drop-shadow-lg">
+            FloodRix pairs <span className="text-white font-medium bg-black/10 px-2 py-0.5 rounded text-sm md:text-base">deep engineering expertise</span> with proprietary digital tools to solve complex water infrastructure challenges.
           </p>
 
 

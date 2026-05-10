@@ -83,46 +83,93 @@ const Home: React.FC = () => {
             </div>
           </SmoothReveal>
 
-          <section id="about" className="py-32 w-full px-6 md:px-20 lg:px-32">
-            {/* ... */}
-            <SmoothReveal direction="up" distance={60}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-                <div className="relative group">
-                  <div className="absolute -inset-6 bg-brand-red/5 rounded-[3rem] blur-3xl group-hover:bg-brand-red/10 transition-all duration-700" />
-                  <img
-                    src="/about.png"
-                    alt="Water Engineering"
-                    className="relative w-full h-[650px] object-cover rounded-[2.5rem] shadow-2xl transition-all duration-1000"
-                  />
-                  <div className="absolute -bottom-6 -left-6 bg-brand-dark p-10 rounded-[2rem] shadow-2xl hidden md:block border border-white/5">
-                    <div className="text-h1 font-bold text-brand-red mb-1">15+</div>
-                    <div className="text-white/40 uppercase tracking-[0.3em] text-caption font-bold">Engineering Excellence</div>
+          <section id="about" className="py-32 lg:py-48 w-full px-6 md:px-12 lg:px-24 bg-white">
+            <SmoothReveal direction="up" distance={40}>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+
+                {/* Left Column: Narrative & Video */}
+                <div className="lg:col-span-7 space-y-12">
+                  <div className="relative group">
+                    <div className="relative aspect-[16/9] rounded-3xl md:rounded-[2.5rem] overflow-hidden bg-gray-100 shadow-2xl shadow-black/5">
+                      <video
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105 [will-change:transform]"
+                        // onMouseEnter={(e) => e.currentTarget.playbackRate = 0.3}
+                        // onMouseLeave={(e) => e.currentTarget.playbackRate = 0.4}
+                        ref={(el) => {
+                          if (el) el.playbackRate = 0.6;
+                        }}
+                      >
+                        <source src="/about_video.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                      <div className="absolute inset-0 border border-black/5 rounded-3xl md:rounded-[2.5rem] pointer-events-none" />
+                    </div>
+                    {/* Floating Metadata Card */}
+                    <div className="absolute -bottom-6 -right-6 bg-brand-dark p-8 rounded-2xl shadow-2xl hidden md:block border border-white/5 max-w-[240px]">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse" />
+                        <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Global Operations</span>
+                      </div>
+                      <p className="text-white text-xs font-light leading-relaxed">
+                        Delivering technical assurance for mission-critical infrastructure projects across <span className="text-white font-bold">38 countries</span>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="max-w-2xl pt-8">
+                    <h3 className="text-h1 text-brand-dark font-serif leading-tight tracking-tight mb-8">
+                      Building climate <span className="italic text-brand-red">resilience</span> <br className="hidden md:block" /> into critical infrastructure.
+                    </h3>
+                    <div className="space-y-6 text-brand-dark/70 font-light leading-relaxed text-body-large">
+                      <p>
+                        FloodRix is a specialized engineering consultancy operating across three core water domains: Highway Drainage, Urban Stormwater Management, and Geohydrology.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-10">
-                  <h3 className="ml-[-4px] text-h1 text-brand-dark font-serif lowercase first-letter:uppercase leading-[1.1]">
-                    Building climate <span className="italic text-brand-red">resilience</span> <br />into critical infrastructure.
-                  </h3>
+                {/* Right Column: Key Metrics & Extended Detail */}
+                <div className="lg:col-span-5 flex flex-col justify-end pb-4">
+                  <div className="space-y-12">
+                    {/* Years Block */}
+                    <div className="border-l-2 border-brand-red pl-8 py-2">
+                      <div className="text-7xl lg:text-8xl font-serif text-brand-dark leading-none tracking-tighter mb-4">
+                        15<span className="text-brand-red">.</span>
+                      </div>
+                      <div className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 leading-relaxed max-w-[200px]">
+                        Years of Engineering Excellence & Technical Assurance
+                      </div>
+                    </div>
 
-                  <div className="space-y-6 text-gray-600 font-sans text-body-large leading-relaxed max-w-xl">
-                    <p>
-                      FloodRix is a specialized engineering consultancy operating across three core water domains: Highway Drainage, Urban Stormwater Management, and Geohydrology.
-                    </p>
-                    <p>
-                      Our multidisciplinary team of hydrologists, hydraulic engineers, and GIS specialists operates at the intersection of environmental science and civil engineering. We deliver robust, data-driven solutions designed to withstand intense regulatory scrutiny and extreme climate events.
-                    </p>
-                    <p>
-                      From initial catchment analysis to construction-ready documentation, FloodRix provides absolute technical assurance for complex infrastructure projects across 38 countries.
-                    </p>
+                    <div className="space-y-8 text-brand-dark/70 font-light leading-relaxed text-body pt-8 border-t border-gray-100">
+                      <p>
+                        Our multidisciplinary team of hydrologists, hydraulic engineers, and GIS specialists operates at the intersection of environmental science and civil engineering.
+                      </p>
+                      <p>
+                        From initial catchment analysis to construction-ready documentation, we deliver robust, data-driven solutions designed to withstand intense regulatory scrutiny and extreme climate events.
+                      </p>
+                      <div className="pt-4">
+                        <a href="#contact" className="group inline-flex items-center gap-3 text-brand-red text-xs font-bold uppercase tracking-widest">
+                          Request Capability Statement
+                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
-
                 </div>
+
               </div>
             </SmoothReveal>
           </section>
 
           <div id="expertise">
+            <SmoothReveal direction="up" distance={40}>
+              <Services />
+            </SmoothReveal>
             <SmoothReveal direction="up" distance={40}>
               <WorkStorytelling />
             </SmoothReveal>

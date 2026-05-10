@@ -9,34 +9,87 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
+const ProgressiveImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={() => setIsLoaded(true)}
+      className={`${className} transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+    />
+  );
+};
+
 const WorkStorytelling: React.FC = () => {
   const domains = [
     {
-      id: "highway",
-      title: "Transport & Highway Drainage",
-      subtitle: "Strategic Infrastructure Advisory",
+      id: "storm-drainage",
+      title: "Storm Drainage & Flood Management",
+      subtitle: "Highway & Urban Drainage Engineering",
       icon: <Waves className="w-5 h-5" />,
-      description: "We provide comprehensive hydraulic engineering for high-speed transport corridors and national infrastructure assets. Our strategies ensure effective runoff management and robust scour protection to maximize asset lifespans.",
-      metrics: ["Detailed Project Reports (DPR)", "Hydraulic Peer Reviews", "Scour Vulnerability Assessments"],
-      image: "https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=1200"
+      description:
+        "We deliver integrated stormwater and flood management solutions for highways, urban infrastructure, and industrial developments. Our expertise includes hydrologic analysis, highway drainage networks, culvert hydraulics, scour assessment, and resilient stormwater systems designed for long-term infrastructure performance.",
+      metrics: [
+        "Highway Drainage Design",
+        "Culvert & Cross-Drainage Structures",
+        "Urban Stormwater Networks",
+        "Scour & Energy Dissipation Analysis"
+      ],
+      imageLow: "/Realistic_highway_drainage_image_202605092058.jpeg",
+      imageHigh: "/make_realistic_highway_drainage_image_202605092110.jpeg"
     },
-    {
-      id: "infrastructure",
-      title: "Urban Resilience & Stormwater",
-      subtitle: "Municipal & Smart City Consultancy",
-      icon: <Activity className="w-5 h-5" />,
-      description: "We partner with municipal bodies to develop comprehensive citywide flood mitigation masterplans. Our resilient urban drainage networks are designed to protect public health while aligning with long-term sustainability mandates.",
-      metrics: ["Urban Flood Risk Analysis", "Stormwater Masterplanning", "Policy Implementation Advisory"],
-      image: "https://images.unsplash.com/photo-1519999482648-25049ddd37b1?auto=format&fit=crop&q=80&w=1200"
-    },
+
     {
       id: "groundwater",
-      title: "Geohydrology & Groundwater Management",
-      subtitle: "Subsurface Engineering Services",
+      title: "Groundwater & Hydrogeology",
+      subtitle: "Aquifer Assessment & Subsurface Modeling",
       icon: <Map className="w-5 h-5" />,
-      description: "We utilize advanced numerical groundwater modeling to solve complex geological challenges. Our consultancy mitigates subsurface water risks, ranging from deep excavation dewatering to environmental impact feasibility studies.",
-      metrics: ["Hydrogeological Surveys", "Aquifer Yield Modeling", "Environmental Impact Assessments (EIA)"],
-      image: "https://images.unsplash.com/photo-1582214400344-f1797e56b826?auto=format&fit=crop&q=80&w=1200"
+      description:
+        "Our groundwater consultancy services support sustainable water resource planning through advanced hydrogeological investigations and numerical groundwater modeling. We help clients understand aquifer behavior, groundwater availability, recharge dynamics, and subsurface water interactions for infrastructure and environmental projects.",
+      metrics: [
+        "Groundwater Modeling",
+        "Aquifer Mapping & Assessment",
+        "Hydrogeological Investigations",
+        "Recharge & Dewatering Studies"
+      ],
+      imageLow: "/Aquifer_layers_beneath_landscape…_202605092108.jpeg",
+      imageHigh: "/Cross-section_scientific_illustration_of_underground_202605092110.jpeg"
+    },
+
+    {
+      id: "irrigation",
+      title: "Irrigation Water Management",
+      subtitle: "Efficient Agricultural Water Systems",
+      icon: <Activity className="w-5 h-5" />,
+      description:
+        "We provide engineering solutions for modern irrigation infrastructure focused on water-use efficiency, reliable distribution, and sustainable agricultural development. Our services include command area planning, sprinkler irrigation systems, and hydraulic design of pressurized irrigation networks.",
+      metrics: [
+        "Command Area Development",
+        "Sprinkler System Design",
+        "Irrigation Pressure Networks",
+        "Water Distribution Optimization"
+      ],
+      imageLow: "/irrigation.jpeg",
+      imageHigh: "/Wide_cinematic_aerial_photograph_of_202605092111.jpeg"
+    },
+
+    {
+      id: "hydraulic-structures",
+      title: "Hydraulic Structures Engineering",
+      subtitle: "Water Control & Conveyance Infrastructure",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      description:
+        "We specialize in the hydraulic design of water control and conveyance structures for irrigation, drainage, river engineering, and infrastructure projects. Our solutions focus on hydraulic efficiency, structural reliability, flood resilience, and sustainable water management.",
+      metrics: [
+        "Spillways & Weirs",
+        "Canal & Cross-Drainage Structures",
+        "Check Dams & River Training Works",
+        "Energy Dissipators & Intake Structures"
+      ],
+      imageLow: "/Create_realistic_image_hydraulic…_202605092103.jpeg",
+      imageHigh: "/create_this_realistic_image_for_202605092110.jpeg"
     }
   ];
 
@@ -69,10 +122,26 @@ const WorkStorytelling: React.FC = () => {
             // Determine content orientation
             const isContentRight = idx % 2 === 0;
 
-            // Explicitly assign colors based on sector theme to match TechnicalAssurance
-            const theme = domain.id === 'highway' ? 'red' : domain.id === 'infrastructure' ? 'teal' : 'dark';
-            const accentClass = theme === 'red' ? 'bg-brand-red' : theme === 'teal' ? 'bg-brand-teal' : 'bg-brand-dark';
-            const iconBgClass = theme === 'red' ? 'bg-brand-red/5 text-brand-red' : theme === 'teal' ? 'bg-brand-teal/5 text-brand-teal' : 'bg-brand-dark/5 text-brand-dark';
+            // Mapping domain IDs to brand themes
+            const theme =
+              domain.id === 'storm-drainage' ? 'red' :
+                domain.id === 'groundwater' ? 'blue' :
+                  domain.id === 'irrigation' ? 'teal' : 'dark';
+
+            const accentClass =
+              theme === 'red' ? 'bg-brand-red' :
+                theme === 'blue' ? 'bg-brand-blue' :
+                  theme === 'teal' ? 'bg-brand-teal' : 'bg-brand-dark';
+
+            const textClass =
+              theme === 'red' ? 'text-brand-red' :
+                theme === 'blue' ? 'text-brand-blue' :
+                  theme === 'teal' ? 'text-brand-teal' : 'text-brand-dark';
+
+            const iconBgClass =
+              theme === 'red' ? 'bg-brand-red/5 text-brand-red' :
+                theme === 'blue' ? 'bg-brand-blue/5 text-brand-blue' :
+                  theme === 'teal' ? 'bg-brand-teal/5 text-brand-teal' : 'bg-brand-dark/5 text-brand-dark';
 
             return (
               <motion.div
@@ -86,15 +155,24 @@ const WorkStorytelling: React.FC = () => {
 
                 {/* Image Section */}
                 <div className={`w-full lg:col-span-7 relative group ${isContentRight ? 'lg:order-1' : 'lg:order-2'}`}>
-                  <div className="relative aspect-[4/3] rounded-3xl md:rounded-[2.5rem] overflow-hidden bg-gray-100">
+                  <div className="relative aspect-[4/3] rounded-3xl md:rounded-[2.5rem] overflow-hidden bg-gray-100 shadow-2xl shadow-black/5">
+                    {/* Low Quality Placeholder (Blurry) */}
                     <img
-                      src={domain.image}
+                      src={domain.imageLow}
                       alt={domain.title}
-                      className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
+                      className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60"
                     />
-                    <div className="absolute inset-0 border border-black/5 rounded-3xl md:rounded-[2.5rem] z-10 pointer-events-none" />
+
+                    {/* High Quality Image with Progressive Fade-in */}
+                    <ProgressiveImage
+                      src={domain.imageHigh}
+                      alt={domain.title}
+                      className="relative z-10 w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 border border-black/5 rounded-3xl md:rounded-[2.5rem] z-20 pointer-events-none" />
                   </div>
                 </div>
+
 
                 {/* Consultancy Content */}
                 <div className={`w-full lg:col-span-5 ${isContentRight ? 'lg:order-2' : 'lg:order-1'}`}>
@@ -114,7 +192,7 @@ const WorkStorytelling: React.FC = () => {
                   <div className="mb-6 flex items-center gap-3">
                     {/* Dynamic Accent Dot for Subtitle */}
                     <div className={`w-1.5 h-1.5 rounded-full ${accentClass}`} />
-                    <span className={`text-xs font-bold uppercase tracking-widest ${theme === 'red' ? 'text-brand-red' : theme === 'teal' ? 'text-brand-teal' : 'text-brand-dark'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-widest ${textClass}`}>
                       {domain.subtitle}
                     </span>
                   </div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Droplets, ChevronDown, Droplet, Waves, Map, UserCircle, Calculator, ArrowRight } from 'lucide-react';
+import { Menu, X, Droplets, ChevronDown, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -91,7 +91,7 @@ const Header: React.FC = () => {
   }
 
   const navLinks: NavLink[] = [
-    { name: 'Services', href: '/#services' },
+    { name: 'Services', href: '/capabilities' },
     { name: 'Projects', href: '/works' },
     { name: 'Leadership', href: '/team' },
     { name: 'Digital Tools', href: '/calculator' },
@@ -103,7 +103,8 @@ const Header: React.FC = () => {
 
   // Reset states on route change
   useEffect(() => {
-    setIsDarkSection(false);
+    const isDarkInitial = pathname === '/capabilities' || pathname === '/team' || pathname === '/works';
+    setIsDarkSection(isDarkInitial);
     setIsInFooter(false);
     setIsAtBottom(false);
     setIsScrolled(window.scrollY > 20);
@@ -138,7 +139,7 @@ const Header: React.FC = () => {
                 {link.href.startsWith('/#') ? (
                   <a
                     href={link.href}
-                    className={`flex items-center gap-2.5 text-nav hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
+                    className={`flex items-center gap-2.5 text-nav font-medium hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
                       }`}
                   >
                     {link.name}
@@ -147,7 +148,7 @@ const Header: React.FC = () => {
                 ) : (
                   <Link
                     href={link.href}
-                    className={`flex items-center gap-2.5 text-nav capitalize hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
+                    className={`flex items-center gap-2.5 text-nav font-medium capitalize hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
                       }`}
                   >
                     {link.name}

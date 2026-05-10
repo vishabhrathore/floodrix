@@ -9,85 +9,13 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 import { PROJECTS } from '../constants';
-import {} from 'next/navigation'
 import Link from 'next/link';
+import WorksHero from '../components/WorksHero';
 
 const OurWorks: React.FC = () => {
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(".hero-bg-text", 
-        { y: 100, opacity: 0 },
-        { y: 0, opacity: 0.03, duration: 2, ease: "power4.out" }
-      );
-      
-      gsap.to(".hero-bg-text", {
-        y: -100,
-        scrollTrigger: {
-          trigger: ".hero-section",
-          start: "top top",
-          end: "bottom top",
-          scrub: true
-        }
-      });
-    });
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#fcfcfc] pb-32">
-      {/* Editorial Hero */}
-      <section className="hero-section relative min-h-[90vh] bg-brand-dark flex flex-col justify-end px-6 md:px-20 lg:px-32 pb-24 overflow-hidden pt-32">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
-          <span className="hero-bg-text text-[60vh] font-serif font-bold text-white tracking-tighter leading-none opacity-0 block transform-gpu uppercase whitespace-nowrap">
-            IMPACT
-          </span>
-        </div>
-        
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-end w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-8 h-[1px] bg-brand-red" />
-              <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-brand-red uppercase">Global Portfolio</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white tracking-tight leading-[1.1] mb-8">
-              Impact at <br/><span className="italic text-white/40">Planetary scale.</span>
-            </h1>
-          </motion.div>
-          
-          <div className="space-y-12">
-            <p className="text-lg text-white/40 leading-relaxed max-w-md">
-              From precision basin modeling in South Asia to coastal resilience systems in the Americas, Floodrix engineering defines the frontier of water management.
-            </p>
-            
-            <div className="grid grid-cols-3 border border-white/10 rounded-2xl overflow-hidden">
-              <div className="p-6 border-r border-white/10">
-                <div className="text-3xl font-serif text-white mb-1">450+</div>
-                <div className="text-[9px] font-mono text-white/20 uppercase tracking-widest">Completed</div>
-              </div>
-              <div className="p-6 border-r border-white/10">
-                <div className="text-3xl font-serif text-white mb-1">32</div>
-                <div className="text-[9px] font-mono text-white/20 uppercase tracking-widest">Countries</div>
-              </div>
-              <div className="p-6">
-                <div className="text-3xl font-serif text-white mb-1">100%</div>
-                <div className="text-[9px] font-mono text-white/20 uppercase tracking-widest">Reliability</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll Cue */}
-        <div className="absolute bottom-12 right-6 md:right-32 flex items-center gap-4 group cursor-default text-white/20">
-          <div className="relative w-12 h-[1px] bg-white/10 overflow-hidden">
-            <div className="absolute inset-0 bg-white/40 -translate-x-full animate-[shimmer_2s_infinite]" />
-          </div>
-          <span className="text-[9px] font-mono font-bold tracking-[0.3em] uppercase">Scroll to explore</span>
-        </div>
-      </section>
+    <div className="min-h-screen bg-[#fcfcfc] pb-32 selection:bg-brand-red selection:text-white">
+      <WorksHero />
 
 
       {/* Portfolio Grid */}

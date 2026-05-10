@@ -56,3 +56,28 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export interface DomainSection {
+  id: string;
+  tag: string;
+  title: string;
+  titleEmphasis: string;
+  intro: string;
+  problem: {
+    title: string;
+    vulnerabilityHeading: string;
+    description: string;
+    points: string[];
+    image: string;
+    tags: string[];
+  };
+  solution: {
+    title: string;
+    description: string;
+    services: { title: string; desc: string }[];
+    image: string;
+    outcomeLabel: string;
+    outcomeValue: string;
+    outcomeDesc: string;
+  };
+}

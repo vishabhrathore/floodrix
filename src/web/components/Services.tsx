@@ -2,63 +2,64 @@
 
 
 import React from 'react';
-import {} from 'next/navigation'
+import { } from 'next/navigation'
 import Link from 'next/link';
 import { SERVICES } from '../constants';
 import { ServiceCardProps } from '../types';
+import { ArrowRight } from 'lucide-react';
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, category }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, category }) => {
   return (
-    <Link href="/capabilities" className="flex-shrink-0 w-[300px] md:w-[350px] snap-center group relative bg-white p-8 md:p-10 rounded-3xl border border-gray-100 shadow-sm hover:shadow-2xl hover:border-brand-red/30 transition-all duration-500 overflow-hidden h-full flex flex-col cursor-pointer">
-      <div className="absolute -top-6 -right-6 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
-        <span className="text-brand-red font-black text-8xl transform rotate-12 block uppercase tracking-tighter">{category}</span>
+    <div className="group py-12 border-t border-gray-100 hover:bg-gray-50/50 transition-all duration-500 px-6 -mx-6">
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-4 mb-8">
+          <span className="text-[10px] font-mono font-bold text-brand-red tracking-widest uppercase">{category}</span>
+          <div className="h-px flex-1 bg-gray-100" />
+        </div>
+
+        <h4 className="text-2xl font-serif text-brand-dark mb-6 group-hover:text-brand-red transition-colors">
+          {title}
+        </h4>
+
+        <p className="text-gray-500 leading-relaxed font-light text-base mb-10 flex-1">
+          {description}
+        </p>
+
+        <Link href="/capabilities" className="inline-flex items-center text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] group-hover:text-brand-red transition-colors">
+          View Domain Strategy <ArrowRight className="ml-3 w-3 h-3 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
-      
-      <div className="bg-brand-red/5 text-brand-red w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-brand-red group-hover:text-white transition-all duration-300 shadow-inner">
-        {icon}
-      </div>
-      
-      <h4 className="text-2xl font-medium text-brand-dark mb-4 group-hover:text-brand-red transition-colors font-serif">
-        {title}
-      </h4>
-      <p className="text-gray-500 leading-relaxed font-light text-base flex-1">
-        {description}
-      </p>
-      
-      <div className="mt-10 flex items-center text-brand-teal font-bold text-[11px] opacity-0 group-hover:opacity-100 transition-all duration-300 tracking-widest uppercase">
-        Explore Capabilities <span className="ml-3 group-hover:ml-5 transition-all">→</span>
-      </div>
-    </Link>
+    </div>
   );
 };
 
 const Services: React.FC = () => {
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
   return (
-    <section id="services" className="py-32 bg-white relative overflow-hidden">
+    <section id="services" className="py-32 lg:py-48 bg-white relative">
       <div className="w-full px-6 md:px-20 lg:px-32">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
-          <div className="w-full">
-            <h2 className="text-gray-400 text-label-caps tracking-[0.2em] text-[10px] mb-4">CORE EXPERTISE</h2>
-            <h3 className="text-section-title text-brand-dark">
-              Specialized engineering in <span className="italic text-brand-red">water resources.</span>
-            </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24 mb-24 items-end">
+          <div className="lg:col-span-7">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-8 h-px bg-brand-red" />
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">Technical Specialization</span>
+            </div>
+            <h2 className="text-h1 font-serif text-brand-dark leading-tight tracking-tight">
+              Engineering <span className="italic text-brand-red">Verticals</span> & <br />Expert Domain Services.
+            </h2>
+          </div>
+          <div className="lg:col-span-5">
+            <p className="text-gray-500 text-lg font-light leading-relaxed mb-4">
+              We provide end-to-end technical consultancy across the water lifecycle, from initial catchment modeling to construction-ready documentation.
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-0">
           {SERVICES.map((service, idx) => (
             <ServiceCard key={idx} {...service} />
           ))}
         </div>
       </div>
-      
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </section>
   );
 };

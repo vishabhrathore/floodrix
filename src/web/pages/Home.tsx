@@ -103,7 +103,7 @@ const Home: React.FC = () => {
                           if (el) el.playbackRate = 0.6;
                         }}
                       >
-                        <source src="/about_video.mp4" type="video/mp4" />
+                        <source src="https://res.cloudinary.com/dpdkzg4ld/video/upload/v1778512343/floodrix/about_video.mp4" type="video/mp4" />
                         Your browser does not support the video tag.
                       </video>
                       <div className="absolute inset-0 border border-black/5 rounded-3xl md:rounded-[2.5rem] pointer-events-none" />
@@ -167,9 +167,9 @@ const Home: React.FC = () => {
           </section>
 
           <div id="expertise">
-            <SmoothReveal direction="up" distance={40}>
+            {/* <SmoothReveal direction="up" distance={40}>
               <Services />
-            </SmoothReveal>
+            </SmoothReveal> */}
             <SmoothReveal direction="up" distance={40}>
               <WorkStorytelling />
             </SmoothReveal>

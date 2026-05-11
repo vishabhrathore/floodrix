@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import Papa from 'papaparse';
 import {
   Droplets,
   Anchor,
@@ -559,64 +558,64 @@ const EngineeringPlatform: React.FC = () => {
           </div>
         </SmoothReveal>
 
-      {/* Main Execution Area */}
-      <div className="relative z-10 px-6 md:px-20 lg:px-32 -mt-12">
-        {/* Breadcrumbs for internal navigation */}
-        <div className="flex items-center gap-3 mb-16 text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400 bg-white border border-gray-100 px-8 py-5 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.08)] w-fit ring-1 ring-black/[0.02]">
-          <button onClick={() => { setPath([]); setResult(null); setMode('manual'); }} className="hover:text-brand-red transition-all flex items-center gap-2">
-            <LayoutDashboard className="w-3 h-3" />
-            Home
-          </button>
-          <ChevronRight className="w-3 h-3 text-gray-200" />
-          <span className={path.length === 0 && mode === 'manual' ? 'text-brand-dark' : ''}>{TREE[currentModule].label}</span>
-          {path.map((p, i) => (
-            <React.Fragment key={p}>
-              <ChevronRight className="w-3 h-3 text-gray-200" />
-              <button
-                onClick={() => handleGoBack(i + 1)}
-                className={`transition-all ${i === path.length - 1 ? 'text-brand-dark font-black' : 'text-gray-400 hover:text-brand-red'}`}
-              >
-                {p}
-              </button>
-            </React.Fragment>
-          ))}
-          {mode === 'batch' && (
-            <>
-              <ChevronRight className="w-3 h-3 text-gray-200" />
-              <span className="text-brand-dark font-black">Batch Grid</span>
-            </>
-          )}
-        </div>
+        {/* Main Execution Area */}
+        <div className="relative z-10 px-6 md:px-20 lg:px-32 -mt-12">
+          {/* Breadcrumbs for internal navigation */}
+          <div className="flex items-center gap-3 mb-16 text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400 bg-white border border-gray-100 px-8 py-5 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.08)] w-fit ring-1 ring-black/[0.02]">
+            <button onClick={() => { setPath([]); setResult(null); setMode('manual'); }} className="hover:text-brand-red transition-all flex items-center gap-2">
+              <LayoutDashboard className="w-3 h-3" />
+              Home
+            </button>
+            <ChevronRight className="w-3 h-3 text-gray-200" />
+            <span className={path.length === 0 && mode === 'manual' ? 'text-brand-dark' : ''}>{TREE[currentModule].label}</span>
+            {path.map((p, i) => (
+              <React.Fragment key={p}>
+                <ChevronRight className="w-3 h-3 text-gray-200" />
+                <button
+                  onClick={() => handleGoBack(i + 1)}
+                  className={`transition-all ${i === path.length - 1 ? 'text-brand-dark font-black' : 'text-gray-400 hover:text-brand-red'}`}
+                >
+                  {p}
+                </button>
+              </React.Fragment>
+            ))}
+            {mode === 'batch' && (
+              <>
+                <ChevronRight className="w-3 h-3 text-gray-200" />
+                <span className="text-brand-dark font-black">Batch Grid</span>
+              </>
+            )}
+          </div>
 
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-          {mode === 'batch' ? (
-            <BatchView
-              node={node}
-              handleFile={handleBatchFile}
-              processBatch={processBatch}
-              batchFile={batchFile}
-              batchProcessedData={batchProcessedData}
-            />
-          ) : (
-            <>
-              {node?.leaf ? (
-                <CalculatorView
-                  node={node}
-                  inputs={inputs}
-                  setInputs={setInputs}
-                  calculate={calculate}
-                  result={result}
-                  resultRef={resultRef}
-                />
-              ) : (
-                <ChoiceGrid node={node || TREE[currentModule]} onSelect={handleSelectChild} />
-              )}
-            </>
-          )}
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+            {mode === 'batch' ? (
+              <BatchView
+                node={node}
+                handleFile={handleBatchFile}
+                processBatch={processBatch}
+                batchFile={batchFile}
+                batchProcessedData={batchProcessedData}
+              />
+            ) : (
+              <>
+                {node?.leaf ? (
+                  <CalculatorView
+                    node={node}
+                    inputs={inputs}
+                    setInputs={setInputs}
+                    calculate={calculate}
+                    result={result}
+                    resultRef={resultRef}
+                  />
+                ) : (
+                  <ChoiceGrid node={node || TREE[currentModule]} onSelect={handleSelectChild} />
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
   );
 };
 
@@ -649,8 +648,8 @@ const ChoiceGrid = ({ node, onSelect }: { node: TreeNode, onSelect: (id: string)
               disabled={isStub}
               onClick={() => onSelect(id)}
               className={`bg-white group text-left p-12 rounded-[3.5rem] border transition-all duration-700 relative overflow-hidden flex flex-col justify-between min-h-[440px] ${isStub
-                  ? 'opacity-40 cursor-not-allowed grayscale border-gray-100'
-                  : 'border-brand-dark/5 hover:border-brand-red/20 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.03)] hover:shadow-[0_50px_120px_-20px_rgba(251,54,64,0.12)] hover:-translate-y-4'
+                ? 'opacity-40 cursor-not-allowed grayscale border-gray-100'
+                : 'border-brand-dark/5 hover:border-brand-red/20 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.03)] hover:shadow-[0_50px_120px_-20px_rgba(251,54,64,0.12)] hover:-translate-y-4'
                 }`}
             >
               <div className="absolute top-0 right-0 p-12 text-8xl text-brand-dark/[0.02] group-hover:text-brand-red/[0.05] transition-all duration-700 font-serif font-black italic">
@@ -1010,8 +1009,8 @@ const CalculatorView = ({ node, inputs, setInputs, calculate, result, resultRef 
                         <div
                           key={ridx}
                           className={`p-8 rounded-3xl border-2 transition-all duration-500 relative overflow-hidden ${ridx === fDef.lookup!.fn(inputs)
-                              ? 'border-brand-red bg-brand-red/[0.03] shadow-xl translate-y-[-4px]'
-                              : 'border-gray-50 bg-gray-50/10 grayscale opacity-40'
+                            ? 'border-brand-red bg-brand-red/[0.03] shadow-xl translate-y-[-4px]'
+                            : 'border-gray-50 bg-gray-50/10 grayscale opacity-40'
                             }`}
                         >
                           {ridx === fDef.lookup!.fn(inputs) && (

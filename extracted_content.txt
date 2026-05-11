@@ -1,0 +1,872 @@
+Comprehensive Analysis of Hydrological
+Risk, Infrastructure Resilience, and
+Water Resource Management in India
+Introduction: The Intersection of Hydrological
+Extremes and Infrastructure Liability
+The vulnerability of modern infrastructure is most acutely exposed at the intersection of water
+and earth. Across the Indian subcontinent, cyclical monsoon patterns and rapidly evolving
+climate dynamics are systematically dismantling engineering paradigms that have governed
+infrastructure design for decades. Traditional assumptions regarding rainfall intensity, aquifer
+recharge, irrigation efficiency, and flood magnitudes are proving catastrophically inadequate.
+What was once considered a 50-year design storm now manifests with alarming regularity,
+overwhelming infrastructure sized to obsolete hydrological constants. The consequences are
+not merely academic; they translate into catastrophic pavement collapses, severe groundwater
+depletion, massive agricultural water losses, and the devastating failure of hydraulic structures.
+This comprehensive research report systematically investigates four critical domains of water
+and infrastructure engineering: Storm Drainage and Flood Management, Groundwater and
+Hydrogeology, Irrigation Water Management, and Hydraulic Structures Engineering. By
+synthesizing forensic engineering audits, national groundwater assessments, hydrological
+modeling data, and historical case studies, this analysis moves beyond surface-level symptoms
+to diagnose the underlying mechanisms of infrastructure failure. The objective is to elucidate
+how second and third-order systemic vulnerabilities—such as the cyclical hydraulic stress in
+pavements, the geotechnical consequences of urban dewatering, the ecological paradox of
+unlined canal seepage, and the inadequacy of deterministic spillway capacities—generate
+profound financial and structural liabilities.
+Ultimately, the paradigm of water infrastructure must shift from reactive mitigation to predictive,
+analytically validated resilience. Systems must be engineered not for the climate that existed
+when foundational codes were written, but for the non-stationary hydrological reality of the
+present and future.
+
+Domain 01 of 04: Storm Drainage & Flood
+Management
+Every monsoon season exposes an uncompromising truth: the vast majority of Indian highway
+networks and urban drainage systems were not designed to accommodate the rainfall
+intensities they are now receiving. What was once categorized as a 50-year storm event now
+arrives every few years, and the infrastructure sized according to these outdated assumptions
+
+fails visibly and expensively. Drainage engineering is routinely postponed during project
+execution until it becomes the most expensive line item on the project in the form of post-failure
+rehabilitation. When drainage fails, the pavement above it is already structurally compromised;
+the visible surface damage simply has not yet manifested.
+
+The Illusion of Pavement Failure: A Consequence of Subsurface
+Saturation
+A pervasive misconception within highway engineering and infrastructure maintenance is that
+premature pavement deterioration is primarily a materials or load-bearing failure. In reality,
+forensic audits conducted by the Ministry of Road Transport & Highways (MoRTH) and the
+Central Road Research Institute (CRRI) consistently identify inadequate drainage as the
+primary root cause of premature pavement failure on national highway and expressway
+corridors.1 The deterioration of highway pavement accelerates sharply the moment surface
+water infiltrates and reaches the sub-base layers.
+The mechanics of this failure are strictly hydrological and geotechnical. At the initial stage of
+water infiltration, the increase in soil moisture content elevates the degree of saturation within
+the subgrade.4 This moisture influx significantly reduces the soil's stiffness and shear strength.
+Research indicates that the reduction in matric suction due to moisture increase reduces the
+effective stress within the soil skeleton, promoting a rapid volume reduction and structural
+compression.4 The Central Road Research Institute and allied studies confirm that once surface
+water infiltrates the sub-base, subgrade shear strength can plummet exponentially; as moisture
+content approaches absolute saturation, no amount of surface repair can prevent structural
+collapse from below.4 A detailed investigation into subgrade moisture revealed that without
+adequate soaking mitigation, each 1% increase in moisture content caused a strength change
+rate approximately one to seven times higher than the rate observed after prolonged soaking,
+indicating that rapid infiltration is immediately destructive.4
+This chemical and physical degradation is vastly compounded by dynamic traffic loads.
+Historically, practitioners have viewed the separation of asphalt binder from aggregate—termed
+"stripping"—as a physio-chemical incompatibility.7 However, extensive case studies indicate that
+under saturated conditions, all asphalt mixes are susceptible to mechanical failure.7 As heavily
+loaded vehicles traverse saturated pavements, cyclical hydraulic stress physically scours the
+asphalt binder from the aggregate.7 A typical dense-graded Hot Mix Asphalt (HMA) wearing
+course may possess up to 8% air voids upon construction, but traffic loading rapidly reduces this
+to 4-5%, sealing the surface.7 When subsurface drainage is inadequate, moisture vapor from
+the subgrade is trapped beneath this sealed wearing course.7 Once this moisture condenses,
+rutting begins in heavily loaded lanes, channeling even more surface water into the failure
+zones and deepening the collapse exactly as CRRI audits document in premature National
+Highway failures.1
+
+Climate Change and the Obsolescence of
+
+Intensity-Duration-Frequency (IDF) Curves
+The fundamental inputs for highway drainage design—Intensity-Duration-Frequency (IDF)
+curves—are increasingly disconnected from the reality of modern weather systems. Culverts
+sized on outdated IDF data consistently fail during peak monsoon discharge, washing out road
+embankments and triggering network closures that cost multiples of what proper hydraulic
+design would have originally required.8
+The scientific community recognizes the non-stationarity of extreme rainfall, a phenomenon
+deeply intertwined with anthropogenic climate change. The theoretical baseline for this
+intensification is the Clausius-Clapeyron (CC) relationship, which postulates a 7% increase in
+atmospheric precipitation capacity per 1 °C increase in global temperature.10 However, recent
+studies utilizing bootstrap methods to calculate extreme precipitation changes have revealed
+significant regional deviations. While inland temperate zones often adhere to the 7% CC
+relationship, tropical and sub-tropical environments often exhibit sub-CC relationships,
+indicating that generalized global scaling factors are insufficient for regional infrastructure
+design.10 Conversely, advanced analyses utilizing an ensemble of General Circulation Models
+(GCMs) across varying Representative Concentration Pathways (RCP) scenarios demonstrate
+a uniform increase in sub-daily precipitation intensities (15, 30, 45, 60, 120, and 180 minutes)
+across all return periods as climate scenarios intensify.8
+Consequently, the reliance on static historical data constitutes a profound engineering liability.
+Drainage must be sized for the storms that will actually occur, not the ones that historically
+characterized the region.
+
+Regulatory Frameworks and Advanced Hydraulic Modeling Solutions
+To combat the systemic failure of drainage infrastructure, the Indian Roads Congress (IRC)
+formalized rigorous guidelines through IRC:SP:42-2014 ("Guidelines on Road Drainage"). This
+standard emphasizes that pavement structures must be protected from any water ingress to
+maintain functional efficiency, dictating the necessity of both surface and subsurface water
+management.11 Surface drainage requires adequate camber, longitudinal gradients, and the
+integration of kerb and gutter systems in urban settings to rapidly channel runoff.11 Subsurface
+drainage, arguably more critical, mandates the use of geo-filter fabrics and geotextiles to act as
+separation layers, preventing the choking of aggregate drains and aiding in the uniform
+distribution of structural loads to the subgrade.15
+However, geometric design compliance is insufficient without rigorous analytical validation from
+first principles. Modern stormwater master planning requires the integration of site-specific
+hydrological analysis with 1D and 2D hydraulic modeling. Tools such as the US EPA Storm
+Water Management Model (SWMM) and the Hydrologic Engineering Center's River Analysis
+System (HEC-RAS) have become indispensable for urban townships, industrial parks, SEZ
+developments, and bridge crossings. SWMM is optimized for urban sewer network hydrology
+and evaluating Low Impact Development (LID) or Sustainable Urban Drainage Systems (SuDS),
+while HEC-RAS excels at modeling river dynamics, water surface profiles, and channel
+
+sediment transport.17
+The necessity of integrating these tools is perfectly illustrated by a recent hydrological
+assessment of Hyderabad, an urban center plagued by recurring floods. A SWMM-based model
+simulating a 48-hour storm event (from October 3–4, 2015) revealed that the existing urban
+drainage infrastructure is critically insufficient, failing to convey runoff from a design storm with a
+mere 2-year return period.19 The rapid urbanization of Hyderabad has vastly increased
+impervious surfaces while decreasing natural infiltration, overwhelming drains originally sized for
+historical rainfall intensities of 12–20 mm/hr.19
+Critical Node
+
+Modeled Flood Depth
+(meters)
+
+System Status
+
+Node-1
+
+2.23
+
+Overflowing
+
+Node-2
+
+3.09
+
+Overflowing
+
+Node-3
+
+2.99
+
+Overflowing
+
+Node-4
+
+3.31
+
+Overflowing
+
+Node-11
+
+3.81
+
+Overflowing
+
+Node-13
+
+5.70
+
+Maximum Capacity Reached
+
+Outfall
+
+5.70
+
+Maximum Capacity Reached
+
+Data Source: SWMM-based dynamic runoff response study for Hyderabad Stormwater Zone.19
+During peak flooding, critical nodes such as Node-13 and the main outfall reached their
+maximum depth capacity of 5.70 meters, forcing excess water to spill over and collect in
+
+low-lying intersections.19 The integration of SWMM hydrology with HEC-RAS flood inundation
+mapping provides planners with the empirical data required to size attenuation ponds, design
+pumping sumps, and redesign drainage capacities to manage larger volumes of surface water.19
+Furthermore, culvert and cross-drainage hydraulics must incorporate box, pipe, and arch culvert
+sizing using HY-8 and HEC-RAS, alongside scour depth estimation per IRC:89, ensuring riprap
+and gabion protection design at all outfalls to dissipate high-velocity energy. Every system must
+be analytically validated against CWC and BIS codes before drawings are issued for
+construction, yielding a 100% regulatory approval record.
+
+Domain 02 of 04: Groundwater & Hydrogeology
+India functions as the world's largest consumer of groundwater, yet its resource management
+strategies remain profoundly inefficient. A generation ago, borewells were routinely 100 feet
+deep; today, they frequently exceed 800 feet and still fail to yield sustainable supply. The core
+vulnerability is that India's aquifers are being spent drastically faster than monsoons can
+replenish them, and the vast majority of developmental projects never measure or account for
+the deficit they create. For developers, industrialists, and urban planners, the question is no
+longer whether groundwater risk exists, but whether that risk has been accurately quantified.
+
+The Silent Crisis of Aquifer Depletion and Over-Exploitation
+Groundwater deficits accumulate in silence. Unlike surface reservoir depletion, aquifer overdraft
+remains largely invisible until it manifests in catastrophic systemic failures: failed public supply
+borewells, land subsidence, and the mobilization of deep-earth contaminants.
+The latest National Compilation on Dynamic Ground Water Resources of India, published by the
+Central Ground Water Board (CGWB) in 2024, provides a stark quantification of this silent crisis.
+The total annual groundwater recharge in the country was assessed at 446.90 Billion Cubic
+Meters (BCM), yielding an extractable resource of 406.19 BCM after allocating for natural
+discharge.22 With a total annual groundwater extraction volume of 245.64 BCM across all
+sectors, the national average stage of groundwater extraction stands at 60.47%.22
+While the macro-level national extraction average suggests a semi-stable equilibrium, granular
+block-level data paints a dire picture of severe regional overdraft. Out of 6,746 assessment units
+(Blocks, Mandals, and Talukas) evaluated nationwide, 751 units—representing 11.13% of the
+country—are categorized as strictly 'Over-exploited', meaning annual extraction vastly exceeds
+total annual recharge.22
+Groundwater
+Categorization (2024
+Assessment)
+
+Number of Assessment
+Units
+
+Percentage of Total Units
+
+Safe (< 60% utilization)
+
+4,951
+
+73.4%
+
+Semi-critical (60-90%
+utilization)
+
+711
+
+10.5%
+
+Critical (91-100% utilization)
+
+206
+
+3.05%
+
+Over-exploited (> 100%
+utilization)
+
+751
+
+11.13%
+
+Saline (Brackish/Saline
+Phreatic Aquifers)
+
+127
+
+1.8%
+
+Data Source: CGWB National Compilation on Dynamic Ground Water Resources of India,
+2024.24
+Although the percentage of over-exploited blocks has declined from 17.24% in 2017 to 11.13%
+in 2024—largely attributed to an 11.36 BCM increase in artificial recharge from tanks, ponds,
+and WCS (Water Conservation Structures)—the absolute volume of depletion in critical
+agricultural and urban zones like Punjab and Haryana remains utterly unsustainable.24 In deeply
+affected north-western districts, water tables are projected to drop below 300 meters by 2039 if
+current extraction vectors hold. Rapid urbanization in cities like Delhi and Mumbai has
+converted vast tracts of natural recharge zones into impermeable concrete, disrupting the
+monsoon recharge mechanisms that historically replenished aquifer storage.
+This depletion is irrefutably corroborated by macro-level satellite gravimetry. NASA's Gravity
+Recovery and Climate Experiment (GRACE) satellite data highlights that the Gangetic Basin, a
+vital resource for one of the world's most densely populated agricultural sectors, exhibits some
+of the highest aquifer depletion rates recorded globally, characterized by marked seasonal
+fluctuations.26 Research utilizing downscaled GRACE data confirms that anthropogenic
+impacts—specifically intensive agricultural extraction and canal network disruptions—dominate
+groundwater storage decline, vastly outweighing natural climatic variability.28 Extensive irrigation
+practices increase atmospheric humidity via evapotranspiration, paradoxically altering local
+precipitation conditions while simultaneously draining the subterranean reserves that sustain
+
+them.26
+
+Construction Dewatering: Geotechnical Risks and Legal Liabilities
+Beyond broad agricultural extraction, localized deep urban excavation presents acute
+hydrogeological risks. Construction dewatering—the continuous pumping required to
+temporarily lower the groundwater table to facilitate dry excavation for deep foundations, mine
+pits, basements, and tunnel drives—is frequently executed without rigorous hydrogeological site
+assessment. The localized, rapid extraction of groundwater inherently removes hydrostatic
+pressure from the surrounding geological matrix. This reduction in pore water pressure triggers
+a corresponding increase in effective stress within the soil skeleton, which initiates consolidation
+and subsequent differential settlement of adjacent structures.30
+When dewatering is improperly modeled, the liability footprint extends far beyond the
+construction site boundaries. The construction of underground mass transit corridors provides
+prime examples of this severe risk. During the execution of the Mumbai Metro Line 3,
+geotechnical engineers recognized that extensive dewatering to excavate underground stations
+in dry conditions would induce elastic shortening and massive consolidation of soil layers,
+severely threatening the structural stability of historically significant heritage buildings in South
+Mumbai.33 To mitigate this catastrophic risk, the project utilized closed-mode Earth Pressure
+Balancing (EPB) Tunnel Boring Machines (TBMs) and implemented pre-excavation ground
+treatment (pre-grouting) to minimize water ingress, thereby strictly controlling groundwater
+drawdown outside the station boxes.33 The vulnerability of such subterranean infrastructure was
+further underscored when an unauthorized private borewell drilling operation pierced and
+flooded the Metro Line 3 tunnel near CSMT, highlighting the chaotic, unmapped nature of urban
+groundwater exploitation.35
+Similarly, the Delhi Metro Phase IV expansion (Aerocity to Tuglakabad corridor) required
+exhaustive Archaeological Impact Assessment Studies to model the interference of bored
+tunnels and cut-and-cover stations with groundwater flow, ensuring that five ancient monuments
+around the Mehrauli Badarpur Road were not compromised by dewatering-induced ground
+settlement.36 EIA studies for the Najafgarh-Dhansa Bus Stand corridor similarly mandated strict
+environmental conservation measures, capping water requirements and mandating CGWA
+approvals for any tube well construction.37
+The failure to predict and mitigate these hydrogeological interferences routinely results in severe
+legal and financial consequences. Industrial and mining contamination plumes can migrate
+through permeable geology for years before surfacing at public supply borewells; at that point,
+the remediation liability and regulatory consequence are both severe and expensive to dispute.
+In India, construction contracts are generally governed by standard forms influenced by FIDIC,
+the Institution of Civil Engineers (ICE), or the Indian Institute of Architects (IIA).38 The allocation
+of risk regarding geotechnical uncertainties often leads to complex litigation.38 When dewatering
+damages adjacent private property, owners routinely pursue construction claims against project
+developers, lead civil engineers, and geotechnical consultants.32 Indian courts recognize claims
+
+for building settlement caused by construction activities; for instance, in CS No. 383/14
+(Complete Dewatering Systems Pvt. Ltd. Vs. Integral Construction Co. India), courts actively
+adjudicate damages and interest based on contractual breaches related to dewatering
+operations.40 While exclusion or limitation of liability clauses are valid under Indian law, courts
+retain discretion to award reasonable compensation in cases of liquidated damages.41
+To neutralize this liability, aquifer behavior must be characterized with analytical precision, not
+approximated with assumptions. Best practices demand the integration of field hydrogeological
+investigation—including borehole siting, lithological logging, and aquifer testing interpreted using
+Theis, Cooper-Jacob, and Neuman methods—with numerical groundwater modeling. Utilizing
+software such as MODFLOW and FEFLOW to simulate steady-state and transient flow allows
+engineers to accurately predict dewatering drawdown, assess aquifer recovery, and map
+DRASTIC vulnerability indexing for EIA chapters and CGWB licensing applications, ensuring
+that regulatory submissions are approved on first review.
+
+Domain 03 of 04: Irrigation Water Management
+India possesses the largest irrigated agricultural footprint globally, yet it operates with staggering
+systemic inefficiency. In an era defined by depleting aquifers, erratic monsoon patterns, and
+escalating energy costs for pumping, the profound loss of agricultural water is both a food
+security threat and a massive financial deficit. The fundamental failure lies not in a lack of
+resources, but in flawed conveyance engineering. Nearly half of every liter diverted for irrigation
+in India is lost before it ever reaches the field; the farmer at the tail end of the canal is not a
+victim of drought, but a victim of engineering that was never executed properly.
+
+The Conveyance Efficiency Paradox: Quantifying Massive Seepage
+Losses
+Data compiled by the Food and Agriculture Organization (FAO) Aquastat system reveals a grim
+reality regarding Indian agriculture: approximately 45% of the water diverted from headworks for
+agricultural purposes is lost in transit within conveyance systems before it ever reaches the crop
+root zone.42 Consequently, macro-irrigation schemes must be constructed at roughly double the
+capacity that a precisely engineered system would require to deliver the identical agricultural
+output.46
+A definitive hydrospatial modeling case study of the Nira Left Bank Canal (NLBC) in the Pune
+district of Maharashtra perfectly quantifies this debilitating loss. The NLBC is an unlined earthen
+canal infrastructure dating back over a century, suffering from significant operational
+degradation, extensive vegetation, and sediment deposition. Utilizing a hydraulic model built on
+a spatial platform and verified with rigorous flow-monitoring events across a 30-kilometer study
+area, engineers demonstrated an average water conveyance loss of 39.96%.44
+
+Month
+
+Conveyance Loss (%) in NLBC
+
+August
+
+15.96%
+
+September
+
+14.99%
+
+October
+
+14.99%
+
+November
+
+13.05%
+
+December
+
+12.45%
+
+January
+
+13.05%
+
+February
+
+13.54%
+
+March
+
+14.02%
+
+April
+
+16.92%
+
+May
+
+18.95%
+
+Data Source: Monthly flow-monitoring observations utilizing standing wave flumes at the head
+and 30th km of the Nira Left Bank Canal.44
+In-depth analysis of these volumetric losses indicates that subsurface seepage and deep
+
+percolation account for an overwhelming 98.37% of the total stream loss, while evaporation
+accounts for a negligible 0.3%.44 The absence of canal lining, coupled with structural cracks and
+breaches, allows millions of liters of water to percolate uselessly into the surrounding geology.
+The direct victims of this engineering failure are the "tail-end" irrigators. Deprived of adequate
+supply due to massive upstream transit losses, these agriculturalists face severe, chronic water
+scarcity that yields uneven crop production and perpetuates economic hardship.44 The
+implementation of Cement Concrete (C.C.) lining could mitigate these seepage losses by an
+estimated 30–40%, which would theoretically allow for an increase in the intensity of irrigation
+beyond the current 45% of net Culturable Command Area (CCA).44
+
+The Ecological Disaster of Unmanaged Seepage: The IGNP Case
+Study
+While unlined canals deprive tail-end users of water, the sheer volume of seepage lost upstream
+frequently generates devastating secondary ecological disasters. The Indira Gandhi Nahar
+Pariyojana (IGNP) in Rajasthan serves as the ultimate cautionary tale of macro-irrigation
+implemented without holistic drainage planning and hydrogeological foresight.
+Conceived as an ambitious project to transform the vast, arid Thar desert into a fertile
+agricultural basin, the IGNP was allocated a share of 8.6 Million Acre Feet (MAF) from the
+surplus waters of the Ravi and Beas rivers, intending to irrigate an area of 19.6 lac hectares
+across districts like Sriganganagar, Hanumangarh, and Bikaner.47 Initially, the command area
+exhibited a remarkable transformation, catalyzing a localized green revolution and heavily
+boosting regional cropping systems.47
+However, the native geology of the Thar desert features a dense hardpan layer situated beneath
+sandy, highly pervious dunes, severely limiting deep aquifer percolation. The introduction of
+unlined earthen field canals, saddles, and the impounding of Ghaggar floodwaters in natural
+depressions created steep artificial hydraulic gradients.49 Massive, continuous seepage from the
+unlined conveyance network caused the groundwater table to rise at an alarming, unnatural
+rate.47
+As the water table approached the surface, it triggered massive and intractable waterlogging. In
+the intense arid heat of Rajasthan, high evaporation rates drove powerful capillary action,
+drawing naturally occurring deep soil salts upward through the soil profile.48 The result was
+catastrophic surface soil salinization. By the late 1990s, nearly 49.6% of the monitored
+command area in Stage-1 was deemed highly sensitive to waterlogging, rendering formerly lush
+and productive agricultural land barren, rocky, and utterly uncultivable.47 While biodrainage
+utilizing species like Eucalyptus and Prosopis juliflora has been suggested for reclamation, the
+IGNP disaster proves irrefutably that applying massive volumes of water to an ecosystem
+without engineered subsurface drainage or strict seepage control is agriculturally suicidal.50
+
+Technological Intervention: SCADA Automation and Demand-Based
+
+Scheduling
+To correct the historical inequities of canal distribution, eliminate seepage-induced ecological
+damage, and drastically reduce the applied irrigation water volume, modern engineering is
+aggressively shifting toward pressurized networks, demand-based scheduling, and deep digital
+automation. Pressurized irrigation systems installed without rigorous hydraulic design routinely
+operate outside manufacturer pressure tolerances, producing uneven application uniformity and
+premature emitter failure. Furthermore, calendar-based irrigation schedules apply water
+according to administrative convenience rather than actual crop demand, leading to
+simultaneous over-irrigation in cool months and deficit stress during critical peak
+evapo-transpiration periods.
+A groundbreaking example of overcoming these inefficiencies is the modernization of the
+Narayanpur Left Bank Canal (NLBC) in Karnataka. To address the chronic under-delivery of
+water to tail-end users, project authorities implemented a Supervisory Control and Data
+Acquisition (SCADA) based smart digital irrigation management system under the PMKSY-AIBP
+framework, alongside similar ongoing projects at Gosikhurd and Lower Pedhi in Maharashtra.52
+This initiative marked the first implementation of dam-to-farmer delivery outlet automation highly
+customized for Indian socio-economic conditions.52
+The NLBC system integrates Internet of Things (IoT) based, solar-powered, fully automated
+stainless steel gates specifically designed to be vandalism-proof.52 These advanced gates
+feature built-in capabilities for direct discharge measurement, upstream and downstream water
+level telemetry, and gate actuator positioning.52 Data from the physical infrastructure is fed into a
+centralized water audit and decision support system via wireless data communication, closely
+monitored by CCTV surveillance.52
+Coupled with an Irrigation Network Management Information System (INMIS), this SCADA
+integration allows water authorities to aggregate agricultural demand, calculate precise crop
+water requirements using sophisticated methodologies like the FAO Penman-Monteith equation,
+and execute rotational supply scheduling for truly equitable distribution.52 The ultimate triumph
+of the NLBC automation project was achieving its primary, historically elusive objective:
+successfully delivering designated, precisely measured water quotas to tail-end farmers for the
+first time in the history of the canal network, drastically improving water use efficiency and
+completely bypassing the losses associated with unmanaged earthen conveyance.52 Similar
+SCADA-based systems, such as those implemented by Tata Trusts in Nava Raipur, underscore
+that technology acts as the crucial mechanism to guarantee urban and agricultural water
+security.55
+
+Domain 04 of 04: Hydraulic Structures Engineering
+Hydraulic structures—dams, barrages, spillways, canal falls, and aqueducts—represent the
+apex where civil engineering meets profound physical consequence. When these massive
+structures fail, they do not merely deteriorate; they release catastrophic kinetic energy capable
+
+of leveling entire downstream communities. A staggering proportion of dam failures in India are
+not acts of unpredictable nature, but rather design events the structures were fundamentally
+unequipped to survive. Research into Indian dam failures attributes approximately 23% of
+structural collapses directly to inadequate spillway capacity, a figure exceeded only by
+foundation deficiencies, which are themselves often initiated by uncontrolled seepage and scour
+beneath weir floors under high-head conditions.56 A structure that performs perfectly within its
+designed envelope offers absolutely no safety margin for the flood that exceeds it—and in
+India's changing climate, that flood is an inevitability.
+
+The Consequence of Underestimated Hydrology: The Machchhu Dam
+Disaster
+The historical benchmark for hydrological underestimation in the Indian subcontinent is the
+catastrophic failure of the Machchhu Dam II in Gujarat on August 11, 1979. Constructed as a
+composite structure spanning the Machhu River, it featured a masonry overflow spillway section
+164.5 meters long, flanked by extensive earthen embankments extending thousands of meters
+on both sides.58 The dam stood 74 feet above the riverbed, possessing a storage capacity of 1.1
+× 10^8 cubic meters.57 At the time of its commissioning in 1972, the dam was designed with a
+maximum spillway capacity of 200,000 cubic feet per second (cfs), a figure experts later agreed
+was fully compliant with the state of engineering practice for that period.56
+However, during a severe, anomalous monsoon event in August 1979, the peak inflow vastly
+exceeded all existing deterministic models. Post-failure forensic estimates of the peak inflow
+varied drastically, ranging from 460,000 cfs (according to the independent 1985 Murthy report)
+to an astonishing 630,000 to 936,000 cfs according to official government estimates.56 Both
+figures represented an inflow more than double or triple the dam's maximum discharge capacity.
+As the storm intensified on the night of August 10, operators attempted to manage the
+relentlessly rising water. By 1:30 AM on August 11, all functioning gates were fully opened (save
+for three that were malfunctioning due to a power failure that forced manual operation), pushing
+the spillway to pass 196,000 cfs—nearly its absolute maximum capacity.56 Despite these efforts,
+the reservoir level continued to rise, eventually generating a 6.1-meter depth of water over the
+crest.57 In the early afternoon, floodwaters completely overtopped the earthen embankments,
+cascading down the downstream slopes as a violently erosive cascade.57 The subsequent
+catastrophic breaching of the dam, opening gaps from 20 to 200 meters wide, resulted in the
+loss of between 1,800 and 25,000 lives.56 When the Machchhu Dam II was eventually rebuilt
+and completed in 1989, its spillway capacity was drastically and necessarily increased to
+872,000 cfs, a grim acknowledgment of the original design's profound hydrological
+inadequacy.56
+
+Contemporary Failures: Construction Deficits and Mechanical Flaws
+While historical failures often stemmed from a genuine lack of climatological data, modern
+hydraulic structure failures increasingly point to lapses in construction methodology, aging
+
+infrastructure, and poor mechanical maintenance.
+The near-collapse of the Karam Dam in the Dhar district of Madhya Pradesh in August 2022
+serves as a critical case study in construction negligence. Designed as an earthfill dam to
+support irrigation, the structure suffered a catastrophic failure mechanism during its very first
+filling.60 Forensic initial analysis indicated that the methodology adopted for the dam's
+construction deviated severely from its design and specifications.61 A critical mechanical error
+occurred in the concrete spillway portion: sluice valves proposed for the Non-Overflowing
+(N.O.F.) section were improperly installed.61 Consequently, mechanical failure under excess
+water pressure hindered the discharge of excess flow.61
+Simultaneously, improper planning regarding nalla closure activities and a severe lack of
+compaction in the hearting zone—which comprised highly expansive black cotton soil—allowed
+severe piping and seepage to take hold.61 On the morning of August 12, a massive portion of
+the earthen bund, measuring approximately 10 meters in height and 20 meters in length,
+suffered a severe slope failure between RD 500m and 530m.61 The resulting deluge stripped
+adjacent tribal farming lands in Bhandakho of their topsoil, washing away the earth and leaving
+behind barren, rocky terrain that decimated local livelihoods.63 The Karam incident underscores
+that even analytically sound hydraulic designs are instantly voided by substandard geotechnical
+execution and a lack of safety compliance.
+Similarly, the catastrophic incident at the Dr. K.L. Rao Sagar Pulichintala Project on the Krishna
+River in Andhra Pradesh in August 2021 exposed the severe vulnerabilities of high-head
+mechanical systems. During a period of heavy upstream monsoon inflow, engineers attempted
+to lift crest gate number 16 to a height of 4 feet at 3:00 AM.64 Due to a mechanical failure of the
+hydraulic lifting system under extreme pressure—exacerbated by a design flaw where the gap
+between gates in each pier was increased to 400 mm—the massive gate collapsed and was
+completely washed away.64 The failure unleashed a massive, uncontrolled discharge exceeding
+500,000 cusecs downstream toward the Prakasam Barrage.65 Authorities were forced to
+immediately enact emergency stop-lock arrangements, inserting 11 heavy iron plates into the
+existing gate grooves to arrest the flow.65 Such failures are frequently precipitated by a failure to
+maintain flood cushions, routine violation of operating rule curves, and a lack of rigorous
+pre-monsoon mechanical auditing.66
+
+Redefining Design Standards: Spillway Capacity and River Training
+To mitigate the recurrence of such immense disasters, the Central Water Commission (CWC)
+and the Bureau of Indian Standards (BIS) continually revise the guidelines governing hydraulic
+analysis. The calculation of the Probable Maximum Flood (PMF)—the largest flood theoretically
+possible at a given location—remains the fundamental cornerstone of spillway design.68
+However, the engineering paradigm is steadily shifting from purely deterministic PMF
+calculations toward Risk-Informed Decision Making (RIDM).70 This approach evaluates the
+probability of extreme events and correlates them with the socioeconomic consequences of
+structural failure, ensuring that spillways are sized not just for historical precedents, but for
+
+modeled climatic extremes.71
+The design of the spillway itself requires meticulous hydraulic profiling. CWC guidelines
+emphasize that velocities at the entrance of the spillway must be strictly limited, and the
+alignment of approach channel training walls must feature gradual transitions to minimize head
+loss and ensure uniform, non-turbulent approach flows.72 High-velocity flow over steep spillway
+chutes requires sophisticated modeling to assess aeration, shockwave generation, and
+cavitation risks, ensuring the concrete surface is not catastrophically eroded by negative vapor
+pressures under high-head conditions.73 Furthermore, the rising popularity of orifice
+spillways—which serve the dual purpose of passing massive floods and flushing
+sediment—requires complex dimensional analysis of fluid properties, flow geometry, dynamic
+viscosity, and surface tension constraints.74
+Beyond dams and spillways, the interaction between linear infrastructure (such as highways and
+railways) and riverine systems requires equally rigorous hydraulic governance. The Indian
+Roads Congress standard IRC:89-2019 ("Guidelines for Design and Construction of River
+Training and Control Works for Road Bridges") dictates the stabilization parameters for bridges
+crossing major alluvial and meandering rivers like the Ganga, Yamuna, and Brahmaputra.75 The
+construction of bridge piers inherently constricts the natural flow cross-section, generating an
+upstream afflux (a dangerous rise in water level) and localized increases in flow velocity.75
+To prevent outflanking and devastating foundation scour, IRC:89 and IS:10751 mandate the
+judicious design of guide bunds—earthen dykes heavily protected by stone pitching, crated
+stone-gabions on the sloping river-side face, and launching aprons at the toe that confine the
+river flow parallel to the abutments.78 Additionally, transverse structures such as spurs or
+groynes are utilized to redirect high-velocity currents away from vulnerable banks.75 The
+empirical design of these protective structures is highly reliant on 1D/2D hydraulic modeling
+(utilizing software such as HEC-RAS) to simulate backwater curves, bridge afflux, and
+accurately estimate pier scour depth.79 An infrastructure crossing built without such predictive
+modeling generates immediate liability, threatening not only the bridge structure itself through
+foundation undermining but also adjacent agricultural and residential lands through artificially
+elevated upstream flood levels. Energy dissipators—including USBR Type I-IV stilling basins,
+trajectory buckets, and roller buckets—must be precisely proportioned at all canal falls and drop
+structures to ensure high-velocity tailwater does not erode downstream channel beds, causing
+secondary network failures.
+By applying rigorous hydraulic analysis at every stage of structural design, engineering firms
+can ensure that no structure leaves the drafting table without a demonstrated, analytically
+proven hydraulic performance envelope, effectively securing both human life and capital
+investment.
+
+Works cited
+1.​ INVESTIGATING PREMATURE PAVEMENT FAILURE DUE TO MOISTURE Final
+
+Report - ROSA P, accessed May 11, 2026,
+https://rosap.ntl.bts.gov/view/dot/22882/dot_22882_DS1.pdf
+2.​ Examine the Underlying Causes of Flexible Pavement Deteriorations, Methods of
+Maintenance and Pavement Condition Rating, accessed May 11, 2026,
+https://www.ijeat.org/wp-content/uploads/papers/v10i4/D25180410421.pdf
+3.​ Premature Pavement Distresses Study | PDF | Road Surface | Asphalt - Scribd,
+accessed May 11, 2026,
+https://www.scribd.com/document/396714841/Investigation-of-Premature-Paveme
+nt-Distresses-on-Typical-National-Highway-Project
+4.​ Field experiment on the water immersion characteristics of graded ..., accessed
+May 11, 2026, https://pmc.ncbi.nlm.nih.gov/articles/PMC12511564/
+5.​ MOISTURE VARIATION IN HIGHWAY SUBGRADES AND THE ASSOCIATED
+CHANGE IN SURFACE DEFLECTIONS - Transportation Research Board (TRB),
+accessed May 11, 2026,
+https://onlinepubs.trb.org/Onlinepubs/trr/1974/497/497-004.pdf
+6.​ Subgrade Strength Recovery of Fine-Grained-Soil-Containing Roads in Western
+Oregon Forest - MDPI, accessed May 11, 2026,
+https://www.mdpi.com/1999-4907/15/4/671
+7.​ PREMATURE FAILURE OF ASPHALT OVERLAYS FROM STRIPPING: CASE
+HISTORIES - Auburn University, accessed May 11, 2026,
+https://www.eng.auburn.edu/research/centers/ncat/files/technical-reports/rep01-01
+.pdf
+8.​ Potential Impact of Climate Change on Rainfall Intensity-Duration-Frequency
+Curves in Roorkee, India - IDEAS/RePEc, accessed May 11, 2026,
+https://ideas.repec.org/a/spr/waterr/v30y2016i13d10.1007_s11269-016-1441-4.ht
+ml
+9.​ Impacts of Climate Change on IDF Relationships for Design of Urban Stormwater
+Systems, accessed May 11, 2026, https://etd.iisc.ac.in/handle/2005/3037
+10.​Climate change impacts on rainfall intensity-duration-frequency curves in local
+scale catchments - PubMed, accessed May 11, 2026,
+https://pubmed.ncbi.nlm.nih.gov/38489074/
+11.​ Comprehensive Overview of IRC Code: Guidelines on Road Drainage
+(IRC:SP:42-2014), accessed May 11, 2026,
+https://www.roadvision.ai/blog/comprehensive-overview-of-irc-code-guidelines-onroad-drainage-irc-sp-42-2014
+12.​IRC SP 42-2014 Guidelines On Road Drainage PDF - Scribd, accessed May 11,
+2026,
+https://www.scribd.com/document/460917419/IRC-SP-42-2014-Guidelines-on-Ro
+ad-Drainage-pdf
+13.​IRC SP 042: Guidelines on Road Drainage (First Revision) - Internet Archive,
+accessed May 11, 2026, https://archive.org/details/govlawircy2014sp42
+14.​DRAINAGE FOR QUALITY IMPROVEMENT OF RURAL ROADS S.K.Mazumder
+(Individual Consultant) Former AICTE Emeritus Professor Delhi Colle, accessed
+May 11, 2026,
+https://www.profskmazumder.com/assets/img/conferencepapers/Con_Ref_61.pdf
+
+15.​GUIDELINES FOR ROAD DRAINAGE SYSTEM | MoIT, accessed May 11, 2026,
+
+https://www.moit.gov.bt/wp-content/uploads/2022/05/Guideline-to-Road-DrainageSystem.pdf
+16.​Full text of "IRC SP 042: Guidelines on Road Drainage (First Revision)" - Internet
+Archive, accessed May 11, 2026,
+https://archive.org/stream/govlawircy2014sp42/govlawircy2014sp42_djvu.txt
+17.​identifying urban floods based on hec-ras, swmm, and google earth engine rms,
+accessed May 11, 2026,
+https://icsbe.uii.ac.id/wp-content/uploads/2024/02/Paper-D-31.pdf
+18.​An Introduction to Green Cities and Comparing HEC-RAS and EPA SWMM: A
+Quick Guide from Clear Creek Solutions, accessed May 11, 2026,
+https://www.clearcreeksolutions.info/blog/streamflowarticle-eafc9-9nyjz-9tx8b-n4z
+6m-yd98b
+19.​(PDF) Application of SWMM for Urban Storm Water Management: A ..., accessed
+May 11, 2026,
+https://www.researchgate.net/publication/389704755_Application_of_SWMM_for_
+Urban_Storm_Water_Management_A_Case_Study_of_Hyderabad_City
+20.​Identification of Critical Hotspots in Urban Drainage Networks using MIKE
+URBAN, accessed May 11, 2026, https://www.chijournal.org/H539
+21.​Comparing SWMM and HEC-RAS Hydrological Modeling Performance in
+Semi-Urbanized Watershed - MDPI, accessed May 11, 2026,
+https://www.mdpi.com/2073-4441/17/9/1331
+22.​Dynamic Groundwater resources of India | Vikaspedia - Energy, accessed May 11,
+2026,
+https://energy.vikaspedia.in/viewcontent/energy/database/dynamic-groundwater-re
+sources-of-india?lgn=en
+23.​National Compilation on - Department of Water Resources, River Development
+and Ganga Rejuvenation, accessed May 11, 2026,
+https://www.jalshakti-dowr.gov.in/static/uploads/2025/11/711d8d476bbf498cd90f80
+38e7371227.pdf
+24.​Union Minister of Jal Shakti Releases Dynamic Ground Water ... - PIB, accessed
+May 11, 2026, https://www.pib.gov.in/PressReleasePage.aspx?PRID=2089039
+25.​National Compilation on Dynamic Ground Water Resources of India 2023 Dataset - CKAN, accessed May 11, 2026,
+https://data.opencity.in/dataset/national-compilation-on-dynamic-ground-water-res
+ources-of-india-2023
+26.​Groundwater depletion in India: the influence of seasonal precipitation and land
+use land cover - PMC, accessed May 11, 2026,
+https://pmc.ncbi.nlm.nih.gov/articles/PMC12804263/
+27.​GRACE Sees Groundwater Losses Around the World, accessed May 11, 2026,
+https://grace.jpl.nasa.gov/resources/9/grace-sees-groundwater-losses-around-theworld/
+28.​Full article: Advances in GRACE satellite studies on terrestrial water storage: a
+comprehensive review - Taylor & Francis, accessed May 11, 2026,
+https://www.tandfonline.com/doi/full/10.1080/10106049.2025.2482706
+
+29.​Publications - GRACE Tellus - NASA, accessed May 11, 2026,
+
+https://grace.jpl.nasa.gov/publications/
+30.​A Case Study on Construction Dewatering-Induced Settlement Damage: Could
+This Have Been Avoided? - David Publishing, accessed May 11, 2026,
+https://www.davidpublisher.com/index.php/Home/Article/index?id=33973.html
+31.​Numerical analysis of metro station pit dewatering and its influence - Frontiers,
+accessed May 11, 2026,
+https://www.frontiersin.org/journals/earth-science/articles/10.3389/feart.2022.1120
+772/full
+32.​A Case Study on Construction Dewatering-Induced Settlement Damage: Could
+This Have Been Avoided? - David Publishing, accessed May 11, 2026,
+https://www.davidpublisher.com/Public/uploads/Contribute/5a4063319c18f.pdf
+33.​Mumbai Metro Line 3 Construction Report | PDF | Tunnel - Scribd, accessed May
+11, 2026,
+https://www.scribd.com/document/756489219/Construction-Methodology-R1-21-0
+5
+34.​Construction Dewatering for Underground Station in Urban Environment ResearchGate, accessed May 11, 2026,
+https://www.researchgate.net/publication/344303842_Construction_Dewatering_fo
+r_Underground_Station_in_Urban_Environment
+35.​Borewell drilling damages Mumbai Metro 3 tunnel near CSMT - The Times of
+India, accessed May 11, 2026,
+https://timesofindia.indiatimes.com/city/mumbai/borewell-drilling-damages-mumbai
+-metro-3-tunnel-near-csmt/articleshow/129660210.cms
+36.​Construction Follow-up Design Services for Delhi Metro Phase III Contract CC-04
+(TBΜ, Cross-Passages & Shafts) - Omikron Kappa, accessed May 11, 2026,
+https://omikronkappa.gr/wp-content/uploads/Delhi_Metro.pdf
+37.​Environmental Impact Assessment Study for Najafgarh- Dhansa Bus Stand
+Corridor of Delhi Metro, accessed May 11, 2026,
+https://backend.delhimetrorail.com/documents/56/EIAReportN-D_Bs_standCorrido
+r.pdf
+38.​Construction & Engineering Laws and Regulations Report 2025-2026 India ICLG.com, accessed May 11, 2026,
+https://iclg.com/practice-areas/construction-and-engineering-law-laws-and-regulati
+ons/india
+39.​Construction Disputes in India - Nishith Desai Associates, accessed May 11, 2026,
+https://www.nishithdesai.com/fileadmin/user_upload/pdfs/Research_Papers/Const
+ruction-disputes-in-india.pdf
+40.​M/S. Complete Dewatering vs M/S. Integral Construction Co. (India) on 27 March,
+2015, accessed May 11, 2026, https://indiankanoon.org/doc/46727782/
+41.​Managing construction risks in Asia-Pacific: India | White & Case LLP, accessed
+May 11, 2026,
+https://www.whitecase.com/insight-our-thinking/managing-construction-risks-asiapacific-india
+42.​Hydrospatial Modelling and Simulations for Assessing the Irrigation Canal
+
+Conveyance Losses - ResearchGate, accessed May 11, 2026,
+https://www.researchgate.net/publication/332117702_Hydrospatial_Modelling_and
+_Simulations_for_Assessing_the_Irrigation_Canal_Conveyance_Losses
+43.​Irrigation in Central Asia in figures - Food and Agriculture Organization, accessed
+May 11, 2026, https://www.fao.org/4/i3289e/i3289e.pdf
+44.​9 VI June 2021 https://doi.org/10.22214/ijraset.2021.35361, accessed May 11,
+2026, https://www.ijraset.com/fileserve.php?FID=35361
+45.​The importance of irrigation supply chains within the water footprint: an example
+from the Pakistani part of the Indus basin, accessed May 11, 2026,
+https://www.waterfootprint.org/resources/The_importance_of_irrigation_supply_ch
+ains_within_the_water_footprint_an_example_from_the_Pakistani_part_of_the_In
+dus_basin.pdf
+46.​Irrigation water withdrawal - Food and Agriculture Organization, accessed May 11,
+2026,
+https://www.fao.org/aquastat/en/data-analysis/irrig-water-use/irrig-water-withdrawa
+l/
+47.​Emerging Issues and Problems of Soil Salinity and Water Logging: A Case Study
+of Indira Gandhi Canal, Rajasthan - ResearchGate, accessed May 11, 2026,
+https://www.researchgate.net/publication/369959145_Emerging_Issues_and_Prob
+lems_of_Soil_Salinity_and_Water_Logging_A_Case_Study_of_Indira_Gandhi_Ca
+nal_Rajasthan
+48.​Emerging Issues and Problems of Soil Salinity and Water Logging: A Case Study
+of Indira Gandhi Canal, Rajasthan - Knowledgeable Research, accessed May 11,
+2026,
+https://knowledgeableresearch.com/index.php/1/article/download/416/357/695
+49.​Study Of Waterlogging And Soil Salinization Problem In And - ijiras, accessed May
+11, 2026, https://www.ijiras.com/2017/Vol_4-Issue_4/paper_26.pdf
+50.​Problem of soil salinity and waterlogging in Indira Gandhi canal area of Rajasthan
+state., accessed May 11, 2026,
+https://www.cabidigitallibrary.org/doi/full/10.5555/19971911521
+51.​POLICY PAPAER 49 COVER.cdr - AgEcon Search, accessed May 11, 2026,
+https://ageconsearch.umn.edu/record/358870/files/PP49.pdf
+52.​Canal Automation for Smart Digital Irrigation Management: A Case ..., accessed
+May 11, 2026,
+https://www.researchgate.net/publication/336148668_Canal_Automation_for_Sma
+rt_Digital_Irrigation_Management_A_Case_Study_on_Narayanpur_Left_Bank_Ca
+nal_Karnataka_State_India
+53.​AGENDA, accessed May 11, 2026,
+https://icid-ciid.org/icid_data_web/Webinar-MedhaRubicon301025.pdf
+54.​scada-iot based irrigation modernisation under pmksy - PIB, accessed May 11,
+2026,
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2238841®=3&lang=1
+55.​Designing Systems for Water Security - Tata Trusts, accessed May 11, 2026,
+https://www.tatatrusts.org/Upload/Content_Files/case-study-nava-raipur-SCADA.p
+df
+
+56.​Machhu Dam II (Gujarat, India, 1979) | ASDSO Dam Failures and ..., accessed
+
+May 11, 2026,
+https://damfailures.org/case-study/machhu-dam-ii-gujarat-india-1979
+57.​41.2 History of Dam Failures - Nptel, accessed May 11, 2026,
+https://archive.nptel.ac.in/content/storage2/courses/105106114/pdfs/Unit41/41_2.p
+df
+58.​1979 Machchhu dam failure - Wikipedia, accessed May 11, 2026,
+https://en.wikipedia.org/wiki/1979_Machchhu_dam_failure
+59.​Dam Failure Case Study: Machhu Dam II (Gujarat, India, 1979), accessed May 11,
+2026,
+https://damsafety.org/reference/dam-failure-case-study-machhu-dam-ii-gujarat-indi
+a-1979
+60.​Karam Dam Failure: Causes and Impact | PDF - Scribd, accessed May 11, 2026,
+https://www.scribd.com/presentation/690238172/CDworks
+61.​Documentation on Dam Leakage, Breaching and Disaster ... - NIDM, accessed
+May 11, 2026,
+https://nidm.gov.in/PDF/pubs/Karam%20Dam%20NIDM%202023.pdf
+62.​Karam Dam Failure: Lessons Learned | PDF | Dam | Water And The Environment
+- Scribd, accessed May 11, 2026,
+https://www.scribd.com/document/856021614/Failure-of-Karam-dam-Case-StudyLesson-Learnt-Vivek-Tripathi-CE-CWC
+63.​Ground Report: Karam Dam Deluge Strips Tribal Farmers of Land, Leaving Rocky
+Soil Crisis, accessed May 11, 2026,
+https://en.themooknayak.com/tribal-news/ground-report-karam-dam-deluge-stripstribal-farmers-of-land-leaving-rocky-soil-crisis
+64.​Pulichintala project hydaulic gate washes away due to heavy discharge - The
+Hindu, accessed May 11, 2026,
+https://www.thehindu.com/news/national/andhra-pradesh/pulichintala-project-hyda
+ulic-gate-washes-away-due-to-heavy-discharge/article35736666.ece
+65.​High alert as Pulichintala project gate collapses - The New Indian Express,
+accessed May 11, 2026,
+https://www.newindianexpress.com/states/andhra-pradesh/2021/Aug/06/high-alert
+-as-pchintala-project-gate-collapses-2340969.html
+66.​Pulichintala project's fallen gate fixed with stop lock; Opposition TDP blames
+YSRCP government's poor maintenance - Deccan Herald, accessed May 11,
+2026,
+https://www.deccanherald.com/india/pulichintala-projects-fallen-gate-fixed-with-sto
+p-lock-opposition-tdp-blames-ysrcp-governments-poor-maintenance-1017345.html
+67.​Andhra Pradesh: Pulichintala Dam Gate disaster shows improper maintenance
+and operation - SANDRP, accessed May 11, 2026,
+https://sandrp.in/2021/08/12/andhra-pradesh-pulichintala-dam-gate-disaster-show
+s-improper-maintenance-and-operation/
+68.​Estimating the Probable Maximum Flood (PMF) Starting with No Existing Model,
+accessed May 11, 2026,
+https://www.hec.usace.army.mil/confluence/hmsdocs/hmsguides/hms-modeling-ap
+
+plications/probable-maximum-flood-tutorials/estimating-the-probable-maximum-flo
+od-pmf-starting-with-no-existing-model
+69.​FOR Oroville PMF memo draft - California Water Commission, accessed May 11,
+2026,
+https://cwc.ca.gov/-/media/CWC-Website/Files/Documents/2023/09_September/S
+eptember2023_Item_8_FriendsOfTheRiverComment.pdf
+70.​Modernizing Probable Maximum Precipitation Estimation (2024) - Earth &
+Environmental Systems Modeling, accessed May 11, 2026,
+https://eesm.science.energy.gov/system/files/publications/attachments/Paciorek%
+202024%20highlight_NASEM_CASCADE%20%281%29_0.pdf
+71.​Estimating probable maximum flood probabilities - Association of State Dam
+Safety Officials, accessed May 11, 2026,
+https://damsafety.org/content/estimating-probable-maximum-flood-probabilities
+72.​Compendium on Spillways and Energy Dissipators Designs - A Legacy of
+CWPRS, accessed May 11, 2026,
+https://cwprs.gov.in/storage/pdf-uploads/Compendium_on_spillways_and_energy_
+dissipators_design-A_legacy_of_CWPRS.pdf
+73.​Spillways, Shockwaves and Air Entrainment - Review and recommendations,
+accessed May 11, 2026,
+https://damsafety.org/content/spillways-shockwaves-and-air-entrainment-review-a
+nd-recommendations
+74.​TECHNICAL MEMORANDUM ON GUIDELINES FOR HYDRAULIC DESIGN OF
+ORIFICE SPILLWAY by Dr. (Mrs.) V. V. Bhosekar, Scientist E Dr. (Mrs - CWPRS,
+accessed May 11, 2026,
+https://cwprs.gov.in/storage/pdf-uploads/6%20%20Guidelines%20for%20Hydrauli
+c%20Design%20of%20Orifice%20Spillway,%202017.pdf
+75.​Understanding IRC Code 89: Guidelines for River Training and Control Works for
+Road Bridges - RoadVision AI, accessed May 11, 2026,
+https://www.roadvision.ai/blog/understanding-irc-code-89-guidelines-for-river-traini
+ng-and-control-works-for-road-bridges
+76.​IRC 89-1997: River Training Guidelines | PDF - Scribd, accessed May 11, 2026,
+https://www.scribd.com/document/433515346/IRC-089-1997
+77.​IRC 089: Guidelines for Design and Construction of River Training and Control
+Works for Road Bridges (First Revision) - Internet Archive, accessed May 11,
+2026, https://archive.org/details/govlawircy1997sp89_0
+78.​RIVER TRAINING WORKS, accessed May 11, 2026,
+https://www.profskmazumder.com/assets/img/journalpapers/Jrnl_Ref_41.pdf
+79.​Dam Break Analysis using HEC-RAS and Flood Inundation Modelling for
+Pulichinatala Dam in Andhra Pradesh, India - ResearchGate, accessed May 11,
+2026,
+https://www.researchgate.net/publication/350995254_Dam_Break_Analysis_using
+_HEC-RAS_and_Flood_Inundation_Modelling_for_Pulichinatala_Dam_in_Andhra
+_Pradesh_India
+
+

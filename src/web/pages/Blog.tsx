@@ -1,31 +1,51 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Calendar, User, ArrowRight, Tag } from 'lucide-react';
-import {} from 'next/navigation'
+import { Calendar, Clock, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
-
 import { BLOGS } from '../constants';
 
 const Blog: React.FC = () => {
+  const [activeFilter, setActiveFilter] = useState('All');
+
+  const categories = ['All', ...Array.from(new Set(BLOGS.map(b => b.category)))];
+
+  const filtered = activeFilter === 'All'
+    ? BLOGS
+    : BLOGS.filter(b => b.category === activeFilter);
+
   return (
-    <div className="pt-40 pb-24 bg-[#fcfcfc] min-h-screen">
+    <div className="pt-40 pb-24 bg-[#fafafa] min-h-screen">
       <div className="w-full px-6 md:px-20 lg:px-32">
-        <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-10">
+
+        {/* ── Page Header ── */}
+        <div className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-10">
           <div className="max-w-2xl">
-            <span className="text-[10px] font-bold text-brand-red uppercase tracking-[0.4em] mb-6 block font-sans">
-              Engineering Journal — Updates & Expertise
+            <span className="text-[10px] font-mono font-bold text-brand-red uppercase tracking-[0.4em] mb-5 block">
+              Engineering Library — Technical Insights
             </span>
-            <h1 className="text-4xl md:text-5xl font-serif text-brand-dark leading-tight">
-              Thoughts from <br/><span className="italic">The Edge.</span>
+            <h1
+              className="font-sans font-bold text-brand-dark leading-[1.08] tracking-tight"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
+              Domain Analysis &<br />
+              <span className="font-serif italic font-normal text-gray-500">Field Intelligence</span>
             </h1>
           </div>
-          <div className="flex gap-4">
-            {["All", "Engineering", "Innovation", "Urbanism"].map((cat) => (
-              <button 
+
+          {/* ── Category Filters ── */}
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <button
                 key={cat}
-                className="px-6 py-2 rounded-full border border-gray-100 hover:border-brand-red transition-colors text-sm font-medium text-gray-500 hover:text-brand-dark"
+                onClick={() => setActiveFilter(cat)}
+                className={[
+                  'px-5 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-all',
+                  activeFilter === cat
+                    ? 'bg-brand-dark text-white'
+                    : 'border border-gray-200 text-gray-400 hover:border-brand-dark hover:text-brand-dark bg-white',
+                ].join(' ')}
               >
                 {cat}
               </button>
@@ -33,72 +53,109 @@ const Blog: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
-          {BLOGS.map((post, idx) => (
-            <motion.article 
+        {/* ── Blog Grid ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
+          {filtered.map((post, idx) => (
+            <motion.article
               key={post.id}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.07, duration: 0.5 }}
               viewport={{ once: true }}
-              className="group cursor-pointer"
             >
-              <Link href={`/blog/${post.id}`}>
-                <div className="aspect-[16/10] overflow-hidden rounded-3xl mb-8 relative">
-                  <motion.img 
-                    src={post.image} 
+              <Link href={`/blog/${post.id}`} className="group block">
+
+                {/* ── Image ── */}
+                <div className="relative aspect-[3/2] overflow-hidden mb-6">
+                  <img
+                    src={post.image}
                     alt={post.title}
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                    whileHover={{ scale: 1.05 }}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-[1.03]"
                   />
-                  <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-dark">
-                    {post.category}
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  {/* Arrow — top right */}
+                  <div className="absolute top-4 right-4 w-9 h-9 bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
+                    <ArrowUpRight className="w-4 h-4 text-brand-dark" />
+                  </div>
+
+                  {/* Category pill — top left */}
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-white/95 backdrop-blur-sm px-3 py-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark">
+                      {post.category}
+                    </span>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center gap-6 text-[11px] font-mono font-bold text-gray-400 uppercase tracking-widest">
-                    <span className="flex items-center gap-2 tracking-widest"><Calendar className="w-3 h-3" /> {post.date}</span>
-                    <span className="flex items-center gap-2">{post.readTime}</span>
+
+                {/* ── Card Body ── */}
+                <div className="space-y-3">
+
+                  {/* Date + Read time */}
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                    <Calendar className="w-3 h-3" />
+                    <span>{post.date}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300 inline-block" />
+                    <Clock className="w-3 h-3" />
+                    <span>{post.readTime}</span>
                   </div>
-                  
-                  <h2 className="text-3xl font-serif text-brand-dark leading-tight group-hover:text-brand-red transition-colors">
+
+                  {/* Title — sans-serif, consistent with project cards */}
+                  <h2
+                    className="font-sans font-bold text-brand-dark tracking-tight leading-snug group-hover:text-brand-red transition-colors duration-300"
+                    style={{ fontSize: 'clamp(1.1rem, 1.6vw, 1.4rem)' }}
+                  >
                     {post.title}
                   </h2>
-                  
-                  <p className="text-gray-500 leading-relaxed font-sans text-lg line-clamp-2">
+
+                  {/* Excerpt */}
+                  <p className="text-sm font-sans text-gray-500 leading-relaxed line-clamp-2">
                     {post.excerpt}
                   </p>
-                  
-                  <div className="pt-4 flex items-center gap-3 text-brand-red font-bold uppercase tracking-widest text-[10px]">
-                    Read Analysis <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
+
+                  {/* Read CTA */}
+                  <div className="pt-3 flex items-center gap-2 text-[10px] font-mono font-bold text-brand-red uppercase tracking-widest">
+                    Read Analysis
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </div>
+
                 </div>
               </Link>
             </motion.article>
           ))}
         </div>
 
-        {/* Subscribe Section */}
-        <div className="mt-40 bg-gray-50 rounded-[3rem] p-12 md:p-24 text-center">
-          <div className="max-w-2xl mx-auto space-y-10">
-            <h3 className="text-4xl font-serif text-brand-dark">Join 2,500+ Engineering Leaders</h3>
-            <p className="text-gray-500 text-lg">
-              Get monthly technical deep dives, regulatory updates, and sector innovations delivered to your inbox.
+        {/* ── Newsletter ── */}
+        <div className="mt-36 border border-gray-100 bg-white p-12 md:p-20 text-center shadow-sm">
+          <div className="max-w-xl mx-auto space-y-8">
+            <div>
+              <p className="text-[10px] font-mono font-bold text-brand-red uppercase tracking-[0.3em] mb-4">
+                Engineering Dispatch
+              </p>
+              <h3
+                className="font-sans font-bold text-brand-dark tracking-tight"
+                style={{ fontSize: 'clamp(1.5rem, 2.5vw, 2rem)' }}
+              >
+                Join 2,500+ Engineering Leaders
+              </h3>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Monthly technical deep dives, regulatory updates, and sector innovations — directly to your inbox.
             </p>
-            <form className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
-              <input 
-                type="email" 
+            <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
                 placeholder="professional@email.com"
-                className="flex-1 px-8 py-4 rounded-full bg-white border border-gray-100 focus:outline-none focus:border-brand-red transition-colors"
-                required
+                className="flex-1 px-6 py-3.5 bg-gray-50 border border-gray-100 focus:outline-none focus:border-brand-red transition-colors text-sm font-sans"
               />
-              <button className="bg-brand-dark text-white px-10 py-4 rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-brand-red transition-all">
+              <button className="bg-brand-dark text-white px-8 py-3.5 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-red transition-all rounded-xl">
                 Subscribe
               </button>
-            </form>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );

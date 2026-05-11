@@ -20,7 +20,7 @@ const Capabilities: React.FC = () => {
       </div>
 
       {/* Trust & Quality Section */}
-      <section className="px-6 md:px-20 lg:px-32 py-32 lg:py-56 bg-white">
+      {/* <section className="px-6 md:px-20 lg:px-32 py-32 lg:py-56 bg-white">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -54,7 +54,7 @@ const Capabilities: React.FC = () => {
             </Link>
           </div>
         </motion.div>
-      </section>
+      </section> */}
 
       <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }` }} />
     </div>

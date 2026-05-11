@@ -114,31 +114,69 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
             <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
           </motion.div>
           <div className="absolute top-0 bottom-0 w-px bg-brand-red/10" />
-          <motion.div
-            style={{
-              height: useTransform(scrollYProgress, [0, 1], ["0%", "150%"]),
-              opacity: useTransform(scrollYProgress, [0.1, 0.4], [0, 1])
-            }}
-            className="absolute top-0 w-[3px] bg-brand-red/60 blur-[2px] origin-top"
-          />
-          <motion.div
-            style={{ y: useTransform(scrollYProgress, [0.5, 0.85], [0, 500]) }}
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative px-12 py-7 bg-white border border-gray-100 rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.1)] flex items-center gap-10 overflow-hidden z-20"
-          >
-            <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-gray-500 uppercase whitespace-nowrap">Vulnerability Audit</span>
-            <div className="relative ml-4 flex items-center justify-center">
-              <ArrowRight className="w-4 h-4 text-brand-red" />
-              <motion.div
-                animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0.3, 0.1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 bg-brand-red rounded-full blur-[8px]"
+          {/* Technical Vertical Connector - Dotted with Signal Pulse */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-full overflow-hidden pointer-events-none">
+            {/* The Dotted Track */}
+            <div 
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: `linear-gradient(to bottom, var(--brand-red) 50%, transparent 50%)`,
+                backgroundSize: '1px 8px'
+              }}
+            />
+            
+            {/* The Traveling Signal */}
+            <motion.div
+              animate={{ 
+                y: ["-10%", "110%"],
+                opacity: [0, 1, 1, 0]
+              }}
+              transition={{ 
+                duration: 4, 
+                repeat: Infinity, 
+                ease: "linear" 
+              }}
+              className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-transparent via-brand-red to-transparent z-10"
+            />
+          </div>
+            <motion.div
+              style={{ y: useTransform(scrollYProgress, [0.5, 0.85], [0, 400]) }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative px-16 py-6 bg-white border border-gray-100 rounded-full shadow-[0_40px_100px_rgba(0,0,0,0.12)] flex items-center gap-12 overflow-hidden z-20 group/capsule"
+            >
+              {/* Liquid Flow Background Effect - Now precisely synced with scroll */}
+              <motion.div 
+                style={{ 
+                  x: useTransform(scrollYProgress, [0.2, 0.8], ["-100%", "200%"]),
+                }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-red/10 to-transparent -skew-x-12 pointer-events-none"
               />
-            </div>
-            <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-brand-red uppercase whitespace-nowrap">Engineering Resolution</span>
-          </motion.div>
+
+              <span className="text-[9px] font-mono font-bold tracking-[0.5em] text-gray-400 uppercase whitespace-nowrap relative z-10">
+                Vulnerability Audit
+              </span>
+              
+              <div className="relative flex items-center justify-center">
+                <div className="w-12 h-[1px] bg-gray-100 absolute -left-14" />
+                <div className="relative z-10 bg-white p-2 rounded-full border border-gray-50 shadow-sm">
+                  <ArrowRight className="w-4 h-4 text-brand-red group-hover/capsule:translate-x-1 transition-transform" />
+                </div>
+                <div className="w-12 h-[1px] bg-gray-100 absolute -right-14" />
+                
+                {/* Enhanced Pulse */}
+                <motion.div
+                  animate={{ scale: [1, 1.8, 1], opacity: [0.2, 0, 0.2] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-brand-red/30 rounded-full blur-[10px]"
+                />
+              </div>
+
+              <span className="text-[9px] font-mono font-bold tracking-[0.5em] text-brand-red uppercase whitespace-nowrap relative z-10">
+                Engineering Resolution
+              </span>
+            </motion.div>
         </div>
 
         <motion.div

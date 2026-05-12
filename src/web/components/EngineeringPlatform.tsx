@@ -484,7 +484,7 @@ const EngineeringPlatform: React.FC = () => {
       </div>
 
       <div className="relative pt-40 md:pt-48 px-6 md:px-20 lg:px-32 max-w-[1920px] mx-auto">
-        <SmoothReveal direction="up" distance={50} delay={0.1}>
+        <SmoothReveal id="hero-section" direction="up" distance={50} delay={0.1}>
           <div className="relative overflow-hidden rounded-[4rem] p-16 md:p-24 mb-20">
             {/* Glass Background */}
             <div className="absolute inset-0 bg-brand-dark/95 backdrop-blur-3xl z-0" />
@@ -559,7 +559,7 @@ const EngineeringPlatform: React.FC = () => {
         </SmoothReveal>
 
         {/* Main Execution Area */}
-        <div className="relative z-10 px-6 md:px-20 lg:px-32 -mt-12">
+        <div id="expertise" className="relative z-10 px-6 md:px-20 lg:px-32 -mt-12">
           {/* Breadcrumbs for internal navigation */}
           <div className="flex items-center gap-3 mb-16 text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400 bg-white border border-gray-100 px-8 py-5 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.08)] w-fit ring-1 ring-black/[0.02]">
             <button onClick={() => { setPath([]); setResult(null); setMode('manual'); }} className="hover:text-brand-red transition-all flex items-center gap-2">

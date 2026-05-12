@@ -9,6 +9,7 @@ interface SmoothRevealProps {
   delay?: number;
   direction?: "up" | "down" | "left" | "right";
   distance?: number;
+  id?: string;
 }
 
 /**
@@ -20,7 +21,8 @@ const SmoothReveal: React.FC<SmoothRevealProps> = ({
   width = "100%", 
   delay = 0.2,
   direction = "up",
-  distance = 40
+  distance = 40,
+  id
 }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -48,7 +50,7 @@ const SmoothReveal: React.FC<SmoothRevealProps> = ({
   };
 
   return (
-    <div ref={ref} style={{ position: "relative", width, overflow: "visible" }}>
+    <div id={id} ref={ref} style={{ position: "relative", width, overflow: "visible" }}>
       <motion.div
         variants={variants}
         initial="hidden"

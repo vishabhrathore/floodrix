@@ -10,23 +10,16 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const Header: React.FC = () => {
+  const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkSection, setIsDarkSection] = useState(false);
   const [isInFooter, setIsInFooter] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollPos = window.scrollY;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const clientHeight = window.innerHeight;
-
-      const atBottom = scrollTop + clientHeight >= scrollHeight - 30;
-      setIsAtBottom(atBottom);
       setIsScrolled(currentScrollPos > 20);
     };
     window.addEventListener('scroll', handleScroll);
@@ -51,7 +44,7 @@ const Header: React.FC = () => {
     sections.forEach(section => {
       const trigger = ScrollTrigger.create({
         trigger: section.id,
-        start: "top 80",
+        start: section.isFooter ? "top 80" : "top 80",
         end: "bottom 80",
         onToggle: (self) => {
           if (self.isActive) {
@@ -73,10 +66,10 @@ const Header: React.FC = () => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = ''; // FIX: Replaced 'unset' with empty string
+      document.body.style.overflow = ''; 
     }
     return () => {
-      document.body.style.overflow = ''; // FIX: Replaced 'unset' with empty string
+      document.body.style.overflow = '';
     };
   }, [isMenuOpen]);
 
@@ -94,7 +87,7 @@ const Header: React.FC = () => {
     { name: 'Services', href: '/capabilities' },
     { name: 'Projects', href: '/works' },
     { name: 'Leadership', href: '/team' },
-    { name: 'Digital Tools', href: '/calculator' },
+    { name: 'Digital Tools', href: '/platform' },
     { name: 'Insights', href: '/blog' },
     { name: 'Contact', href: '/#contact' },
   ];
@@ -103,19 +96,18 @@ const Header: React.FC = () => {
 
   // Reset states on route change
   useEffect(() => {
-    const isDarkInitial = pathname === '/capabilities' || pathname === '/team' || pathname === '/works';
+    const isDarkInitial = pathname === '/' || pathname === '/capabilities' || pathname === '/team' || pathname === '/works' || pathname === '/calculator' || pathname === '/platform';
     setIsDarkSection(isDarkInitial);
     setIsInFooter(false);
-    setIsAtBottom(false);
     setIsScrolled(window.scrollY > 20);
-    setIsMenuOpen(false); // Close menu on navigation
+    setIsMenuOpen(false); 
   }, [pathname]);
 
   return (
     <>
       <nav
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-700 translate-y-0 ${isScrolled || !isHome
-          ? isInFooter || isAtBottom
+          ? isInFooter
             ? 'bg-black py-3 border-b border-transparent'
             : isDarkSection
               ? 'bg-transparent backdrop-blur-xl border-b border-white/5 py-3 shadow-2xl'
@@ -126,7 +118,7 @@ const Header: React.FC = () => {
           {/* Logo Section */}
           <Link href="/" className="flex items-center space-x-4 group">
 
-            <span className={`text-h3 font-serif font-bold transition-colors duration-500 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
+            <span className={`text-h3 font-serif font-bold transition-colors duration-500 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'text-brand-dark' : 'text-white'
               }`}>
               FLOOD<span className="text-brand-red">RIX</span>
             </span>
@@ -139,7 +131,7 @@ const Header: React.FC = () => {
                 {link.href.startsWith('/#') ? (
                   <a
                     href={link.href}
-                    className={`flex items-center gap-2.5 text-nav font-medium hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
+                    className={`flex items-center gap-2.5 text-nav font-medium hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'text-brand-dark' : 'text-white'
                       }`}
                   >
                     {link.name}
@@ -148,7 +140,7 @@ const Header: React.FC = () => {
                 ) : (
                   <Link
                     href={link.href}
-                    className={`flex items-center gap-2.5 text-nav font-medium capitalize hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'
+                    className={`flex items-center gap-2.5 text-nav font-medium capitalize hover:text-brand-red transition-all py-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'text-brand-dark' : 'text-white'
                       }`}
                   >
                     {link.name}
@@ -157,19 +149,19 @@ const Header: React.FC = () => {
 
                 {link.dropdown && (
                   <div className="absolute top-full left-0 pt-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-500 transform group-hover:translate-y-0 translate-y-4">
-                    <div className={`w-72 rounded-xl shadow-2xl overflow-hidden border border-white/10 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'bg-white/80 backdrop-blur-2xl' : 'bg-brand-dark/90 backdrop-blur-3xl'
+                    <div className={`w-72 rounded-xl shadow-2xl overflow-hidden border border-white/10 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'bg-white/80 backdrop-blur-2xl' : 'bg-brand-dark/90 backdrop-blur-3xl'
                       }`}>
                       <div className="p-3 grid grid-cols-1 gap-1">
                         {link.dropdown.map((subItem) => (
                           <a
                             key={subItem.name}
                             href={subItem.href}
-                            className={`flex items-center gap-4 px-5 py-4 rounded-lg transition-all group/item ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom)
+                            className={`flex items-center gap-4 px-5 py-4 rounded-lg transition-all group/item ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter)
                               ? 'text-gray-600 hover:bg-gray-50 hover:text-brand-red'
                               : 'text-white/60 hover:bg-white/5 hover:text-white'
                               }`}
                           >
-                            <div className={`p-2 rounded-lg transition-colors ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'bg-gray-100' : 'bg-white/5 group-hover/item:bg-brand-teal'
+                            <div className={`p-2 rounded-lg transition-colors ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'bg-gray-100' : 'bg-white/5 group-hover/item:bg-brand-teal'
                               }`}>
                               {React.cloneElement(subItem.icon as React.ReactElement<any>, {
                                 className: "w-4 h-4"
@@ -185,7 +177,7 @@ const Header: React.FC = () => {
               </div>
             ))}
 
-            <div className={`h-8 w-[1px] mx-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'bg-gray-200' : 'bg-white/10'}`} />
+            <div className={`h-8 w-[1px] mx-2 ${(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'bg-gray-200' : 'bg-white/10'}`} />
 
           </div>
 
@@ -195,9 +187,9 @@ const Header: React.FC = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <X className={(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'} />
+              <X className={(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'text-brand-dark' : 'text-white'} />
             ) : (
-              <Menu className={(isScrolled || !isHome) && (!isDarkSection && !isInFooter && !isAtBottom) ? 'text-brand-dark' : 'text-white'} />
+              <Menu className={(isScrolled || !isHome) && (!isDarkSection && !isInFooter) ? 'text-brand-dark' : 'text-white'} />
             )}
           </button>
         </div>

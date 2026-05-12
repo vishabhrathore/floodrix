@@ -31,7 +31,7 @@ const MeetOurTeam: React.FC = () => {
       <CommonHero {...heroData} />
 
       {/* Team Grid — unchanged */}
-      <section className="px-6 md:px-20 lg:px-32 py-32 relative">
+      <section id="team" className="px-6 md:px-20 lg:px-32 py-32 relative">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
           {TEAM.map((member, idx) => (
             <motion.div
@@ -167,20 +167,6 @@ const MeetOurTeam: React.FC = () => {
                 Submit Project Enquiry
                 <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform duration-500" />
               </button>
-
-              <div className="mt-16 grid grid-cols-2 gap-12 pt-12 border-t border-gray-100">
-                <div>
-                  <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-2">Response Protocol</p>
-                  <p className="text-sm font-bold text-brand-dark">Initial consultation within 2 working days</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-2">Current Capacity</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <p className="text-sm font-bold text-emerald-600">Accepting project commissions</p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* ── Right: Spec cards ── */}

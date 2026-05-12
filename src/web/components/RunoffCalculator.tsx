@@ -33,7 +33,7 @@ const RunoffCalculator: React.FC = () => {
   };
 
   return (
-    <section id="calculator" className="relative z-10 py-32 bg-black border-b border-white/5">
+    <section className="relative z-10 py-32 bg-black border-b border-white/5">
       {/* Background ambient light */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_top_right,rgba(13,148,136,0.08)_0%,transparent_70%)] -z-10" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_bottom_left,rgba(13,148,136,0.08)_0%,transparent_70%)] -z-10" />

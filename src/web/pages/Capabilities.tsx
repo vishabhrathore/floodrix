@@ -13,7 +13,7 @@ const Capabilities: React.FC = () => {
     <div className="min-h-screen bg-[#fcfcfc] pb-32 selection:bg-brand-red selection:text-white">
       <CapabilitiesHero />
 
-      <div className="w-full">
+      <div id="expertise" className="w-full">
         {domains.map((domain) => (
           <DomainSectionItem key={domain.id} domain={domain} />
         ))}

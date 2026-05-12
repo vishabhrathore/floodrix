@@ -23,13 +23,15 @@ interface Domain {
 const DomainItem: React.FC<{ domain: Domain; idx: number }> = ({ domain, idx }) => {
   const containerRef = useRef(null);
   const isContentRight = idx % 2 === 0;
-  
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
   });
 
-  const yProgress = useTransform(scrollYProgress, [0, 1], [50, -50]);
+  const yImage = useTransform(scrollYProgress, [0, 1], [100, -100]);
+  const yText = useTransform(scrollYProgress, [0, 1], [50, -50]);
+  const yBgIndex = useTransform(scrollYProgress, [0, 1], [-50, 50]);
 
   // Mapping domain IDs to brand themes
   const theme =
@@ -55,23 +57,31 @@ const DomainItem: React.FC<{ domain: Domain; idx: number }> = ({ domain, idx }) 
   return (
     <motion.div
       ref={containerRef}
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-      className={`grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center`}
+      transition={{ duration: 1 }}
+      className="relative grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center"
     >
+      {/* Background Floating Index */}
+      <motion.div
+        style={{ y: yBgIndex }}
+        className={`absolute -top-20 ${isContentRight ? '-left-10' : '-right-10'} text-[20rem] font-serif font-bold text-gray-50 select-none -z-10 opacity-60 hidden lg:block`}
+      >
+        0{idx + 1}
+      </motion.div>
+
       {/* Image Section */}
       <div className={`w-full lg:col-span-7 relative group ${isContentRight ? 'lg:order-1' : 'lg:order-2'}`}>
-        <motion.div 
-          style={{ y: yProgress }}
+        <motion.div
+          style={{ y: yImage }}
           className="relative aspect-[16/10] rounded-[2rem] overflow-hidden bg-gray-100 shadow-2xl shadow-black/5"
         >
           <motion.img
             src={domain.image}
             alt={domain.title}
             className="absolute inset-0 w-full h-full object-cover z-10"
-            animate={{ scale: [1, 1.2] }}
+            animate={{ scale: [1, 1.4] }}
             transition={{ duration: 30, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
           />
           <div className="absolute inset-0 bg-brand-dark/10 group-hover:bg-transparent transition-colors duration-700 z-20" />
@@ -79,7 +89,10 @@ const DomainItem: React.FC<{ domain: Domain; idx: number }> = ({ domain, idx }) 
       </div>
 
       {/* Consultancy Content */}
-      <div className={`w-full lg:col-span-5 ${isContentRight ? 'lg:order-2' : 'lg:order-1'}`}>
+      <motion.div
+        style={{ y: yText }}
+        className={`w-full lg:col-span-5 ${isContentRight ? 'lg:order-2' : 'lg:order-1'}`}
+      >
         <div className="flex items-center gap-3 mb-8">
           <span className={`text-[9px] font-mono font-bold ${textClass} ${bgSubtleClass} px-4 py-1.5 rounded-full border uppercase tracking-[0.3em]`}>
             Sector 0{idx + 1}
@@ -113,7 +126,7 @@ const DomainItem: React.FC<{ domain: Domain; idx: number }> = ({ domain, idx }) 
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
@@ -190,7 +203,7 @@ const WorkStorytelling: React.FC = () => {
       <div className="w-full px-6 md:px-12 lg:px-24 relative z-10">
 
         {/* Header Section - Professional & Grounded */}
-        <div className="mb-20 border-b border-gray-100 pb-16">
+        <div className="mb-20 pb-16">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-8 h-[1px] bg-brand-red" />
             <span className="text-[10px] font-mono font-bold tracking-[0.5em] text-brand-red uppercase">Our Domains</span>

@@ -28,9 +28,11 @@ const Hero: React.FC = () => {
           loop
           muted
           playsInline
+          preload="auto"
+          poster="https://res.cloudinary.com/dpdkzg4ld/video/upload/v1778512402/floodrix/hero.jpg"
           className="absolute inset-0 w-full h-full object-cover opacity-80"
         >
-          <source src="https://res.cloudinary.com/dpdkzg4ld/video/upload/v1778512402/floodrix/hero.mp4" type="video/mp4" />
+          <source src="https://res.cloudinary.com/dpdkzg4ld/video/upload/f_auto,q_auto/v1778512402/floodrix/hero.mp4" type="video/mp4" />
           <img src="/assets/images/dam-fallback.jpg" alt="Infrastructure" className="w-full h-full object-cover" />
         </video>
 

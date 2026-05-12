@@ -4,6 +4,10 @@ import { Provider } from 'jotai'
 import { TRPCReactProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import ConsentDefaults from '@/components/ConsentDefaults';
+import GTMScript from '@/components/GTMScript';
+import CookieBanner from '@/components/CookieBanner';
+import ConsentRestore from '@/components/ConsentRestore';
 
 import "./globals.css";
 
@@ -61,13 +65,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${dmSans.variable} ${dmMono.variable} ${playfair.variable} ${lora.variable} ${sourceSerif.variable} ${bitter.variable}`} suppressHydrationWarning>
+      <head>
+        <ConsentDefaults />
+      </head>
       <body
         className="antialiased"
       >
         <TRPCReactProvider>
           <NuqsAdapter>
             <Provider>
+              <GTMScript />
+              <ConsentRestore />
               {children}
+              <CookieBanner />
               <Toaster />
             </Provider>
           </NuqsAdapter>

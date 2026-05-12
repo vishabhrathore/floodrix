@@ -128,7 +128,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 order-1 md:order-2">
             <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+            <a href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
         </div>
       </div>

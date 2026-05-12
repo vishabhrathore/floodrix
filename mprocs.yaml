@@ -2,8 +2,8 @@ procs:
   ngrok:
     cmd: ["npm", "run", "ngrok:dev"]
 
-  inngest:
-    cmd: ["npm", "run", "inngest:dev"]
+  redis:
+    cmd: ["docker-compose", "up"]
 
   next:
     cmd: ["npm", "run", "dev"]

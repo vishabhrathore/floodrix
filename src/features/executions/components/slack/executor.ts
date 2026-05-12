@@ -1,8 +1,6 @@
 import Handlebars from "handlebars";
 import { decode } from "html-entities";
-import { NonRetriableError } from "inngest";
 import type { NodeExecutor } from "@/features/executions/types";
-import { slackChannel } from "@/inngest/channels/slack";
 import ky from "ky";
 
 Handlebars.registerHelper("json", (context) => {
@@ -25,21 +23,9 @@ export const slackExecutor: NodeExecutor<SlackData> = async ({
   step,
   publish,
 }) => {
-  await publish(
-    slackChannel().status({
-      nodeId,
-      status: "loading",
-    }),
-  );
 
   if (!data.content) {
-    await publish(
-      slackChannel().status({
-        nodeId,
-        status: "error",
-      }),
-    );
-    throw new NonRetriableError("Slack node: Message content is required");
+    throw new Error("Slack node: Message content is required");
   }
 
   const rawContent = Handlebars.compile(data.content)(context);
@@ -48,29 +34,17 @@ export const slackExecutor: NodeExecutor<SlackData> = async ({
   try {
     const result = await step.run("slack-webhook", async () => {
       if (!data.webhookUrl) {
-        await publish(
-          slackChannel().status({
-            nodeId,
-            status: "error",
-          }),
-        );
-        throw new NonRetriableError("Slack node: Webhook URL is required");
+        throw new Error("Slack node: Webhook URL is required");
       }
 
       await ky.post(data.webhookUrl, {
         json: {
-          content: content, // The key depends on workflow config
+          content: content,
         },
       });
 
       if (!data.variableName) {
-        await publish(
-          slackChannel().status({
-            nodeId,
-            status: "error",
-          })
-        );
-        throw new NonRetriableError("Slack node: Variable name is missing");
+        throw new Error("Slack node: Variable name is missing");
       }
 
       return {
@@ -81,21 +55,8 @@ export const slackExecutor: NodeExecutor<SlackData> = async ({
       };
     });
     
-    await publish(
-      slackChannel().status({
-        nodeId,
-        status: "success",
-      }),
-    );
-
     return result;
   } catch (error) {
-     await publish(
-      slackChannel().status({
-        nodeId,
-        status: "error",
-      }),
-    );
-    throw error;
+     throw error;
   }
 };

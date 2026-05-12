@@ -1,9 +1,7 @@
 import Handlebars from "handlebars";
-import { NonRetriableError } from "inngest";
 import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { NodeExecutor } from "@/features/executions/types";
-import { openAiChannel } from "@/inngest/channels/openai";
 import prisma from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 
@@ -29,41 +27,17 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
   step,
   publish,
 }) => {
-  await publish(
-    openAiChannel().status({
-      nodeId,
-      status: "loading",
-    }),
-  );
 
   if (!data.variableName) {
-    await publish(
-      openAiChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("OpenAi node: Variable name is missing");
+    throw new Error("OpenAi node: Variable name is missing");
   }
 
   if (!data.credentialId) {
-    await publish(
-      openAiChannel().status({
-        nodeId,
-        status: "error",
-      }),
-    );
-    throw new NonRetriableError("OpenAi node: Credential is required");
+    throw new Error("OpenAi node: Credential is required");
   }
 
   if (!data.userPrompt) {
-    await publish(
-      openAiChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("OpenAi node: User prompt is missing");
+    throw new Error("OpenAi node: User prompt is missing");
   }
 
   const systemPrompt = data.systemPrompt
@@ -81,13 +55,7 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
   });
 
   if (!credential) {
-    await publish(
-      openAiChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("OpenAI node: Credential not found");
+    throw new Error("OpenAI node: Credential not found");
   }
 
   const openai = createOpenAI({
@@ -95,32 +63,13 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
   });
 
   try {
-    const { steps } = await step.ai.wrap(
-      "openai-generate-text",
-      generateText,
-      {
+    const { text } = await generateText({
         model: openai("gpt-4"),
         system: systemPrompt,
         prompt: userPrompt,
-        experimental_telemetry: {
-          isEnabled: true,
-          recordInputs: true,
-          recordOutputs: true,
-        },
-      },
-    );
-
-    const text = 
-      steps[0].content[0].type === "text" 
-        ? steps[0].content[0].text
-        : "";
+    });
     
-    await publish(
-      openAiChannel().status({
-        nodeId,
-        status: "success",
-      }),
-    );
+    // Realtime status updates removed
 
     return {
       ...context,
@@ -129,12 +78,6 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
       },
     }
   } catch (error) {
-     await publish(
-      openAiChannel().status({
-        nodeId,
-        status: "error",
-      }),
-    );
-    throw error;
+     throw error;
   }
 };

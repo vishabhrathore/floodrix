@@ -6,7 +6,6 @@ import { BaseExecutionNode } from "../base-execution-node";
 import { GeminiDialog, GeminiFormValues } from "./dialog";
 import { useNodeStatus } from "../../hooks/use-node-status";
 import { fetchGeminiRealtimeToken } from "./actions";
-import { GEMINI_CHANNEL_NAME } from "@/inngest/channels/gemini";
 
 type GeminiNodeData = {
   variableName?: string;
@@ -23,7 +22,7 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
 
   const nodeStatus = useNodeStatus({
     nodeId: props.id,
-    channel: GEMINI_CHANNEL_NAME,
+    channel: "gemini",
     topic: "status",
     refreshToken: fetchGeminiRealtimeToken,
   });

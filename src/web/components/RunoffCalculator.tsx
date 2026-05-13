@@ -4,8 +4,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useSpring, useTransform, AnimatePresence } from 'motion/react';
 import { Calculator, Info, Zap, Activity, Waves, ArrowRight } from 'lucide-react';
+import { useHeaderTheme } from '../hooks/useHeaderTheme';
 
 const RunoffCalculator: React.FC = () => {
+  const sectionRef = React.useRef<HTMLElement>(null);
+  useHeaderTheme('dark', sectionRef);
+
   const [coefficient, setCoefficient] = useState(0.70); // C
   const [intensity, setIntensity] = useState(50); // i (mm/hr)
   const [area, setArea] = useState(10); // A (Hectares)
@@ -33,7 +37,7 @@ const RunoffCalculator: React.FC = () => {
   };
 
   return (
-    <section className="relative z-10 py-32 bg-black border-b border-white/5">
+    <section ref={sectionRef} data-header-theme="dark" className="relative z-10 py-32 bg-black border-b border-white/5">
       {/* Background ambient light */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_top_right,rgba(13,148,136,0.08)_0%,transparent_70%)] -z-10" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_bottom_left,rgba(13,148,136,0.08)_0%,transparent_70%)] -z-10" />
@@ -84,7 +88,7 @@ const RunoffCalculator: React.FC = () => {
             </div>
 
             <div className="pt-8">
-              <button className="bg-brand-red text-white px-10 py-5 rounded-2xl font-mono text-[10px] font-bold uppercase tracking-[0.3em] transition-all flex items-center gap-4 group shadow-lg hover:shadow-[0_0_30px_rgba(251,54,64,0.3)] hover:-translate-y-1">
+              <button className="bg-brand-red text-white px-10 py-5 rounded-full font-mono text-[10px] font-bold uppercase tracking-[0.3em] transition-all flex items-center gap-4 group shadow-lg hover:shadow-[0_0_30px_rgba(251,54,64,0.3)] hover:-translate-y-1">
                 Access Digital Tools
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
               </button>
@@ -100,7 +104,7 @@ const RunoffCalculator: React.FC = () => {
             className="relative"
           >
             {/* The "Mac" Frame */}
-            <div className="relative bg-[#0f0f0f] rounded-[2rem] border border-white/10 shadow-xl overflow-hidden">
+            <div className="relative bg-[#0f0f0f] rounded-[2.5rem] border border-white/10 shadow-xl overflow-hidden">
               {/* Header Bar */}
               <div className="bg-[#1a1a1a] px-6 py-4 flex items-center border-b border-white/10">
                 <div className="flex gap-2">

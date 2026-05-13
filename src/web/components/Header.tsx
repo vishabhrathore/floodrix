@@ -5,62 +5,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Droplets, ChevronDown, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useHeaderStore } from '@/web/store/useHeaderStore';
 
-gsap.registerPlugin(ScrollTrigger);
-
-  const Header: React.FC = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
+const Header: React.FC = () => {
+  const isScrolled = useHeaderStore(state => state.isScrolled);
+  const isDarkSection = useHeaderStore(state => state.isDarkSection);
+  const isInFooter = useHeaderStore(state => state.isInFooter);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDarkSection, setIsDarkSection] = useState(false);
-  const [isInFooter, setIsInFooter] = useState(false);
   const pathname = usePathname();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollPos = window.scrollY;
-      setIsScrolled(currentScrollPos > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-
-    // Section tracking
-    const sections = [
-      { id: "#hero-section", isDark: true },
-      { id: "#calculator", isDark: true },
-      { id: "#about", isDark: false },
-      { id: "#expertise", isDark: false },
-      { id: "#assurance", isDark: false },
-      { id: "#impact", isDark: true },
-      { id: "#portfolio", isDark: false },
-      { id: "#projects", isDark: false },
-      { id: "#team", isDark: false },
-      { id: "#contact", isDark: false },
-      { id: "#main-footer", isDark: true, isFooter: true }
-    ];
-
-    const triggers: ScrollTrigger[] = [];
-
-    sections.forEach(section => {
-      const trigger = ScrollTrigger.create({
-        trigger: section.id,
-        start: section.isFooter ? "top 80" : "top 80",
-        end: "bottom 80",
-        onToggle: (self) => {
-          if (self.isActive) {
-            setIsDarkSection(section.isDark);
-            setIsInFooter(!!section.isFooter);
-          }
-        },
-      });
-      triggers.push(trigger);
-    });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      triggers.forEach(t => t.kill());
-    };
-  }, []);
+  // State management is now handled globally in WebLayout via useHeaderStore
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -96,10 +50,6 @@ gsap.registerPlugin(ScrollTrigger);
 
   // Reset states on route change
   useEffect(() => {
-    const isDarkInitial = pathname === '/' || pathname === '/capabilities' || pathname === '/team' || pathname === '/works' || pathname === '/calculator' || pathname === '/platform';
-    setIsDarkSection(isDarkInitial);
-    setIsInFooter(false);
-    setIsScrolled(window.scrollY > 20);
     setIsMenuOpen(false); 
   }, [pathname]);
 

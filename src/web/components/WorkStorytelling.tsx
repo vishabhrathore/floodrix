@@ -72,10 +72,10 @@ const DomainItem: React.FC<{ domain: Domain; idx: number }> = ({ domain, idx }) 
       </motion.div>
 
       {/* Image Section */}
-      <div className={`w-full lg:col-span-7 relative group ${isContentRight ? 'lg:order-1' : 'lg:order-2'}`}>
+      <div className={`w-full lg:col-span-6 relative group ${isContentRight ? 'lg:order-1' : 'lg:order-2'}`}>
         <motion.div
           style={{ y: yImage }}
-          className="relative aspect-[16/10] rounded-[2rem] overflow-hidden bg-gray-100 shadow-2xl shadow-black/5"
+          className="relative aspect-[3/2] rounded-[2rem] overflow-hidden bg-gray-100 shadow-2xl shadow-black/5"
         >
           <motion.img
             src={domain.image}
@@ -91,10 +91,10 @@ const DomainItem: React.FC<{ domain: Domain; idx: number }> = ({ domain, idx }) 
       {/* Consultancy Content */}
       <motion.div
         style={{ y: yText }}
-        className={`w-full lg:col-span-5 ${isContentRight ? 'lg:order-2' : 'lg:order-1'}`}
+        className={`w-full lg:col-span-6 ${isContentRight ? 'lg:order-2' : 'lg:order-1'}`}
       >
         <div className="flex items-center gap-3 mb-8">
-          <span className={`text-[9px] font-mono font-bold ${textClass} ${bgSubtleClass} px-4 py-1.5 rounded-full border uppercase tracking-[0.3em]`}>
+          <span className={`text-[11px] font-mono font-bold ${textClass} ${bgSubtleClass} px-4 py-1.5 rounded-full border uppercase tracking-[0.3em]`}>
             Sector 0{idx + 1}
           </span>
         </div>
@@ -217,7 +217,7 @@ const WorkStorytelling: React.FC = () => {
               </h2>
             </div>
             <div className="lg:col-span-5">
-              <p className="text-gray-600 text-h4 leading-relaxed font-light border-l-2 border-brand-red pl-6">
+              <p className="text-gray-600 text-lg leading-relaxed font-light border-l-2 border-brand-red pl-6">
                 Strategic consultancy and engineering solutions for complex stormwater, groundwater, and irrigation infrastructure.
               </p>
             </div>

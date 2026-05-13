@@ -26,7 +26,7 @@ const OurWorks: React.FC = () => {
               <Link href={`/project/${project.id}`} className="group block">
 
                 {/* ── Image ── */}
-                <div className="relative aspect-[3/2] overflow-hidden rounded-2xl shadow-sm">
+                <div className="relative aspect-[3/2] overflow-hidden rounded-[2.5rem] shadow-sm">
                   <img
                     src={project.image}
                     alt={project.title}
@@ -108,7 +108,7 @@ const OurWorks: React.FC = () => {
 
         {/* Load More */}
         <div className="mt-20 text-center">
-          <button className="bg-brand-dark text-white px-12 py-5 text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-brand-red transition-all shadow-xl active:scale-95 rounded-xl">
+          <button className="bg-brand-dark text-white px-12 py-5 text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-brand-red transition-all shadow-xl active:scale-95 rounded-full">
             Load More Case Studies
           </button>
         </div>

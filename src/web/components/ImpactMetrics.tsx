@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useHeaderTheme } from '../hooks/useHeaderTheme';
 import SmoothReveal from './SmoothReveal';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -52,6 +53,9 @@ const Metric: React.FC<MetricItem> = ({ label, target, suffix, detail }) => {
 };
 
 const ImpactMetrics: React.FC = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  useHeaderTheme('dark', sectionRef);
+  
   const metrics: MetricItem[] = [
     {
       label: "Projects Delivered",
@@ -80,7 +84,7 @@ const ImpactMetrics: React.FC = () => {
   ];
 
   return (
-    <section className="bg-brand-dark w-full px-6 md:px-12 lg:px-24 py-16 lg:py-24">
+    <section ref={sectionRef} data-header-theme="dark" className="bg-brand-dark w-full px-6 md:px-12 lg:px-24 py-16 lg:py-24">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-16 gap-8 border-b border-white/10 pb-12">
         <div className="max-w-3xl">
           <SmoothReveal direction="up" distance={20} delay={0.1}>

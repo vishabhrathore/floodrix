@@ -4,11 +4,6 @@ import { Provider } from 'jotai'
 import { TRPCReactProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
-import ConsentDefaults from '@/components/ConsentDefaults';
-import GTMScript from '@/components/GTMScript';
-import CookieBanner from '@/components/CookieBanner';
-import ConsentRestore from '@/components/ConsentRestore';
-
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -66,7 +61,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} ${dmMono.variable} ${playfair.variable} ${lora.variable} ${sourceSerif.variable} ${bitter.variable}`} suppressHydrationWarning>
       <head>
-        <ConsentDefaults />
       </head>
       <body
         className="antialiased"
@@ -74,10 +68,7 @@ export default function RootLayout({
         <TRPCReactProvider>
           <NuqsAdapter>
             <Provider>
-              <GTMScript />
-              <ConsentRestore />
               {children}
-              <CookieBanner />
               <Toaster />
             </Provider>
           </NuqsAdapter>

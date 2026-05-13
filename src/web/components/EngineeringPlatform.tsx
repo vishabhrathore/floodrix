@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { gsap } from 'gsap';
 import SmoothReveal from './SmoothReveal';
+import { useHeaderTheme } from '../hooks/useHeaderTheme';
 
 // --- Types ---
 interface FormulaField {
@@ -357,6 +358,8 @@ const EngineeringPlatform: React.FC = () => {
   const [batchProcessedData, setBatchProcessedData] = useState<any[] | null>(null);
 
   const resultRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  useHeaderTheme('dark', heroRef);
 
   // Initialize inputs when leaf is reached
   const node = getNode(currentModule, path);
@@ -487,7 +490,7 @@ const EngineeringPlatform: React.FC = () => {
         <SmoothReveal id="hero-section" direction="up" distance={50} delay={0.1}>
           <div className="relative overflow-hidden rounded-[4rem] p-16 md:p-24 mb-20">
             {/* Glass Background */}
-            <div className="absolute inset-0 bg-brand-dark/95 backdrop-blur-3xl z-0" />
+            <div ref={heroRef} id="hero-section" data-header-theme="dark" className="absolute inset-0 bg-brand-dark/95 backdrop-blur-3xl z-0" />
             <div className="absolute inset-0 z-[1] overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_0%_0%,rgba(251,54,64,0.15)_0%,transparent_50%)]" />
               <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_100%,rgba(251,54,64,0.05)_0%,transparent_50%)]" />

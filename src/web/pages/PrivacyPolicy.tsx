@@ -1,84 +1,345 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Shield, Lock, Eye, FileText } from 'lucide-react';
+import { useHeaderTheme } from '../hooks/useHeaderTheme';
+import Link from 'next/link';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
+
+const navSections = [
+  { id: "who-we-are", label: "01 — Who we are" },
+  { id: "data-collection", label: "02 — Data we collect" },
+  { id: "legal-basis", label: "03 — Legal basis" },
+  { id: "google", label: "04 — Google Analytics" },
+  { id: "retention", label: "05 — Retention" },
+  { id: "sharing", label: "06 — Data sharing" },
+  { id: "rights", label: "07 — Your rights" },
+  { id: "security", label: "08 — Security" },
+  { id: "changes", label: "09 — Changes" },
+  { id: "contact", label: "10 — Contact" },
+];
+
+function useActiveSection(ids: string[]) {
+  const [active, setActive] = useState(ids[0]);
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActive(id); },
+        { rootMargin: '-20% 0px -70% 0px' }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach(o => o.disconnect());
+  }, [ids]);
+  return active;
+}
+
+function H2({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <h2
+      id={id}
+      className="text-2xl md:text-[1.75rem] font-serif font-semibold text-brand-dark tracking-tight scroll-mt-32 mb-5 pt-10 border-t border-gray-100 first:border-none first:pt-0"
+    >
+      {children}
+    </h2>
+  );
+}
+
+function H3({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-[12px] font-mono font-semibold text-brand-dark uppercase tracking-widest mt-7 mb-3">
+      {children}
+    </h3>
+  );
+}
+
+function DataTable({ cols, rows }: { cols: string[]; rows: string[][] }) {
+  return (
+    <div className="overflow-x-auto my-5">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b-2 border-gray-900">
+            {cols.map((c, i) => (
+              <th key={i} className="text-left py-3 pr-8 text-[11px] font-mono font-semibold uppercase tracking-widest text-brand-dark">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-gray-100 hover:bg-gray-50/50">
+              {row.map((cell, j) => (
+                <td key={j} className="py-3.5 pr-8 text-[13px] text-gray-600 leading-relaxed align-top">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Note({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="border-l-2 border-brand-red/40 pl-5 py-0.5 my-5">
+      <p className="text-[13px] text-gray-500 leading-relaxed">{children}</p>
+    </div>
+  );
+}
 
 const PrivacyPolicy: React.FC = () => {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useHeaderTheme('light', containerRef);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+  const active = useActiveSection(navSections.map(s => s.id));
 
   return (
-    <div className="min-h-screen bg-white pt-32 pb-20 px-6 md:px-20 lg:px-32">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto"
-      >
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-brand-red/10 rounded-2xl">
-            <Shield className="w-8 h-8 text-brand-red" />
+    <div ref={containerRef} className="min-h-screen bg-white selection:bg-brand-red/10 selection:text-brand-dark">
+
+      <div className="h-[3px] w-full bg-brand-red" />
+
+      <div className="max-w-[1280px] mx-auto px-6 md:px-12 lg:px-20">
+
+        {/* Header */}
+        <motion.header
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="pt-24 pb-14 border-b border-gray-200"
+        >
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-[11px] font-mono text-gray-400 uppercase tracking-widest hover:text-brand-red transition-colors mb-10"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Floodrix Engineering Portal
+          </Link>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
+            <div className="lg:col-span-7">
+              <p className="text-[11px] font-mono text-brand-red uppercase tracking-[0.25em] mb-4">Legal</p>
+              <h1 className="text-4xl md:text-5xl font-serif font-semibold text-brand-dark leading-[1.1] tracking-tight mb-5">
+                Privacy Policy
+              </h1>
+              <p className="text-[15px] text-gray-500 leading-relaxed max-w-xl">
+                This document describes how Floodrix collects, processes, and protects personal data in connection with the use of the Engineering Portal.
+              </p>
+            </div>
+            <div className="lg:col-span-5">
+              <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
+                {[
+                  { label: "Last revised", value: "May 2026" },
+                  { label: "Governing law", value: "India — DPDP Act 2023" },
+                  { label: "Contact", value: "privacy@floodrix.com" },
+                ].map((m, i) => (
+                  <div key={i} className="flex items-baseline justify-between gap-4 px-5 py-3 border-b border-gray-100 last:border-none odd:bg-gray-50/50">
+                    <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider">{m.label}</span>
+                    <span className="text-[12px] font-mono font-semibold text-brand-dark">{m.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-brand-dark">Privacy Policy</h1>
-        </div>
+        </motion.header>
 
-        <div className="prose prose-lg max-w-none text-gray-600 space-y-12">
-          <section>
-            <h2 className="text-2xl font-bold text-brand-dark flex items-center gap-3 mb-4">
-              <Eye className="w-6 h-6 text-brand-dark" />
-              1. Information We Collect
-            </h2>
+        {/* Body */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 py-16">
+
+          {/* Sidebar nav */}
+          <aside className="hidden lg:block lg:col-span-3 pr-12">
+            <div className="sticky top-28">
+              <p className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.25em] mb-5">Contents</p>
+              <nav className="space-y-0">
+                {navSections.map(s => (
+                  <a
+                    key={s.id}
+                    href={`#${s.id}`}
+                    className={`flex items-center py-2.5 text-[12px] font-mono transition-colors border-l-2 pl-4 ${active === s.id
+                        ? 'border-brand-red text-brand-dark font-semibold'
+                        : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-200'
+                      }`}
+                  >
+                    {s.label}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          {/* Main */}
+          <main className="lg:col-span-9 lg:border-l lg:border-gray-100 lg:pl-14 text-[14px] text-gray-600 leading-[1.9] space-y-1">
+
+            {/* 01 */}
+            <H2 id="who-we-are">1. Who we are</H2>
             <p>
-              Floodrix collects information to provide better services to all our users. We collect information in the following ways:
+              Floodrix is an engineering consultancy providing hydraulic modelling, hydrological assessment, and drainage design services. This website is intended for civil engineers, infrastructure developers, and government bodies seeking technical resources and advisory services.
             </p>
-            <ul className="list-disc pl-6 space-y-2 mt-4">
-              <li><strong>Information you give us:</strong> For example, our services require you to sign up for an account. When you do, we’ll ask for personal information, like your name, email address, or telephone number.</li>
-              <li><strong>Information we get from your use of our services:</strong> We collect information about the services that you use and how you use them, like when you visit a website that uses our advertising services or you view and interact with our ads and content.</li>
+            <p className="mt-3">
+              For privacy-related enquiries, contact:{' '}
+              <a href="mailto:privacy@floodrix.com" className="font-mono text-brand-red hover:underline">
+                privacy@floodrix.com
+              </a>
+            </p>
+
+            {/* 02 */}
+            <H2 id="data-collection">2. What data we collect</H2>
+
+            <H3>2a — Analytics data (consent-gated)</H3>
+            <p>
+              If you accept analytics cookies, we collect the following via Google Analytics 4 through Google Tag Manager. No data of this type is collected if you decline or have not yet made a choice:
+            </p>
+            <ul className="mt-3 space-y-2 ml-1">
+              {[
+                "Pages visited and time spent on each page",
+                "How you arrived at the site — search engine, direct, or referral",
+                "Browser type, operating system, and screen resolution",
+                "Approximate geographic location (country and city) derived from IP address — the full IP address is not stored",
+                "Interaction events such as button clicks, file downloads, and form completions",
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="mt-2.5 w-1 h-1 rounded-full bg-brand-red flex-shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
-          </section>
+            <Note>This data is aggregated and anonymised. We do not build individual user profiles.</Note>
 
-          <section>
-            <h2 className="text-2xl font-bold text-brand-dark flex items-center gap-3 mb-4">
-              <Lock className="w-6 h-6 text-brand-dark" />
-              2. How We Use Information
-            </h2>
+            <H3>2b — Contact and enquiry data</H3>
             <p>
-              We use the information we collect from all of our services to provide, maintain, protect and improve them, to develop new ones, and to protect Floodrix and our users.
+              When you submit a project enquiry, we collect your name, email address, organisation name (if provided), and message content. This is used solely to respond to your enquiry and is not used for marketing without separate consent.
             </p>
-            <p className="mt-4">
-              We also use this information to offer you tailored content – like giving you more relevant search results and ads.
-            </p>
-          </section>
 
-          <section>
-            <h2 className="text-2xl font-bold text-brand-dark flex items-center gap-3 mb-4">
-              <FileText className="w-6 h-6 text-brand-dark" />
-              3. Information Security
-            </h2>
+            <H3>2c — Cookie preference</H3>
             <p>
-              We work hard to protect Floodrix and our users from unauthorized access to or unauthorized alteration, disclosure or destruction of information we hold. In particular:
+              We store your consent choice in your browser's local storage. This is a functional necessity to remember your preference across visits. It does not constitute tracking.
             </p>
-            <ul className="list-disc pl-6 space-y-2 mt-4">
-              <li>We encrypt many of our services using SSL.</li>
-              <li>We review our information collection, storage and processing practices, including physical security measures, to guard against unauthorized access to systems.</li>
-              <li>We restrict access to personal information to Floodrix employees, contractors and agents who need to know that information in order to process it for us.</li>
-            </ul>
-          </section>
 
-          <section className="bg-gray-50 p-8 rounded-3xl border border-gray-100 mt-12">
-            <h2 className="text-xl font-bold text-brand-dark mb-4">Contact Us</h2>
-            <p className="text-sm">
-              If you have any questions about this Privacy Policy, please contact us at: <br />
-              <span className="text-brand-red font-medium">privacy@floodrix.eco</span>
+            <H3>2d — Data we do not collect</H3>
+            <p>
+              We do not collect payment card information, sensitive personal data (health, religion, ethnicity), data from children under 18, or precise geolocation coordinates.
             </p>
-          </section>
-        </div>
 
-        <div className="mt-20 pt-10 border-t border-gray-100 text-sm text-gray-400">
-          Last updated: April 28, 2024
+            {/* 03 */}
+            <H2 id="legal-basis">3. Legal basis for processing</H2>
+            <DataTable
+              cols={["Data type", "Legal basis"]}
+              rows={[
+                ["Analytics (GA4)", "Your consent — Consent Mode v2"],
+                ["Contact enquiries", "Legitimate interest / contractual necessity"],
+                ["Cookie preference storage", "Legitimate interest (functional necessity)"],
+              ]}
+            />
+            <p className="mt-2 text-[13px] text-gray-500">
+              Under India's Digital Personal Data Protection Act 2023 (DPDP Act), we process personal data only for the purposes stated above and do not repurpose it without notifying you.
+            </p>
+
+            {/* 04 */}
+            <H2 id="google">4. Google Analytics and Tag Manager</H2>
+            <p>
+              We use Google Tag Manager to manage analytics tags. GTM itself does not collect personal data. Google Analytics 4 is loaded <strong className="font-semibold text-brand-dark">only after you explicitly accept analytics cookies</strong>. If you reject or have not yet made a choice, no GA4 data collection occurs.
+            </p>
+            <p className="mt-3">
+              Google processes analytics data on servers that may be located outside India, including in the United States. Google anonymises IP addresses before storage and will not associate your IP with any other data held by Google. We do not enable Google Signals or advertising features. For details, refer to{' '}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-brand-dark font-mono text-[13px] hover:text-brand-red transition-colors underline underline-offset-2"
+              >
+                Google's Privacy Policy <ExternalLink className="w-3 h-3" />
+              </a>.
+            </p>
+
+            {/* 05 */}
+            <H2 id="retention">5. Data retention</H2>
+            <DataTable
+              cols={["Data type", "Retention period", "Notes"]}
+              rows={[
+                ["GA4 analytics data", "14 months", "GA4 default; configurable in property settings"],
+                ["Contact enquiry emails", "3 years", "From last correspondence"],
+                ["Cookie preference", "Until browser storage cleared", "Local storage entry"],
+              ]}
+            />
+
+            {/* 06 */}
+            <H2 id="sharing">6. Data sharing</H2>
+            <p>
+              We do not sell, rent, or trade your personal data. We share data only with the following processors under contractual data processing agreements:
+            </p>
+            <DataTable
+              cols={["Third party", "Purpose"]}
+              rows={[
+                ["Google LLC", "Analytics processing via GA4 / GTM"],
+                ["Email / CRM provider", "Routing and storing contact enquiries"],
+              ]}
+            />
+            <p className="mt-2 text-[13px] text-gray-500">
+              We may disclose data where required by law, regulatory authority, or court order, including under the DPDP Act 2023.
+            </p>
+
+            {/* 07 */}
+            <H2 id="rights">7. Your rights</H2>
+            <p>Under the DPDP Act 2023 and applicable law, you have the right to access, correct, or erase your personal data, and to withdraw consent at any time.</p>
+            <DataTable
+              cols={["Right", "How to exercise"]}
+              rows={[
+                ["Access data we hold about you", "Email privacy@floodrix.com"],
+                ["Correct inaccurate data", "Email privacy@floodrix.com"],
+                ["Erase your data", "Email privacy@floodrix.com (subject to legal retention obligations)"],
+                ["Withdraw analytics consent", "Clear browser local storage — banner reappears on next visit"],
+                ["Nominate a representative", "Email privacy@floodrix.com with written authorisation"],
+              ]}
+            />
+            <p className="text-[13px] text-gray-500">We will respond to all rights requests within 30 days.</p>
+
+            {/* 08 */}
+            <H2 id="security">8. Security</H2>
+            <p>
+              We implement industry-standard security measures including HTTPS encryption, access controls on contact form data, and periodic security reviews. No transmission over the internet is completely secure; we take all reasonable precautions but cannot guarantee absolute security.
+            </p>
+
+            {/* 09 */}
+            <H2 id="changes">9. Changes to this policy</H2>
+            <p>
+              We will update this policy when our data practices change. The revision date at the top of this page will reflect any update. For material changes, we will post a notice on the homepage for 30 days.
+            </p>
+
+            {/* 10 */}
+            <H2 id="contact">10. Contact</H2>
+            <div className="space-y-1 text-[14px]">
+              <p className="font-semibold text-brand-dark">Floodrix Engineering Portal</p>
+              <p>
+                <a href="mailto:privacy@floodrix.com" className="font-mono text-brand-red hover:underline">
+                  privacy@floodrix.com
+                </a>
+              </p>
+              <p className="text-gray-500">[Registered address]</p>
+            </div>
+
+            {/* Footer */}
+            <div className="pt-12 border-t border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-8">
+              <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest">
+                © Floodrix Engineering Portal — May 2026
+              </p>
+              <div className="flex items-center gap-6">
+                <Link href="/terms" className="text-[11px] font-mono text-gray-400 hover:text-brand-dark transition-colors uppercase tracking-widest">
+                  Terms & Conditions
+                </Link>
+                <Link href="/cookie-policy" className="text-[11px] font-mono text-gray-400 hover:text-brand-dark transition-colors uppercase tracking-widest">
+                  Cookie Policy
+                </Link>
+              </div>
+            </div>
+
+          </main>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

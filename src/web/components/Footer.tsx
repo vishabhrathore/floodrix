@@ -5,8 +5,12 @@ import React, { useEffect } from 'react';
 import { Droplets, Linkedin, Twitter, Facebook, Mail, Phone, MapPin } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useFooterObserver } from '../hooks/useFooterObserver';
 
 const Footer: React.FC = () => {
+  const footerRef = React.useRef<HTMLElement>(null);
+  useFooterObserver(footerRef);
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       const footerBrand = document.querySelector('#footer-brand-reveal');
@@ -52,7 +56,7 @@ const Footer: React.FC = () => {
   }, []);
 
   return (
-    <footer id="main-footer" className="bg-black text-white pt-32 pb-40 relative overflow-hidden min-h-[95vh] flex flex-col justify-start">
+    <footer ref={footerRef} id="main-footer" data-header-theme="dark" className="bg-black text-white pt-32 pb-40 relative overflow-hidden min-h-[95vh] flex flex-col justify-start">
       {/* Background Decorative Text - Parallax Target */}
       <div id="footer-brand-reveal" className="absolute bottom-0 left-0 w-full flex items-center justify-center select-none pointer-events-none opacity-0 overflow-hidden pb-10">
         <span className="text-[35vh] md:text-[45vh] font-serif font-bold tracking-tighter leading-none text-white block transform-gpu whitespace-nowrap uppercase">

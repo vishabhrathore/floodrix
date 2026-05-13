@@ -59,7 +59,6 @@ const Home: React.FC = () => {
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
-      ScrollTrigger.getAll().forEach(t => t.kill());
     };
   }, []);
 

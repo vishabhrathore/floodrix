@@ -10,133 +10,88 @@ export default function ContactPage() {
   const containerRef = useSectionTheme<HTMLDivElement>('contact-container', 'light');
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-[#fcfcfc] selection:bg-brand-red/10 selection:text-brand-dark pt-24 md:pt-32">
+    <div ref={containerRef} className="relative min-h-screen bg-[#ffffff] selection:bg-brand-red/10 selection:text-brand-dark pt-32 md:pt-40">
 
-      <main>
+      <main className="w-full px-6 md:px-20 lg:px-32">
 
-        {/* Page Header */}
-        <section className="px-6 md:px-12 lg:px-24 mb-20 lg:mb-28">
-          <SmoothReveal direction="up" distance={30}>
-            <div className="max-w-3xl">
-              <p className="text-[11px] font-mono text-brand-red uppercase tracking-widest mb-6">
-                Project Enquiries
-              </p>
-              {/* font-serif for brand identity — consistent with the landing page */}
-              <h1 className="text-display font-serif text-brand-dark leading-[1.05] tracking-tight mb-8">
-                Work with our<br />
-                <span className="italic text-brand-red">engineering</span> team.
-              </h1>
-              <p className="text-lg text-gray-500 font-sans font-light leading-[1.8] max-w-xl">
-                We provide hydraulic modelling, drainage design, and regulatory submissions for infrastructure projects across India. Describe your requirements and we will direct your enquiry to the relevant technical lead.
-              </p>
-            </div>
-          </SmoothReveal>
-        </section>
+        {/* ── Formal Header (ARUP Style) ── */}
+        <header className="mb-24">
+          <div className="max-w-4xl mb-20">
+            <h1 className="text-5xl md:text-7xl font-serif text-brand-dark tracking-tight mb-8">
+              Contact us
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-500 font-sans font-light leading-relaxed">
+              Our services are delivered by a global network of experts with a depth of expertise and a 
+              commitment to technical excellence. Get in touch using the options below and we&apos;ll connect you to 
+              the right person.
+            </p>
+          </div>
+        </header>
 
-        {/* Main Grid */}
-        <section className="px-6 md:px-12 lg:px-24 pb-32">
+        {/* ── Main Interactive Grid ── */}
+        <section className="pb-32">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
 
-            {/* Left: Contact information */}
-            <div className="lg:col-span-5 space-y-0">
-              <SmoothReveal direction="right" distance={40} delay={0.2}>
-                <div className="space-y-10">
-
-                  {/* Engagement process */}
-                  <div className="space-y-6">
-                    <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest">
-                      Engagement process
+            {/* Left: Engagement & Details */}
+            <div className="lg:col-span-5 space-y-16">
+              <SmoothReveal direction="up" distance={20}>
+                <div className="space-y-12">
+                  
+                  {/* Global Presence Note */}
+                  <div className="space-y-4">
+                    <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest font-bold">Expert Connection</p>
+                    <p className="text-lg text-brand-dark font-sans font-medium leading-relaxed">
+                      We operate a specialized technical dispatch system to ensure your enquiry reaches 
+                      the most qualified specialist in your region.
                     </p>
-                    <div className="space-y-6">
-                      {[
-                        {
-                          step: "01",
-                          title: "Submit your brief",
-                          body: "Complete the form with your project scope, location, and applicable standards. The more detail you provide, the faster we can direct your enquiry."
-                        },
-                        {
-                          step: "02",
-                          title: "Technical acknowledgement",
-                          body: "We respond within 2 working days to confirm the relevant technical lead and schedule a scope discussion if required."
-                        },
-                        {
-                          step: "03",
-                          title: "Written proposal",
-                          body: "We issue a written fee proposal covering scope of work, deliverables, timeline, and regulatory standards applicable to your project."
-                        }
-                      ].map((item) => (
-                        <div key={item.step} className="flex items-start gap-5">
-                          <span className="text-[11px] font-mono text-brand-red mt-0.5 flex-shrink-0">{item.step}</span>
-                          <div>
-                            <p className="text-base font-semibold text-brand-dark font-sans mb-1">{item.title}</p>
-                            <p className="text-sm text-gray-500 font-sans font-light leading-relaxed">{item.body}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
-                  {/* Contact details */}
-                  <div className="pt-10 border-t border-gray-100 space-y-0">
-                    <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest mb-6">
-                      Contact details
-                    </p>
-
+                  {/* Contact Methods */}
+                  <div className="pt-12 border-t border-gray-100 space-y-2">
                     <ContactInfoRow
-                      icon={<Mail size={15} />}
-                      label="Technical enquiries"
+                      icon={<Mail size={16} />}
+                      label="Technical Enquiries"
                       value="engineering@floodrix.com"
                     />
                     <ContactInfoRow
-                      icon={<Phone size={15} />}
-                      label="Office — Mon to Fri, 9:00–18:00 IST"
+                      icon={<Phone size={16} />}
+                      label="Global Headquarters"
                       value="+91 124 000 0000"
                     />
                     <ContactInfoRow
-                      icon={<MapPin size={15} />}
-                      label="Registered office"
+                      icon={<MapPin size={16} />}
+                      label="Corporate Address"
                       value="Corporate Greens, Sector 56, Gurugram – 122011, Haryana"
                     />
                   </div>
 
-                  {/* Confidentiality note — plain text, no decorative card */}
-                  <div className="pt-8 border-t border-gray-100">
-                    <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest mb-3">
-                      Confidentiality
-                    </p>
-                    <p className="text-sm text-gray-500 font-sans leading-relaxed">
-                      All project enquiries are handled in strict confidence. Non-disclosure arrangements are standard practice for commissions involving proprietary site data or unreleased regulatory submissions.
-                    </p>
-                  </div>
-
-                  {/* LinkedIn only — Twitter/Instagram are wrong for this audience */}
-                  <div className="pt-8 border-t border-gray-100 flex items-center gap-3">
+                  {/* LinkedIn */}
+                  <div className="pt-4">
                     <a
                       href="https://linkedin.com/company/floodrix"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2.5 text-[11px] font-mono text-gray-400 uppercase tracking-widest hover:text-brand-dark transition-colors"
+                      className="inline-flex items-center gap-3 text-[11px] font-mono text-gray-400 uppercase tracking-[0.3em] font-bold hover:text-brand-red transition-colors"
                     >
-                      <Linkedin size={15} />
-                      Follow on LinkedIn
+                      <Linkedin size={14} className="text-brand-red" />
+                      Institutional LinkedIn
                     </a>
                   </div>
-
                 </div>
               </SmoothReveal>
             </div>
 
-            {/* Right: Form */}
+            {/* Right: Premium Form Container */}
             <div className="lg:col-span-7">
-              <SmoothReveal direction="left" distance={40} delay={0.4}>
-                <div className="bg-white rounded-2xl border border-gray-200 p-8 md:p-10">
-                  {/* Form header */}
-                  <div className="mb-10 pb-8 border-b border-gray-100">
-                    <h2 className="text-h4 font-serif text-brand-dark mb-2 tracking-tight">
-                      Project enquiry <span className="italic text-brand-red">form</span>
+              <SmoothReveal direction="up" distance={30} delay={0.2}>
+                <div className="bg-[#fcfcfc] rounded-[2.5rem] p-10 md:p-16 border border-gray-100 shadow-2xl shadow-black/[0.02]">
+                  <div className="mb-12">
+                    <h2 className="text-3xl font-serif text-brand-dark tracking-tight mb-4">
+                      Submit an enquiry
                     </h2>
-                    <p className="text-xs text-gray-400 font-sans font-light">
-                      All fields marked with an asterisk are required. We do not use this information for marketing purposes.
+                    <p className="text-sm text-gray-400 font-sans font-light">
+                      Describe your project requirements and technical standards. 
+                      A specialist lead will review and respond within 48 hours.
                     </p>
                   </div>
                   <ContactForm />

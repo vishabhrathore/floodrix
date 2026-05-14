@@ -154,7 +154,7 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
               className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-red/10 to-transparent -skew-x-12 pointer-events-none"
             />
 
-            <span className="text-[9px] font-mono font-bold tracking-[0.5em] text-gray-400 uppercase whitespace-nowrap relative z-10">
+            <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-gray-400 uppercase whitespace-nowrap relative z-10">
               Vulnerability Audit
             </span>
 
@@ -173,7 +173,7 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
               />
             </div>
 
-            <span className="text-[9px] font-mono font-bold tracking-[0.5em] text-brand-red uppercase whitespace-nowrap relative z-10">
+            <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-brand-red uppercase whitespace-nowrap relative z-10">
               Engineering Resolution
             </span>
           </motion.div>

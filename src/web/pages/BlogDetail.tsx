@@ -8,9 +8,7 @@ import {
   ArrowLeft, Clock, Calendar, ExternalLink,
   Share2, FileText, ChevronRight
 } from 'lucide-react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import MarkdownContent from '../components/MarkdownContent';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -203,85 +201,8 @@ const BlogDetail: React.FC = () => {
               </div>
 
               {/* Readable column — max ~72ch */}
-              <div className="max-w-[72ch] prose-custom">
-                <Markdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeRaw]}
-                  components={{
-                    h2: ({ node, ...props }) => (
-                      <h2
-                        className="font-serif font-bold text-brand-dark mt-20 mb-8 tracking-tight"
-                        style={{ fontSize: 'clamp(1.35rem, 2vw, 1.75rem)', lineHeight: 1.25 }}
-                        {...props}
-                      />
-                    ),
-                    h3: ({ node, ...props }) => (
-                      <h3
-                        className="font-sans font-bold text-brand-dark mt-14 mb-6 tracking-tight"
-                        style={{ fontSize: 'clamp(1.1rem, 1.6vw, 1.35rem)', lineHeight: 1.3 }}
-                        {...props}
-                      />
-                    ),
-                    p: ({ node, ...props }) => (
-                      <p
-                        className="font-sans text-gray-700 leading-[1.82] mb-10"
-                        style={{ fontSize: '1.0625rem' }}
-                        {...props}
-                      />
-                    ),
-                    blockquote: ({ node, ...props }) => (
-                      <blockquote
-                        className="my-14 border-l-2 border-brand-red pl-8 font-serif italic text-gray-500"
-                        style={{ fontSize: '1.125rem', lineHeight: 1.7 }}
-                        {...props}
-                      />
-                    ),
-                    ul: ({ node, ...props }) => (
-                      <ul className="list-disc list-outside ml-5 mb-10 space-y-3 font-sans" {...props} />
-                    ),
-                    ol: ({ node, ...props }) => (
-                      <ol className="list-decimal list-outside ml-5 mb-10 space-y-3 font-sans" {...props} />
-                    ),
-                    li: ({ node, ...props }) => (
-                      <li
-                        className="text-gray-700 leading-relaxed pl-1"
-                        style={{ fontSize: '1.0625rem' }}
-                        {...props}
-                      />
-                    ),
-                    strong: ({ node, ...props }) => (
-                      <strong className="font-bold text-brand-dark" {...props} />
-                    ),
-                    table: ({ node, ...props }) => (
-                      <div className="my-16 overflow-x-auto rounded-xl border border-gray-100 shadow-sm bg-white">
-                        <table
-                          className="w-full text-left border-collapse font-sans text-sm"
-                          {...props}
-                        />
-                      </div>
-                    ),
-                    thead: ({ node, ...props }) => (
-                      <thead className="bg-gray-50 border-b border-gray-100" {...props} />
-                    ),
-                    th: ({ node, ...props }) => (
-                      <th
-                        className="px-6 py-4 text-[11px] font-mono uppercase tracking-widest text-gray-400 font-bold"
-                        {...props}
-                      />
-                    ),
-                    td: ({ node, ...props }) => (
-                      <td
-                        className="px-6 py-5 text-gray-600 border-b border-gray-50 align-top leading-relaxed"
-                        {...props}
-                      />
-                    ),
-                    tr: ({ node, ...props }) => (
-                      <tr className="hover:bg-gray-50/50 transition-colors" {...props} />
-                    ),
-                  }}
-                >
-                  {blog.content}
-                </Markdown>
+              <div className="max-w-[72ch]">
+                <MarkdownContent content={blog.content} />
               </div>
 
             </motion.div>

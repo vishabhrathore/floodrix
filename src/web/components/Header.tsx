@@ -43,7 +43,7 @@ const Header: React.FC = () => {
     { name: 'Leadership', href: '/team' },
     { name: 'Digital Tools', href: '/platform' },
     { name: 'Insights', href: '/blog' },
-    { name: 'Contact', href: '/#contact' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   const isHome = pathname === '/';

@@ -4,10 +4,13 @@ import React from 'react';
 import { Mail, Phone, MapPin, Linkedin } from 'lucide-react';
 import SmoothReveal from '@/web/components/SmoothReveal';
 import ContactForm from '@/web/components/ContactForm';
+import { useSectionTheme } from '@/web/hooks/useSectionTheme';
 
 export default function ContactPage() {
+  const containerRef = useSectionTheme<HTMLDivElement>('contact-container', 'light');
+
   return (
-    <div className="relative min-h-screen bg-[#fcfcfc] selection:bg-brand-red/10 selection:text-brand-dark pt-24 md:pt-32">
+    <div ref={containerRef} className="relative min-h-screen bg-[#fcfcfc] selection:bg-brand-red/10 selection:text-brand-dark pt-24 md:pt-32">
 
       <main>
 

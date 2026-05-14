@@ -2,16 +2,17 @@
 
 
 import React from 'react';
-import { motion } from 'motion/react';
 import { TEAM } from '../constants';
 import { ArrowRight } from 'lucide-react';
 import { } from 'next/navigation'
 import Link from 'next/link';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 import SmoothReveal from './SmoothReveal';
 
 const TeamGist: React.FC = () => {
+  const sectionRef = useSectionTheme<HTMLElement>('home-team', 'light');
   return (
-    <section className="py-32 bg-white overflow-hidden">
+    <section ref={sectionRef} className="py-32 bg-white overflow-hidden">
       <div className="px-6 md:px-20 lg:px-32">
         <SmoothReveal direction="up" distance={30}>
           <div className="flex flex-col lg:flex-row justify-between items-end mb-20 gap-8">

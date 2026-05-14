@@ -2,31 +2,29 @@
 
 
 import React, { useEffect } from 'react';
-import { Droplets, Linkedin, Twitter, Facebook, Mail, Phone, MapPin } from 'lucide-react';
+import { Linkedin, Twitter, Facebook, Mail, Phone, MapPin } from 'lucide-react';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useFooterObserver } from '../hooks/useFooterObserver';
+import { useFooterTheme } from '../hooks/useSectionTheme';
 
 const Footer: React.FC = () => {
-  const footerRef = React.useRef<HTMLElement>(null);
-  useFooterObserver(footerRef);
+  const footerRef = useFooterTheme();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       const footerBrand = document.querySelector('#footer-brand-reveal');
       const footerSection = document.querySelector('#main-footer');
-      
+
       if (footerBrand && footerSection) {
-        gsap.fromTo(footerBrand, 
-          { 
-            y: 300, 
+        gsap.fromTo(footerBrand,
+          {
+            y: 300,
             scale: 0.9,
             opacity: 0,
           },
-          { 
-            y: 50, 
+          {
+            y: 50,
             scale: 1,
-            opacity: 0.08, 
+            opacity: 0.08,
             ease: "none",
             scrollTrigger: {
               trigger: footerSection,
@@ -56,7 +54,7 @@ const Footer: React.FC = () => {
   }, []);
 
   return (
-    <footer ref={footerRef} id="main-footer" data-header-theme="dark" className="bg-black text-white pt-32 pb-40 relative overflow-hidden min-h-[95vh] flex flex-col justify-start">
+    <footer ref={footerRef} id="main-footer" className="bg-black text-white pt-32 pb-40 relative overflow-hidden min-h-[95vh] flex flex-col justify-start">
       {/* Background Decorative Text - Parallax Target */}
       <div id="footer-brand-reveal" className="absolute bottom-0 left-0 w-full flex items-center justify-center select-none pointer-events-none opacity-0 overflow-hidden pb-10">
         <span className="text-[35vh] md:text-[45vh] font-serif font-bold tracking-tighter leading-none text-white block transform-gpu whitespace-nowrap uppercase">
@@ -114,10 +112,10 @@ const Footer: React.FC = () => {
                   <div className="bg-white/5 p-3 rounded-lg h-inner flex items-center justify-center group-hover:bg-brand-teal/20 transition-colors">
                     <MapPin className="w-5 h-5 text-brand-teal" />
                   </div>
-                  <span className="text-white/50 font-light leading-relaxed">1200 Innovation Way,<br/>Tech Hub 560001, India</span>
+                  <span className="text-white/50 font-light leading-relaxed">1200 Innovation Way,<br />Tech Hub 560001, India</span>
                 </div>
                 <div className="flex gap-5 group">
-                   <div className="bg-white/5 p-3 rounded-lg h-inner flex items-center justify-center group-hover:bg-brand-teal/20 transition-colors">
+                  <div className="bg-white/5 p-3 rounded-lg h-inner flex items-center justify-center group-hover:bg-brand-teal/20 transition-colors">
                     <Mail className="w-5 h-5 text-brand-teal" />
                   </div>
                   <span className="text-white/50 font-light leading-relaxed">solutions@floodrix.eco</span>

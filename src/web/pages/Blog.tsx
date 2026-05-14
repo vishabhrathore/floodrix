@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Calendar, Clock, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import { BLOGS } from '../constants';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 const Blog: React.FC = () => {
+  const containerRef = useSectionTheme<HTMLDivElement>('blog-container', 'light');
   const [activeFilter, setActiveFilter] = useState('All');
 
   const categories = ['All', ...Array.from(new Set(BLOGS.map(b => b.category)))];
@@ -16,7 +18,7 @@ const Blog: React.FC = () => {
     : BLOGS.filter(b => b.category === activeFilter);
 
   return (
-    <div className="pt-40 pb-24 bg-[#fafafa] min-h-screen">
+    <div ref={containerRef} className="pt-40 pb-24 bg-[#fafafa] min-h-screen">
       <div className="w-full px-6 md:px-20 lg:px-32">
 
         {/* ── Page Header ── */}

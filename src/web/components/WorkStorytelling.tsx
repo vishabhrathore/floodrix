@@ -10,6 +10,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
+import { useSectionTheme } from '../hooks/useSectionTheme';
+
 interface Domain {
   id: string;
   title: string;
@@ -198,8 +200,10 @@ const WorkStorytelling: React.FC = () => {
     }
   ];
 
+  const sectionRef = useSectionTheme('home-domains', 'light');
+
   return (
-    <section className="bg-white py-24 lg:py-32 border-t border-gray-200 overflow-hidden relative">
+    <section ref={sectionRef} className="bg-white py-24 lg:py-32 border-t border-gray-200 overflow-hidden relative">
       <div className="w-full px-6 md:px-12 lg:px-24 relative z-10">
 
         {/* Header Section - Professional & Grounded */}

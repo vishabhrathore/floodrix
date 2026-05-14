@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { useHeaderTheme } from '../hooks/useHeaderTheme';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { gsap } from 'gsap';
@@ -96,11 +96,9 @@ function Note({ children }: { children: React.ReactNode }) {
 }
 
 const PrivacyPolicy: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useSectionTheme<HTMLDivElement>('privacy-container', 'light');
   const cursorRef = useRef<HTMLDivElement>(null);
   const cursorFollowerRef = useRef<HTMLDivElement>(null);
-
-  useHeaderTheme('light', containerRef);
 
   useEffect(() => {
     window.scrollTo(0, 0);

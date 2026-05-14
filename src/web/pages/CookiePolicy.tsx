@@ -2,17 +2,15 @@
 
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { useHeaderTheme } from '../hooks/useHeaderTheme';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { gsap } from 'gsap';
 
 const CookiePolicy: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useSectionTheme<HTMLDivElement>('cookie-container', 'light');
   const cursorRef = useRef<HTMLDivElement>(null);
   const cursorFollowerRef = useRef<HTMLDivElement>(null);
-
-  useHeaderTheme('light', containerRef);
 
   useEffect(() => {
     window.scrollTo(0, 0);

@@ -13,10 +13,12 @@ import Contact from '../components/Contact';
 import SmoothReveal from '../components/SmoothReveal';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const Home: React.FC = () => {
+  const aboutRef = useSectionTheme('home-about', 'light');
   const cursorRef = useRef<HTMLDivElement>(null);
   const cursorFollowerRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +82,7 @@ const Home: React.FC = () => {
             <RunoffCalculator />
           </SmoothReveal>
 
-          <section id="about" className="py-32 lg:py-48 w-full px-6 md:px-12 lg:px-24 bg-white">
+          <section id="about" ref={aboutRef} className="py-32 lg:py-48 w-full px-6 md:px-12 lg:px-24 bg-white">
             <SmoothReveal direction="up" distance={40}>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
 

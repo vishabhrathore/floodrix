@@ -2,13 +2,12 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { motion, useSpring, useTransform, AnimatePresence } from 'motion/react';
-import { Calculator, Info, Zap, Activity, Waves, ArrowRight } from 'lucide-react';
-import { useHeaderTheme } from '../hooks/useHeaderTheme';
+import { motion, useSpring, useTransform } from 'motion/react';
+import { Calculator, Zap, Activity, Waves, ArrowRight } from 'lucide-react';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 const RunoffCalculator: React.FC = () => {
-  const sectionRef = React.useRef<HTMLElement>(null);
-  useHeaderTheme('dark', sectionRef);
+  const sectionRef = useSectionTheme('runoff-calculator', 'dark');
 
   const [coefficient, setCoefficient] = useState(0.70); // C
   const [intensity, setIntensity] = useState(50); // i (mm/hr)

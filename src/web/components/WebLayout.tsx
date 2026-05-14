@@ -16,52 +16,73 @@ import { useHeaderStore } from '@/web/store/useHeaderStore';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/**
+ * Per-route default theme.
+ *
+ * 'dark'  → page starts with a dark/hero background  → header text = white
+ * 'light' → page starts with a white/light background → header text = dark
+ */
+const ROUTE_DEFAULT_THEME: Array<{ match: (p: string) => boolean; dark: boolean }> = [
+    { match: p => p === '/', dark: true }, // homepage hero
+    { match: p => p.startsWith('/capabilities'), dark: false },
+    { match: p => p.startsWith('/works'), dark: true },
+    { match: p => p.startsWith('/team'), dark: true },
+    { match: p => p.startsWith('/platform'), dark: true },
+    { match: p => p.startsWith('/blog'), dark: false },
+    { match: p => p.startsWith('/contact'), dark: false },
+    { match: p => p.startsWith('/privacy'), dark: false },
+    { match: p => p.startsWith('/terms'), dark: false },
+    { match: p => p.startsWith('/cookie-policy'), dark: false },
+];
+
+function getDefaultDark(pathname: string): boolean {
+    const match = ROUTE_DEFAULT_THEME.find(r => r.match(pathname));
+    return match?.dark ?? true; // default to dark if unknown route
+}
+
 const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const setIsScrolled = useHeaderStore(state => state.setIsScrolled);
-  const setSectionState = useHeaderStore(state => state.setSectionState);
-  const setIsInFooter = useHeaderStore(state => state.setIsInFooter);
-  const reset = useHeaderStore(state => state.reset);
   const pathname = usePathname();
+  const resetForRoute = useHeaderStore(s => s.resetForRoute);
+  const onScroll = useHeaderStore(s => s.onScroll);
 
+  // ── Route change: reset store BEFORE the new page's sections register ───────
   useEffect(() => {
-    // 1. Reset the store - wipe all section registrations from the old page
-    // We assume pages start with a dark hero by default unless specified otherwise
-    reset(true);
-    
-    // 2. Scroll to top immediately and synchronously
-    window.scrollTo(0, 0);
+    // Scroll to top immediately and synchronously
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    resetForRoute(getDefaultDark(pathname));
 
-    // 3. Global Scroll Position Tracking
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
-    // 4. Delayed Refresh - wait for paint, then for content to settle
+    // After reset, give the new page one frame to mount its sections,
+    // then re-compute based on current scroll (which is 0 after the scroll above).
     const raf = requestAnimationFrame(() => {
-      const timeout = setTimeout(() => {
+        onScroll();
         ScrollTrigger.refresh();
-      }, 300); // Increased slightly for image/video hydration
-      return () => clearTimeout(timeout);
     });
+    return () => cancelAnimationFrame(raf);
+  }, [pathname, resetForRoute, onScroll]);
 
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      cancelAnimationFrame(raf);
+  // ── Single passive scroll listener for the whole app ────────────────────────
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+        if (!ticking) {
+            requestAnimationFrame(() => {
+                onScroll();
+                ticking = false;
+            });
+            ticking = true;
+        }
     };
-  }, [setIsScrolled, reset, setIsInFooter, pathname]);
 
-  // Essential ScrollTrigger refresh for dynamic height changes
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [pathname]);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Compute once on mount in case the page loads mid-scroll
+    onScroll();
 
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [onScroll]);
+
+  // ── Lenis Smooth Scroll ──
   useEffect(() => {
-    // 0. Initialize Lenis Smooth Scroll Globally
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -73,7 +94,10 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       infinite: false,
     });
 
-    lenis.on('scroll', ScrollTrigger.update);
+    lenis.on('scroll', () => {
+      ScrollTrigger.update();
+      onScroll(); // Sync header theme with Lenis scroll
+    });
 
     const raf = (time: number) => {
       lenis.raf(time * 1000);
@@ -87,12 +111,9 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     window.addEventListener('resize', handleResize);
-
-    // Optional: Add class to html for CSS integration
     document.documentElement.classList.add('lenis');
     (window as any).lenis = lenis;
 
-    // Refresh ScrollTrigger after a short delay to ensure everything is loaded
     setTimeout(() => {
       ScrollTrigger.refresh();
     }, 500);
@@ -104,7 +125,7 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       document.documentElement.classList.remove('lenis');
       (window as any).lenis = undefined;
     };
-  }, []);
+  }, [onScroll]);
 
   return (
     <>

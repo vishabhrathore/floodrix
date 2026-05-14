@@ -9,10 +9,13 @@ import {
 } from 'lucide-react';
 
 import SmoothReveal from './SmoothReveal';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 const TechnicalAssurance: React.FC = () => {
+  const sectionRef = useSectionTheme('home-assurance', 'light');
+
   return (
-    <section className="bg-white py-32 border-t border-gray-100 overflow-hidden relative">
+    <section ref={sectionRef} className="bg-white py-32 border-t border-gray-100 overflow-hidden relative">
       <SmoothReveal direction="up" distance={40}>
         <div className="w-full px-6 md:px-20 lg:px-32 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-end">

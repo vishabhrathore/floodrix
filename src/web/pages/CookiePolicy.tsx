@@ -5,18 +5,40 @@ import { motion } from 'motion/react';
 import { useHeaderTheme } from '../hooks/useHeaderTheme';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { gsap } from 'gsap';
 
 const CookiePolicy: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const cursorFollowerRef = useRef<HTMLDivElement>(null);
+
   useHeaderTheme('light', containerRef);
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+
+    const onMouseMove = (e: MouseEvent) => {
+      gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0 });
+      gsap.to(cursorFollowerRef.current, { x: e.clientX, y: e.clientY, duration: 0.15 });
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    return () => window.removeEventListener('mousemove', onMouseMove);
+  }, []);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-white selection:bg-brand-red/10 selection:text-brand-dark">
+    <div ref={containerRef} className="relative min-h-screen bg-[#fcfcfc] cursor-none selection:bg-brand-red selection:text-white">
+      {/* Cinematic Grain Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] bg-repeat"
+        style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
-      <div className="h-px w-full bg-gray-200" />
+      {/* Futuristic Cursor System */}
+      <div ref={cursorRef} className="fixed w-2 h-2 bg-brand-red rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 mix-blend-difference hidden md:block" />
+      <div ref={cursorFollowerRef} className="fixed w-10 h-10 border border-brand-teal/50 rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hidden md:block scale-animation" />
 
-      <div className="max-w-[1100px] mx-auto px-6 md:px-12 lg:px-20">
+      <div className="h-px w-full bg-gray-200 relative z-10" />
+
+      <div className="w-full px-6 md:px-12 lg:px-24 xl:px-32 relative z-10">
 
         {/* Header */}
         <motion.header
@@ -25,13 +47,8 @@ const CookiePolicy: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="pt-24 pb-12 border-b border-gray-200"
         >
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-[11px] font-mono text-gray-400 uppercase tracking-widest hover:text-brand-dark transition-colors mb-10"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Floodrix Engineering Portal
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-serif font-semibold text-brand-dark leading-[1.1] tracking-tight mb-5">
+
+          <h1 className="font-serif font-semibold text-brand-dark leading-[1.1] tracking-tight mb-5">
             Our use of cookies
           </h1>
           <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest">
@@ -43,7 +60,7 @@ const CookiePolicy: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 py-16">
 
           {/* Prose */}
-          <main className="lg:col-span-8 lg:pr-16 space-y-5 text-[15px] text-gray-600 leading-[1.9]">
+          <main className="lg:col-span-8 lg:pr-16 space-y-5 text-gray-600 leading-[1.9]">
 
             <p>
               We use cookies on our website to help us improve your experience and to ensure that it performs as you expect it to.
@@ -59,7 +76,7 @@ const CookiePolicy: React.FC = () => {
             </p>
 
             <div className="pt-4">
-              <h2 className="text-2xl md:text-[1.75rem] font-serif font-semibold text-brand-dark mb-5 tracking-tight">
+              <h2 className="font-serif font-semibold text-brand-dark mb-5 tracking-tight">
                 Information about our use of cookies
               </h2>
               <p className="mb-5">We use the following categories of cookies:</p>
@@ -135,20 +152,6 @@ const CookiePolicy: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-10 border-t border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest">
-                © Floodrix Engineering Portal — May 2026
-              </p>
-              <div className="flex items-center gap-6">
-                <Link href="/privacy" className="text-[11px] font-mono text-gray-400 hover:text-brand-dark transition-colors uppercase tracking-widest">
-                  Privacy Policy
-                </Link>
-                <Link href="/terms" className="text-[11px] font-mono text-gray-400 hover:text-brand-dark transition-colors uppercase tracking-widest">
-                  Terms & Conditions
-                </Link>
-              </div>
-            </div>
-
           </main>
 
           {/* Sticky panel */}
@@ -172,12 +175,12 @@ const CookiePolicy: React.FC = () => {
                 </button>
               </div>
               <div className="border border-gray-100 rounded-lg p-5">
-                <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest mb-3">Related</p>
+                <p className="text-[14px] font-mono text-gray-400 uppercase tracking-widest mb-3">Related</p>
                 <div className="space-y-2.5">
-                  <Link href="/privacy" className="block text-[13px] text-gray-600 hover:text-brand-dark transition-colors hover:underline underline-offset-2">
+                  <Link href="/privacy" className="block text-[14px] text-gray-600 hover:text-brand-dark transition-colors hover:underline underline-offset-2">
                     Privacy Policy
                   </Link>
-                  <Link href="/terms" className="block text-[13px] text-gray-600 hover:text-brand-dark transition-colors hover:underline underline-offset-2">
+                  <Link href="/terms" className="block text-[14px] text-gray-600 hover:text-brand-dark transition-colors hover:underline underline-offset-2">
                     Terms and Conditions
                   </Link>
                 </div>
@@ -187,6 +190,16 @@ const CookiePolicy: React.FC = () => {
 
         </div>
       </div>
+      <style jsx global>{`
+        @keyframes scale-animation {
+          0% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.1); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .scale-animation {
+          animation: scale-animation 2s infinite ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };

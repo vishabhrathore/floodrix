@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useHeaderTheme } from '../hooks/useHeaderTheme';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { gsap } from 'gsap';
 
 const navSections = [
   { id: "about", label: "01 — About these terms" },
@@ -43,7 +44,7 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="text-2xl md:text-[1.75rem] font-serif font-semibold text-brand-dark tracking-tight scroll-mt-32 mb-5 pt-10 border-t border-gray-100 first:border-none first:pt-0"
+      className="font-serif font-semibold text-brand-dark tracking-tight scroll-mt-32 mb-5 pt-10 border-t border-gray-100 first:border-none first:pt-0"
     >
       {children}
     </h2>
@@ -62,7 +63,7 @@ function Warning({ children }: { children: React.ReactNode }) {
   return (
     <div className="border border-brand-red/20 bg-brand-red/[0.025] rounded p-5 my-5 flex gap-4">
       <span className="text-[10px] font-mono font-bold text-brand-red uppercase tracking-widest pt-0.5 flex-shrink-0">Note</span>
-      <p className="text-[13px] text-gray-600 leading-relaxed">{children}</p>
+      <p className="text-gray-600 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -71,7 +72,7 @@ function BulletList({ items }: { items: string[] }) {
   return (
     <ul className="mt-3 space-y-2.5 ml-1">
       {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-3 text-[14px] text-gray-600 leading-relaxed">
+        <li key={i} className="flex items-start gap-3 text-gray-600 leading-relaxed">
           <span className="mt-2.5 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
           <span>{item}</span>
         </li>
@@ -82,16 +83,38 @@ function BulletList({ items }: { items: string[] }) {
 
 const TermsAndConditions: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const cursorFollowerRef = useRef<HTMLDivElement>(null);
+
   useHeaderTheme('light', containerRef);
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+
+    const onMouseMove = (e: MouseEvent) => {
+      gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0 });
+      gsap.to(cursorFollowerRef.current, { x: e.clientX, y: e.clientY, duration: 0.15 });
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    return () => window.removeEventListener('mousemove', onMouseMove);
+  }, []);
+
   const active = useActiveSection(navSections.map(s => s.id));
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-white selection:bg-brand-red/10 selection:text-brand-dark">
+    <div ref={containerRef} className="relative min-h-screen bg-[#fcfcfc] cursor-none selection:bg-brand-red selection:text-white">
+      {/* Cinematic Grain Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] bg-repeat"
+        style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
-      <div className="h-[3px] w-full bg-brand-dark" />
+      {/* Futuristic Cursor System */}
+      <div ref={cursorRef} className="fixed w-2 h-2 bg-brand-red rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 mix-blend-difference hidden md:block" />
+      <div ref={cursorFollowerRef} className="fixed w-10 h-10 border border-brand-teal/50 rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hidden md:block scale-animation" />
 
-      <div className="max-w-[1280px] mx-auto px-6 md:px-12 lg:px-20">
+      <div className="h-[3px] w-full bg-brand-dark relative z-10" />
+
+      <div className="w-full px-6 md:px-12 lg:px-24 xl:px-32 relative z-10">
 
         {/* Header */}
         <motion.header
@@ -100,17 +123,11 @@ const TermsAndConditions: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="pt-24 pb-14 border-b border-gray-200"
         >
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-[11px] font-mono text-gray-400 uppercase tracking-widest hover:text-brand-dark transition-colors mb-10"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Floodrix Engineering Portal
-          </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
             <div className="lg:col-span-7">
               <p className="text-[11px] font-mono text-gray-400 uppercase tracking-[0.25em] mb-4">Legal</p>
-              <h1 className="text-4xl md:text-5xl font-serif font-semibold text-brand-dark leading-[1.1] tracking-tight mb-5">
+              <h1 className="font-serif font-semibold text-brand-dark leading-[1.1] tracking-tight mb-5">
                 Terms and Conditions
               </h1>
               <p className="text-[15px] text-gray-500 leading-relaxed max-w-xl">
@@ -140,15 +157,15 @@ const TermsAndConditions: React.FC = () => {
           {/* Sidebar */}
           <aside className="hidden lg:block lg:col-span-3 pr-12">
             <div className="sticky top-28">
-              <p className="text-[10px] font-mono text-gray-400 uppercase tracking-[0.25em] mb-5">Contents</p>
+              <p className="text-[14px] font-mono text-gray-400 uppercase tracking-[0.25em] mb-5">Contents</p>
               <nav className="space-y-0">
                 {navSections.map(s => (
                   <a
                     key={s.id}
                     href={`#${s.id}`}
-                    className={`flex items-center py-2.5 text-[12px] font-mono transition-colors border-l-2 pl-4 ${active === s.id
-                        ? 'border-brand-dark text-brand-dark font-semibold'
-                        : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-200'
+                    className={`flex items-center py-2.5 text-[14px] font-mono transition-colors border-l-2 pl-4 ${active === s.id
+                      ? 'border-brand-dark text-brand-dark font-semibold'
+                      : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-200'
                       }`}
                   >
                     {s.label}
@@ -159,7 +176,7 @@ const TermsAndConditions: React.FC = () => {
           </aside>
 
           {/* Main */}
-          <main className="lg:col-span-9 lg:border-l lg:border-gray-100 lg:pl-14 text-[14px] text-gray-600 leading-[1.9] space-y-1">
+          <main className="lg:col-span-9 lg:border-l lg:border-gray-100 lg:pl-14 text-gray-600 leading-[1.9] space-y-1">
 
             {/* 01 */}
             <H2 id="about">1. About these terms</H2>
@@ -285,24 +302,21 @@ const TermsAndConditions: React.FC = () => {
               <p className="text-gray-500">[Registered address]</p>
             </div>
 
-            {/* Footer */}
-            <div className="pt-12 border-t border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-8">
-              <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest">
-                © Floodrix Engineering Portal — May 2026
-              </p>
-              <div className="flex items-center gap-6">
-                <Link href="/privacy" className="text-[11px] font-mono text-gray-400 hover:text-brand-dark transition-colors uppercase tracking-widest">
-                  Privacy Policy
-                </Link>
-                <Link href="/cookie-policy" className="text-[11px] font-mono text-gray-400 hover:text-brand-dark transition-colors uppercase tracking-widest">
-                  Cookie Policy
-                </Link>
-              </div>
-            </div>
+
 
           </main>
         </div>
       </div>
+      <style jsx global>{`
+        @keyframes scale-animation {
+          0% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.1); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .scale-animation {
+          animation: scale-animation 2s infinite ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { sendWorkflowExecution } from "@/inngest/utils";
+import { sendWorkflowExecution } from "@/lib/workflow-utils";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {

@@ -31,7 +31,7 @@ import { RunStrategy } from "./types";
 import { SessionRepository } from "./SessionRepository";
 import { RunStrategyResolver } from "./RunStrategyResolver";
 import { WorkflowExecutor } from "./WorkflowExecutor";
-import { inngest } from "@/inngest/client";
+import { workflowQueue, calcQueue, addJob } from "@/lib/bullmq";
 
 interface RunOrchestratorDeps {
     db: PrismaClient;
@@ -140,9 +140,10 @@ export class RunOrchestrator {
 
         // If we paused for background_transition, hand off to Inngest
         if (result.status === "PAUSED" && result.pauseReason === "background_transition") {
-            await inngest.send({
-                name: "calc/session.resume",
-                data: { sessionId: result.sessionId, reason: "async_node_hit" },
+            await addJob(calcQueue, "resume", { 
+                sessionId: result.sessionId, 
+                reason: "async_node_hit",
+                type: "calc/session.resume"
             });
 
             return {
@@ -202,9 +203,9 @@ export class RunOrchestrator {
         );
 
         // Always hand off to Inngest for background batch
-        await inngest.send({
-            name: "calc/session.start-background",
-            data: { sessionId: result.sessionId },
+        await addJob(calcQueue, "start-background", { 
+            sessionId: result.sessionId,
+            type: "calc/session.start-background"
         });
 
         return {

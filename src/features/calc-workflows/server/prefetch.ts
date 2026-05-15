@@ -1,4 +1,5 @@
 import type { inferInput } from "@trpc/tanstack-react-query";
+
 import { prefetch, trpc } from "@/trpc/server";
 
 type Input = inferInput<typeof trpc.calcWorkflows.getMany>;
@@ -6,8 +7,18 @@ type Input = inferInput<typeof trpc.calcWorkflows.getMany>;
 /**
  * Prefetch all calc workflows based on Nuqs URL params
  */
-export const prefetchCalcWorkflows = (params: Input) => {
-  return prefetch(trpc.calcWorkflows.getMany.queryOptions(params));
+export const prefetchCalcWorkflows = (params: any) => {
+  return prefetch(
+    trpc.calcWorkflows.getMany.queryOptions({
+      ...params,
+      search: params.search || undefined,
+      status: params.status || undefined,
+      visibility: params.visibility || undefined,
+      libraryStatus: params.libraryStatus || undefined,
+      category: params.category || undefined,
+      organizationId: params.organizationId || undefined,
+    }),
+  );
 };
 
 /**

@@ -5,14 +5,14 @@ erDiagram
             USER USER
 SUPER_ADMIN SUPER_ADMIN
         }
-    
+
 
 
         Visibility {
             PRIVATE PRIVATE
 PUBLIC PUBLIC
         }
-    
+
 
 
         OrgRole {
@@ -20,7 +20,7 @@ PUBLIC PUBLIC
 ADMIN ADMIN
 MEMBER MEMBER
         }
-    
+
 
 
         WorkflowStatus {
@@ -29,7 +29,7 @@ PUBLISHED PUBLISHED
 ARCHIVED ARCHIVED
 DEPRECATED DEPRECATED
         }
-    
+
 
 
         LibraryStatus {
@@ -38,7 +38,7 @@ PENDING PENDING
 LISTED LISTED
 UNLISTED UNLISTED
         }
-    
+
 
 
         CollaboratorPermission {
@@ -46,7 +46,7 @@ UNLISTED UNLISTED
 EDIT EDIT
 ADMIN ADMIN
         }
-    
+
 
 
         SessionStatus {
@@ -58,7 +58,7 @@ ERRORED ERRORED
 CANCELLED CANCELLED
 TIMED_OUT TIMED_OUT
         }
-    
+
 
 
         RunMode {
@@ -66,7 +66,7 @@ TIMED_OUT TIMED_OUT
 BATCH BATCH
 API API
         }
-    
+
 
 
         NodeExecutionStatus {
@@ -77,7 +77,7 @@ COMPLETED COMPLETED
 SKIPPED SKIPPED
 ERRORED ERRORED
         }
-    
+
 
 
         CalcNodeType {
@@ -102,7 +102,7 @@ PARALLEL PARALLEL
 CUSTOM_CODE CUSTOM_CODE
 REFERENCE_IMAGE REFERENCE_IMAGE
         }
-    
+
 
 
         VariableDataType {
@@ -112,7 +112,7 @@ BOOLEAN BOOLEAN
 ARRAY ARRAY
 OBJECT OBJECT
         }
-    
+
 
 
         VariableSourceType {
@@ -124,7 +124,7 @@ DECISION_SET DECISION_SET
 COMPUTED COMPUTED
 EXTERNAL EXTERNAL
         }
-    
+
 
 
         VariableScope {
@@ -132,7 +132,7 @@ EXTERNAL EXTERNAL
 GROUP_SCOPED GROUP_SCOPED
 NODE_LOCAL NODE_LOCAL
         }
-    
+
 
 
         TableType {
@@ -143,7 +143,7 @@ INTERPOLATION_1D INTERPOLATION_1D
 INTERPOLATION_2D INTERPOLATION_2D
 CLASSIFICATION CLASSIFICATION
         }
-    
+
 
 
         WorkspaceNodeType {
@@ -154,7 +154,7 @@ SEPARATOR SEPARATOR
 EXTERNAL_LINK EXTERNAL_LINK
 NOTE NOTE
         }
-    
+
 
 
         BatchStatus {
@@ -164,7 +164,7 @@ COMPLETED COMPLETED
 FAILED FAILED
 CANCELLED CANCELLED
         }
-    
+
 
 
         BatchRowStatus {
@@ -172,7 +172,7 @@ CANCELLED CANCELLED
 SUCCESS SUCCESS
 ERROR ERROR
         }
-    
+
 
 
         SubmissionStatus {
@@ -180,7 +180,7 @@ ERROR ERROR
 APPROVED APPROVED
 REJECTED REJECTED
         }
-    
+
 
 
         ExecutionStatus {
@@ -188,7 +188,7 @@ REJECTED REJECTED
 SUCCESS SUCCESS
 FAILED FAILED
         }
-    
+
 
 
         CredentialType {
@@ -196,7 +196,7 @@ FAILED FAILED
 ANTHROPIC ANTHROPIC
 GEMINI GEMINI
         }
-    
+
 
 
         NodeType {
@@ -211,14 +211,14 @@ OPENAI OPENAI
 DISCORD DISCORD
 SLACK SLACK
         }
-    
+
 
 
         BillingType {
             SUBSCRIPTION SUBSCRIPTION
 ONE_TIME ONE_TIME
         }
-    
+
 
 
         BillingStatus {
@@ -226,7 +226,7 @@ ONE_TIME ONE_TIME
 CANCELED CANCELED
 EXPIRED EXPIRED
         }
-    
+
 
 
         AuditResourceType {
@@ -242,7 +242,7 @@ BATCH_JOB BATCH_JOB
 UPLOADED_DATASET UPLOADED_DATASET
 SESSION SESSION
         }
-    
+
 
 
         AuditAction {
@@ -289,34 +289,34 @@ COLLABORATOR_ADDED COLLABORATOR_ADDED
 COLLABORATOR_REMOVED COLLABORATOR_REMOVED
 PERMISSION_CHANGED PERMISSION_CHANGED
         }
-    
+
   "user" {
     String id "🗝️"
-    String name 
-    String email 
-    Boolean emailVerified 
+    String name
+    String email
+    Boolean emailVerified
     String image "❓"
-    GlobalRole globalRole 
-    DateTime createdAt 
-    DateTime updatedAt 
+    GlobalRole globalRole
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "session" {
     String id "🗝️"
-    DateTime expiresAt 
-    String token 
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime expiresAt
+    String token
+    DateTime createdAt
+    DateTime updatedAt
     String ipAddress "❓"
     String userAgent "❓"
     }
-  
+
 
   "account" {
     String id "🗝️"
-    String accountId 
-    String providerId 
+    String accountId
+    String providerId
     String accessToken "❓"
     String refreshToken "❓"
     String idToken "❓"
@@ -324,382 +324,382 @@ PERMISSION_CHANGED PERMISSION_CHANGED
     DateTime refreshTokenExpiresAt "❓"
     String scope "❓"
     String password "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "verification" {
     String id "🗝️"
-    String identifier 
-    String value 
-    DateTime expiresAt 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String identifier
+    String value
+    DateTime expiresAt
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "organizations" {
     String id "🗝️"
-    String name 
-    Boolean isPersonal 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    Boolean isPersonal
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "organization_members" {
     String id "🗝️"
-    OrgRole role 
-    DateTime createdAt 
+    OrgRole role
+    DateTime createdAt
     }
-  
+
 
   "calc_actors" {
     String id "🗝️"
-    String displayName 
-    DateTime createdAt 
+    String displayName
+    DateTime createdAt
     }
-  
+
 
   "billing_plans" {
     String id "🗝️"
-    String name 
-    Int maxRunsPerMonth 
+    String name
+    Int maxRunsPerMonth
     Int maxRunsPerWorkflow "❓"
     Int priceMonthly "❓"
     Int priceOneTime "❓"
-    String currency 
-    Boolean isActive 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String currency
+    Boolean isActive
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "org_billing" {
     String id "🗝️"
-    BillingType billingType 
+    BillingType billingType
     Int remainingRuns "❓"
-    BillingStatus status 
-    DateTime startedAt 
+    BillingStatus status
+    DateTime startedAt
     DateTime expiresAt "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "org_usage" {
     String id "🗝️"
-    DateTime periodStart 
-    DateTime periodEnd 
-    Int totalRuns 
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime periodStart
+    DateTime periodEnd
+    Int totalRuns
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "Workflow" {
     String id "🗝️"
-    String name 
-    WorkflowStatus status 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    WorkflowStatus status
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "Credential" {
     String id "🗝️"
-    String name 
-    String value 
-    CredentialType type 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    String value
+    CredentialType type
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "Node" {
     String id "🗝️"
-    String name 
-    NodeType type 
-    Json position 
-    Json data 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    NodeType type
+    Json position
+    Json data
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "Connection" {
     String id "🗝️"
-    String fromOutput 
-    String toInput 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String fromOutput
+    String toInput
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "Execution" {
     String id "🗝️"
-    ExecutionStatus status 
+    ExecutionStatus status
     String error "❓"
     String errorStack "❓"
-    DateTime startedAt 
+    DateTime startedAt
     DateTime completedAt "❓"
-    String inngestEventId 
+    String inngestEventId
     Json output "❓"
     }
-  
+
 
   "calc_workflows" {
     String id "🗝️"
-    String name 
-    String slug 
+    String name
+    String slug
     String description "❓"
     String category "❓"
-    Json tags 
-    Json metadata 
-    Json canvasState 
-    WorkflowStatus status 
-    Visibility visibility 
+    Json tags
+    Json metadata
+    Json canvasState
+    WorkflowStatus status
+    Visibility visibility
     String publicSlug "❓"
-    LibraryStatus libraryStatus 
+    LibraryStatus libraryStatus
     Int maxRunsPerUser "❓"
     Int windowSizeMin "❓"
     Int maxRunsTotal "❓"
     DateTime deletedAt "❓"
     DateTime publishedAt "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_versions" {
     String id "🗝️"
-    Int version 
-    Json snapshot 
+    Int version
+    Json snapshot
     String changelog "❓"
-    DateTime publishedAt 
+    DateTime publishedAt
     }
-  
+
 
   "calc_drafts" {
     String id "🗝️"
-    Json canvasState 
-    DateTime savedAt 
+    Json canvasState
+    DateTime savedAt
     }
-  
+
 
   "calc_nodes" {
     String id "🗝️"
-    CalcNodeType type 
-    String label 
+    CalcNodeType type
+    String label
     String description "❓"
-    Float positionX 
-    Float positionY 
-    Json config 
-    Json style 
-    Int sortOrder 
+    Float positionX
+    Float positionY
+    Json config
+    Json style
+    Int sortOrder
     DateTime deletedAt "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_edges" {
     String id "🗝️"
-    String sourceHandle 
-    String targetHandle 
+    String sourceHandle
+    String targetHandle
     Json condition "❓"
     String label "❓"
-    Json style 
-    Int sortOrder 
+    Json style
+    Int sortOrder
     DateTime deletedAt "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_variables" {
     String id "🗝️"
-    String contextKey 
-    String displayLabel 
-    String notation 
-    VariableDataType dataType 
+    String contextKey
+    String displayLabel
+    String notation
+    VariableDataType dataType
     String unit "❓"
     Json defaultValue "❓"
     Json constraints "❓"
     VariableSourceType sourceType "❓"
-    VariableScope scope 
+    VariableScope scope
     String scopeGroupId "❓"
     String description "❓"
-    Int sortOrder 
+    Int sortOrder
     DateTime deletedAt "❓"
     }
-  
+
 
   "calc_collaborators" {
     String id "🗝️"
-    CollaboratorPermission permission 
-    DateTime createdAt 
+    CollaboratorPermission permission
+    DateTime createdAt
     }
-  
+
 
   "formula_registry" {
     String id "🗝️"
-    String slug 
-    String name 
+    String slug
+    String name
     String description "❓"
-    String category 
+    String category
     String subCategory "❓"
-    Json tags 
-    String expressionNotation 
-    String displayExpression 
-    Json inputVariables 
-    Json outputVariable 
-    Json intermediateSteps 
+    Json tags
+    String expressionNotation
+    String displayExpression
+    Json inputVariables
+    Json outputVariable
+    Json intermediateSteps
     String reference "❓"
     String sourceStandard "❓"
     Int yearIntroduced "❓"
     String region "❓"
     String applicability "❓"
     String limitations "❓"
-    Int currentVersion 
-    Boolean isPublished 
-    Boolean isSystem 
-    Visibility visibility 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Int currentVersion
+    Boolean isPublished
+    Boolean isSystem
+    Visibility visibility
+    DateTime createdAt
+    DateTime updatedAt
     DateTime deletedAt "❓"
     }
-  
+
 
   "formula_registry_versions" {
     String id "🗝️"
-    Int version 
-    Json snapshot 
+    Int version
+    Json snapshot
     String changelog "❓"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "table_registry" {
     String id "🗝️"
-    String slug 
-    String name 
+    String slug
+    String name
     String description "❓"
-    String category 
+    String category
     String subCategory "❓"
-    Json tags 
-    TableType tableType 
-    Json inputKeys 
-    Json outputKey 
-    Json columns 
-    Json data 
+    Json tags
+    TableType tableType
+    Json inputKeys
+    Json outputKey
+    Json columns
+    Json data
     Json interpolationConfig "❓"
-    String fallbackMode 
+    String fallbackMode
     Json fallbackValue "❓"
-    Boolean allowOverride 
-    Boolean showInOutput 
+    Boolean allowOverride
+    Boolean showInOutput
     String reference "❓"
     String sourceStandard "❓"
     String sourcePage "❓"
     String sourceImage "❓"
-    Int currentVersion 
-    Boolean isPublished 
-    Boolean isSystem 
-    Visibility visibility 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Int currentVersion
+    Boolean isPublished
+    Boolean isSystem
+    Visibility visibility
+    DateTime createdAt
+    DateTime updatedAt
     DateTime deletedAt "❓"
     }
-  
+
 
   "table_registry_versions" {
     String id "🗝️"
-    Int version 
-    Json snapshot 
+    Int version
+    Json snapshot
     String changelog "❓"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "formula_registry_usages" {
     String id "🗝️"
     Int pinnedVersion "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "table_registry_usages" {
     String id "🗝️"
     Int pinnedVersion "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "workspaces" {
     String id "🗝️"
-    String name 
+    String name
     String description "❓"
     String icon "❓"
     String color "❓"
-    Visibility visibility 
-    Boolean isTemplate 
-    Json metadata 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Visibility visibility
+    Boolean isTemplate
+    Json metadata
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "workspace_nodes" {
     String id "🗝️"
-    WorkspaceNodeType nodeType 
-    String name 
+    WorkspaceNodeType nodeType
+    String name
     String description "❓"
     String icon "❓"
     String color "❓"
     Int linkedVersion "❓"
     String externalUrl "❓"
     String noteContent "❓"
-    Int sortOrder 
-    Boolean isExpanded 
-    Boolean isLocked 
+    Int sortOrder
+    Boolean isExpanded
+    Boolean isLocked
     Float canvasX "❓"
     Float canvasY "❓"
-    Json metadata 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Json metadata
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_sessions" {
     String id "🗝️"
-    Int versionNum 
-    SessionStatus status 
-    Json variables 
+    Int versionNum
+    SessionStatus status
+    Json variables
     String currentNodeId "❓"
     DateTime pausedAt "❓"
     String pauseReason "❓"
-    Json executionOrder 
-    Int currentIndex 
+    Json executionOrder
+    Int currentIndex
     Json inputSnapshot "❓"
     DateTime startedAt "❓"
     DateTime completedAt "❓"
     Int duration "❓"
     Json error "❓"
-    RunMode runMode 
-    Json metadata 
+    RunMode runMode
+    Json metadata
     String idempotencyKey "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_node_executions" {
     String id "🗝️"
-    NodeExecutionStatus status 
-    Int stepNumber 
+    NodeExecutionStatus status
+    Int stepNumber
     Json inputVars "❓"
     Json outputVars "❓"
     Json result "❓"
@@ -710,123 +710,123 @@ PERMISSION_CHANGED PERMISSION_CHANGED
     DateTime startedAt "❓"
     DateTime completedAt "❓"
     Int durationMs "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "workspace_sessions" {
     String id "🗝️"
-    Json sharedVariables 
-    SessionStatus status 
-    DateTime startedAt 
+    Json sharedVariables
+    SessionStatus status
+    DateTime startedAt
     DateTime completedAt "❓"
     }
-  
+
 
   "workspace_session_runs" {
     String id "🗝️"
-    Int sortOrder 
-    SessionStatus status 
-    DateTime createdAt 
+    Int sortOrder
+    SessionStatus status
+    DateTime createdAt
     }
-  
+
 
   "library_submissions" {
     String id "🗝️"
-    SubmissionStatus status 
+    SubmissionStatus status
     String adminFeedback "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_ratings" {
     String id "🗝️"
-    Int score 
+    Int score
     String review "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "calc_rating_aggregates" {
     String id "🗝️"
-    Float averageRating 
-    Int ratingCount 
-    DateTime updatedAt 
+    Float averageRating
+    Int ratingCount
+    DateTime updatedAt
     }
-  
+
 
   "batch_jobs" {
     String id "🗝️"
-    String fileName 
+    String fileName
     String fileUrl "❓"
-    Int totalRows 
-    Json columns 
-    Json columnMapping 
-    BatchStatus status 
-    Int processedRows 
-    Int successRows 
-    Int errorRows 
+    Int totalRows
+    Json columns
+    Json columnMapping
+    BatchStatus status
+    Int processedRows
+    Int successRows
+    Int errorRows
     String errorSummary "❓"
     String resultFileUrl "❓"
     DateTime startedAt "❓"
     DateTime completedAt "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "batch_row_executions" {
     String id "🗝️"
-    Int rowNumber 
-    Json inputData 
-    BatchRowStatus status 
+    Int rowNumber
+    Json inputData
+    BatchRowStatus status
     Json outputData "❓"
     Json variables "❓"
     String error "❓"
     Int durationMs "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "uploaded_datasets" {
     String id "🗝️"
-    String fileName 
-    String fileType 
-    Int fileSize 
-    String storageUrl 
-    Int rowCount 
-    Json columns 
+    String fileName
+    String fileType
+    Int fileSize
+    String storageUrl
+    Int rowCount
+    Json columns
     Json columnMapping "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "node_templates" {
     String id "🗝️"
-    CalcNodeType type 
-    String label 
+    CalcNodeType type
+    String label
     String description "❓"
-    Json config 
-    Json style 
+    Json config
+    Json style
     String category "❓"
-    Json tags 
-    Visibility visibility 
-    Boolean isSystem 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Json tags
+    Visibility visibility
+    Boolean isSystem
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "audit_logs" {
     String id "🗝️"
-    AuditResourceType resourceType 
-    String resourceId 
-    AuditAction action 
+    AuditResourceType resourceType
+    String resourceId
+    AuditAction action
     Json changes "❓"
     Json beforeSnapshot "❓"
     Json afterSnapshot "❓"
@@ -835,9 +835,9 @@ PERMISSION_CHANGED PERMISSION_CHANGED
     String sessionId "❓"
     String batchId "❓"
     DateTime expiresAt "❓"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
     "user" |o--|| "GlobalRole" : "enum:globalRole"
     "session" }o--|| user : "user"
     "account" }o--|| user : "user"

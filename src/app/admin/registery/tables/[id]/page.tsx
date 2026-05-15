@@ -2,14 +2,12 @@ import { TableView } from "@/features/registery/table/components";
 import { requireAuth } from "@/lib/auth-utils";
 
 interface PageProps {
-    params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function TableDetailPage({ params }: PageProps) {
-    await requireAuth();
-    const { id } = await params;
+  await requireAuth();
+  const { id } = await params;
 
-    return (
-        <TableView tableId={id} />
-    );
+  return <TableView tableId={id} />;
 }

@@ -1,11 +1,8 @@
 "use client";
 
-import React, { forwardRef, type ReactNode } from "react";
-import {
-  Handle,
-  Position,
-  type NodeProps,
-} from "@xyflow/react";
+import React, { type ReactNode, forwardRef } from "react";
+
+import { Handle, type NodeProps, Position } from "@xyflow/react";
 
 import { BaseNode } from "./base-node";
 

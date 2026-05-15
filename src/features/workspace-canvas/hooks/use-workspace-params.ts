@@ -6,8 +6,9 @@
 "use client";
 
 import { useQueryStates } from "nuqs";
+
 import { workspaceCanvasParams } from "../params";
 
 export function useWorkspaceCanvasParams() {
-    return useQueryStates(workspaceCanvasParams);
+  return useQueryStates(workspaceCanvasParams);
 }

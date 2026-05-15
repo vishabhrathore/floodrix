@@ -1,11 +1,12 @@
 // src/features/calc-workflows/hooks/use-calc-workflows.ts
-
-import { useTRPC } from "@/trpc/client";
 import {
-  useSuspenseQuery,
   useMutation,
   useQueryClient,
+  useSuspenseQuery,
 } from "@tanstack/react-query";
+
+import { useTRPC } from "@/trpc/client";
+
 import { useCalcWorkflowsParams } from "./use-calc-workflows-params";
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -16,20 +17,20 @@ export function useSuspenseCalcWorkflows() {
 
   return useSuspenseQuery(
     trpc.calcWorkflows.getMany.queryOptions({
-      organizationId: params.organizationId,
+      ...params,
       search: params.search || undefined,
       status: params.status || undefined,
-      page: params.page,
-      pageSize: params.pageSize,
-    })
+      visibility: params.visibility || undefined,
+      libraryStatus: params.libraryStatus || undefined,
+      category: params.category || undefined,
+      organizationId: params.organizationId || undefined,
+    }),
   );
 }
 
 export function useCalcWorkflow(id: string) {
   const trpc = useTRPC();
-  return useSuspenseQuery(
-    trpc.calcWorkflows.getOne.queryOptions({ id })
-  );
+  return useSuspenseQuery(trpc.calcWorkflows.getOne.queryOptions({ id }));
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ export function useCreateCalcWorkflow() {
           queryKey: trpc.calcWorkflows.getMany.queryKey(),
         });
       },
-    })
+    }),
   );
 }
 
@@ -60,6 +61,6 @@ export function useRemoveCalcWorkflow() {
           queryKey: trpc.calcWorkflows.getMany.queryKey(),
         });
       },
-    })
+    }),
   );
 }

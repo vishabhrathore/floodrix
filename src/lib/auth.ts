@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+
 import prisma from "@/lib/db";
 
 // ─── Hardcoded free plan ID — must match your seed ───────────────────────────
@@ -75,14 +76,18 @@ export const auth = betterAuth({
 
               // ── 5. Current month usage window ─────────────────────────────
               const now = new Date();
-              const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+              const periodStart = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                1,
+              );
               const periodEnd = new Date(
                 now.getFullYear(),
                 now.getMonth() + 1,
                 0,
                 23,
                 59,
-                59
+                59,
               );
 
               await tx.orgUsage.create({
@@ -117,7 +122,9 @@ export const auth = betterAuth({
           } catch (error) {
             // ── Cleanup: If setup fails, delete the user so they can retry ──
             // Otherwise, they are stuck in a "half-created" state (account exists but no org)
-            await prisma.user.delete({ where: { id: user.id } }).catch(() => { });
+            await prisma.user
+              .delete({ where: { id: user.id } })
+              .catch(() => {});
             throw error;
           }
         },
@@ -136,7 +143,7 @@ export const auth = betterAuth({
 export async function onUserJoinOrg(
   userId: string,
   organizationId: string,
-  role: "OWNER" | "ADMIN" | "MEMBER" = "MEMBER"
+  role: "OWNER" | "ADMIN" | "MEMBER" = "MEMBER",
 ) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   const displayName = user.name || user.email.split("@")[0];

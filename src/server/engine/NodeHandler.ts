@@ -14,31 +14,31 @@
 //    - call ctx.db for registry resolution (FormulaHandler, LookupTableHandler, etc.)
 //    - perform I/O if they're an ASYNC_NODE_TYPE (ApiCallHandler, etc.)
 // ═══════════════════════════════════════════════════════════════════════════
-
 import type { CalcNodeType } from "@/generated/prisma";
+
 import type { ExecutionContext, NodeOutcome } from "./types";
 
 export interface NodeHandler {
-    /** The node type this handler is registered for. */
-    readonly type: CalcNodeType;
+  /** The node type this handler is registered for. */
+  readonly type: CalcNodeType;
 
-    /**
-     * Optional per-handler timeout in ms. The executor enforces this by racing
-     * execute() against a timer. Defaults to no timeout (handler runs as long
-     * as it wants — appropriate for sync handlers that are bounded by mathjs
-     * complexity limits anyway).
-     *
-     * Async handlers (ApiCallHandler, PdfReportHandler) MUST set this.
-     */
-    readonly timeoutMs?: number;
+  /**
+   * Optional per-handler timeout in ms. The executor enforces this by racing
+   * execute() against a timer. Defaults to no timeout (handler runs as long
+   * as it wants — appropriate for sync handlers that are bounded by mathjs
+   * complexity limits anyway).
+   *
+   * Async handlers (ApiCallHandler, PdfReportHandler) MUST set this.
+   */
+  readonly timeoutMs?: number;
 
-    /**
-     * Execute the node. See class doc above for what's allowed.
-     *
-     * Implementations should be pure with respect to anything outside
-     * ctx — no captured closures over module-level state.
-     */
-    execute(ctx: ExecutionContext): Promise<NodeOutcome>;
+  /**
+   * Execute the node. See class doc above for what's allowed.
+   *
+   * Implementations should be pure with respect to anything outside
+   * ctx — no captured closures over module-level state.
+   */
+  execute(ctx: ExecutionContext): Promise<NodeOutcome>;
 }
 
 /**
@@ -47,8 +47,8 @@ export interface NodeHandler {
  * but some operations (mathjs, fetch) can throw natively.
  */
 export function toErroredOutcome(err: unknown): NodeOutcome {
-    if (err instanceof Error) return { kind: "errored", error: err };
-    return { kind: "errored", error: new Error(String(err)) };
+  if (err instanceof Error) return { kind: "errored", error: err };
+  return { kind: "errored", error: new Error(String(err)) };
 }
 
 /**
@@ -56,13 +56,19 @@ export function toErroredOutcome(err: unknown): NodeOutcome {
  * Used in node:errored events and stored on CalcNodeExecution.errorType.
  */
 export function classifyError(err: Error): string {
-    const msg = err.message.toLowerCase();
-    if (msg.includes("not found in variables") || msg.includes("hasn't been computed")) return "missing_variable";
-    if (msg.includes("no matching row")) return "lookup_miss";
-    if (msg.includes("circular") || msg.includes("cycle")) return "circular_dependency";
-    if (msg.includes("timeout") || msg.includes("timed out")) return "timeout";
-    if (msg.includes("validation")) return "validation";
-    if (msg.includes("undefined symbol")) return "missing_variable";
-    if (msg.includes("size limit") || msg.includes("too large")) return "size_limit";
-    return "computation";
+  const msg = err.message.toLowerCase();
+  if (
+    msg.includes("not found in variables") ||
+    msg.includes("hasn't been computed")
+  )
+    return "missing_variable";
+  if (msg.includes("no matching row")) return "lookup_miss";
+  if (msg.includes("circular") || msg.includes("cycle"))
+    return "circular_dependency";
+  if (msg.includes("timeout") || msg.includes("timed out")) return "timeout";
+  if (msg.includes("validation")) return "validation";
+  if (msg.includes("undefined symbol")) return "missing_variable";
+  if (msg.includes("size limit") || msg.includes("too large"))
+    return "size_limit";
+  return "computation";
 }

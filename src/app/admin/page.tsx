@@ -1,36 +1,38 @@
+import { Suspense } from "react";
+
+import { ErrorBoundary } from "react-error-boundary";
+
 import {
-    AdminDashboardContainer,
-    AdminDashboardList,
-    AdminDashboardLoading,
-    AdminDashboardError,
+  AdminDashboardContainer,
+  AdminDashboardError,
+  AdminDashboardList,
+  AdminDashboardLoading,
 } from "@/features/admin/dashboard/components";
 import {
-    prefetchSuperAdminStats,
-    prefetchSystemAlerts
+  prefetchSuperAdminStats,
+  prefetchSystemAlerts,
 } from "@/features/admin/dashboard/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
 import { HydrateClient } from "@/trpc/server";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
 
 const Page = async () => {
-    await requireAuth();
+  await requireAuth();
 
-    // Prefetch data for the dashboard
-    prefetchSuperAdminStats();
-    prefetchSystemAlerts();
+  // Prefetch data for the dashboard
+  prefetchSuperAdminStats();
+  prefetchSystemAlerts();
 
-    return (
-        <AdminDashboardContainer>
-            <HydrateClient>
-                <ErrorBoundary fallback={<AdminDashboardError />}>
-                    <Suspense fallback={<AdminDashboardLoading />}>
-                        <AdminDashboardList />
-                    </Suspense>
-                </ErrorBoundary>
-            </HydrateClient>
-        </AdminDashboardContainer>
-    )
+  return (
+    <AdminDashboardContainer>
+      <HydrateClient>
+        <ErrorBoundary fallback={<AdminDashboardError />}>
+          <Suspense fallback={<AdminDashboardLoading />}>
+            <AdminDashboardList />
+          </Suspense>
+        </ErrorBoundary>
+      </HydrateClient>
+    </AdminDashboardContainer>
+  );
 };
 
 export default Page;

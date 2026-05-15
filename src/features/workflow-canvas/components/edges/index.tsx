@@ -1,5 +1,5 @@
-import { DefaultEdge } from "./default-edge";
 import { ConditionalEdge } from "./conditional-edge";
+import { DefaultEdge } from "./default-edge";
 
 /**
  * Edge types registry — pass directly to <ReactFlow edgeTypes={edgeTypes} />
@@ -8,8 +8,8 @@ import { ConditionalEdge } from "./conditional-edge";
  * "conditional"  — true/false branches from DECISION nodes; requires data.branch = "true"|"false"
  */
 export const edgeTypes = {
-    default: DefaultEdge,
-    conditional: ConditionalEdge,
+  default: DefaultEdge,
+  conditional: ConditionalEdge,
 } as const;
 
 export type EdgeTypeName = keyof typeof edgeTypes;

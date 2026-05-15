@@ -4,17 +4,6 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
-generator erd {
-  provider        = "prisma-erd-generator"
-  output          = "./ERD.svg"
-  puppeteerConfig = "./prisma/puppeteer.config.json"
-}
-
-generator mermaid {
-  provider = "prisma-erd-generator"
-  output   = "./ERD.md"
-}
-
 datasource db {
   provider   = "postgresql"
   extensions = [pgcrypto]

@@ -1,4 +1,5 @@
-import { parseAsInteger, parseAsString, createLoader } from "nuqs/server";
+import { createLoader, parseAsInteger, parseAsString } from "nuqs/server";
+
 import { PAGINATION } from "@/config/constants";
 
 export const libraryParams = {
@@ -8,9 +9,7 @@ export const libraryParams = {
   pageSize: parseAsInteger
     .withDefault(PAGINATION.DEFAULT_PAGE_SIZE)
     .withOptions({ clearOnDefault: true }),
-  search: parseAsString
-    .withDefault("")
-    .withOptions({ clearOnDefault: true }),
+  search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
   status: parseAsString
     .withDefault("PENDING") // Default to the review queue view
     .withOptions({ clearOnDefault: true }),

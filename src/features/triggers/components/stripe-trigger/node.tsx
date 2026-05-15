@@ -1,17 +1,19 @@
-import { NodeProps } from "@xyflow/react";
 import { memo, useState } from "react";
-import { BaseTriggerNode } from "../base-trigger-node";
-import { StripeTriggerDialog } from "./dialog";
+
+import { NodeProps } from "@xyflow/react";
+
 import { useNodeStatus } from "@/features/executions/hooks/use-node-status";
+
+import { BaseTriggerNode } from "../base-trigger-node";
 import { fetchStripeTriggerRealtimeToken } from "./actions";
-import { STRIPE_TRIGGER_CHANNEL_NAME } from "@/inngest/channels/stripe-trigger";
+import { StripeTriggerDialog } from "./dialog";
 
 export const StripeTriggerNode = memo((props: NodeProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const nodeStatus = useNodeStatus({
     nodeId: props.id,
-    channel: STRIPE_TRIGGER_CHANNEL_NAME,
+    channel: "stripe-trigger",
     topic: "status",
     refreshToken: fetchStripeTriggerRealtimeToken,
   });
@@ -20,10 +22,7 @@ export const StripeTriggerNode = memo((props: NodeProps) => {
 
   return (
     <>
-      <StripeTriggerDialog 
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
+      <StripeTriggerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <BaseTriggerNode
         {...props}
         icon="/logos/stripe.svg"
@@ -34,5 +33,5 @@ export const StripeTriggerNode = memo((props: NodeProps) => {
         onDoubleClick={handleOpenSettings}
       />
     </>
-  )
+  );
 });

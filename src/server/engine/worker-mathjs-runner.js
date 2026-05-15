@@ -17,51 +17,55 @@
 
 const { parentPort } = require("node:worker_threads");
 
-if (!parentPort) {
-    // Worker script imported outside a worker context — nothing to do.
-    return;
-}
-
-parentPort.on("message", (req) => {
+if (parentPort) {
+  parentPort.on("message", (req) => {
     try {
-        // Lazy-load mathjs inside the worker. Keeps cold-start lean and
-        // ensures the worker's copy is isolated from the main thread's.
-        const { create, all } = require("mathjs");
+      // Lazy-load mathjs inside the worker. Keeps cold-start lean and
+      // ensures the worker's copy is isolated from the main thread's.
+      const { create, all } = require("mathjs");
 
-        // Use a limited math instance. Not full sandboxing (a determined
-        // attacker could still access globals) but blocks the obvious
-        // dangerous surface.
-        // Use a limited math instance.
-        const math = create(all);
-        const internalEvaluate = math.evaluate;
+      // Use a limited math instance. Not full sandboxing (a determined
+      // attacker could still access globals) but blocks the obvious
+      // dangerous surface.
+      // Use a limited math instance.
+      const math = create(all);
+      const internalEvaluate = math.evaluate;
 
-        math.import({
-            import: function () { throw new Error("import disabled"); },
-            createUnit: function () { throw new Error("createUnit disabled"); },
-            // We don't override evaluate/parse/simplify here because we need
-            // them to perform the calculation. Security is handled by the
-            // validator in the main thread before the worker is spawned.
-        }, { override: true });
+      math.import(
+        {
+          import: function () {
+            throw new Error("import disabled");
+          },
+          createUnit: function () {
+            throw new Error("createUnit disabled");
+          },
+          // We don't override evaluate/parse/simplify here because we need
+          // them to perform the calculation. Security is handled by the
+          // validator in the main thread before the worker is spawned.
+        },
+        { override: true },
+      );
 
-        internalEvaluate.call(math, req.code, req.scope);
+      internalEvaluate.call(math, req.code, req.scope);
 
-        // Filter and serialize the scope to return only the values we want.
-        const outputScope = {};
-        for (const [k, v] of Object.entries(req.scope)) {
-            // Return numbers and booleans. Coerce others if possible or skip.
-            if (typeof v === "number" || typeof v === "boolean") {
-                outputScope[k] = v;
-            } else if (v && typeof v === "object" && v.isBigNumber) {
-                outputScope[k] = v.toNumber();
-            }
+      // Filter and serialize the scope to return only the values we want.
+      const outputScope = {};
+      for (const [k, v] of Object.entries(req.scope)) {
+        // Return numbers and booleans. Coerce others if possible or skip.
+        if (typeof v === "number" || typeof v === "boolean") {
+          outputScope[k] = v;
+        } else if (v && typeof v === "object" && v.isBigNumber) {
+          outputScope[k] = v.toNumber();
         }
+      }
 
-        parentPort.postMessage({ ok: true, result: outputScope });
+      parentPort.postMessage({ ok: true, result: outputScope });
     } catch (err) {
-        parentPort.postMessage({
-            ok: false,
-            error: err && err.message ? err.message : String(err),
-            errorName: err && err.name ? err.name : "UnknownError",
-        });
+      parentPort.postMessage({
+        ok: false,
+        error: err && err.message ? err.message : String(err),
+        errorName: err && err.name ? err.name : "UnknownError",
+      });
     }
-});
+  });
+}

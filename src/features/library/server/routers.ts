@@ -1,9 +1,10 @@
-import prisma from "@/lib/db";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { TRPCError } from "@trpc/server";
 import z from "zod";
+
 import { PAGINATION } from "@/config/constants";
 import { SubmissionStatus } from "@/generated/prisma";
-import { TRPCError } from "@trpc/server";
+import prisma from "@/lib/db";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const librarySubmissionsRouter = createTRPCRouter({
   getMany: protectedProcedure
@@ -17,12 +18,15 @@ export const librarySubmissionsRouter = createTRPCRouter({
           .default(PAGINATION.DEFAULT_PAGE_SIZE),
         search: z.string().default(""),
         status: z.string().default("PENDING"),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       // Ensure only super admins can review library submissions
       if (ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Super admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin access required",
+        });
       }
 
       const { page, pageSize, search, status } = input;
@@ -46,12 +50,17 @@ export const librarySubmissionsRouter = createTRPCRouter({
           where: whereClause,
           include: {
             submitter: {
-              select: { displayName: true, organization: { select: { name: true } } },
+              select: {
+                displayName: true,
+                organization: { select: { name: true } },
+              },
             },
             calcVersion: {
               select: {
                 version: true,
-                calcWorkflow: { select: { id: true, name: true, category: true } },
+                calcWorkflow: {
+                  select: { id: true, name: true, category: true },
+                },
               },
             },
           },
@@ -81,7 +90,10 @@ export const librarySubmissionsRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Super admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin access required",
+        });
       }
 
       const submission = await prisma.librarySubmission.findUniqueOrThrow({
@@ -108,11 +120,14 @@ export const librarySubmissionsRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         feedback: z.string().min(1, "Feedback is required when rejecting"),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       if (ctx.auth.user.globalRole !== "SUPER_ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Super admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin access required",
+        });
       }
 
       const submission = await prisma.librarySubmission.findUniqueOrThrow({

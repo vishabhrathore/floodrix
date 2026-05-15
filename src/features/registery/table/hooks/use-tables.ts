@@ -1,7 +1,14 @@
 // hooks.ts
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { useTRPC } from "@/trpc/client";
+
 import { useTablesParams } from "./use-tables-params";
 
 export const useSuspenseTables = () => {
@@ -13,10 +20,7 @@ export const useSuspenseTables = () => {
 export const useTable = (id?: string) => {
   const trpc = useTRPC();
   return useQuery(
-    trpc.tables.getOne.queryOptions(
-      { id: id! },
-      { enabled: !!id }
-    )
+    trpc.tables.getOne.queryOptions({ id: id! }, { enabled: !!id }),
   );
 };
 
@@ -46,7 +50,9 @@ export const useUpdateTable = () => {
       onSuccess: (data) => {
         toast.success(`Table "${data.name}" updated`);
         queryClient.invalidateQueries(trpc.tables.getMany.queryOptions({}));
-        queryClient.invalidateQueries(trpc.tables.getOne.queryOptions({ id: data.id }));
+        queryClient.invalidateQueries(
+          trpc.tables.getOne.queryOptions({ id: data.id }),
+        );
       },
       onError: (error: any) => {
         toast.error(`Failed to update table: ${error.message}`);

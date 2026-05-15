@@ -1,14 +1,17 @@
-import { auth } from "@/lib/auth";
-import { polarClient } from "@/lib/polar";
-import prisma from "@/lib/db";
-import { initTRPC, TRPCError } from "@trpc/server";
-import { headers } from "next/headers";
 import { cache } from "react";
+
+import { headers } from "next/headers";
+
+import { TRPCError, initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { z } from "zod";
 
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/db";
+import { polarClient } from "@/lib/polar";
 import { loadContext } from "@/server/context/context.loader";
 import { assertAndConsumeBillingQuota } from "@/server/context/runtime-checks";
+
 export const createTRPCContext = cache(async () => {
   return {
     db: prisma,
@@ -44,7 +47,7 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   if (!session) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "Unauthorized"
+      message: "Unauthorized",
     });
   }
 
@@ -107,7 +110,7 @@ export const billedProcedure = protectedProcedure
     z.object({
       organizationId: z.string(),
       workflowId: z.string(),
-    })
+    }),
   )
   .use(async ({ ctx, input, next }) => {
     const reqCtx = await loadContext(ctx.db, ctx.userId, {

@@ -1,15 +1,14 @@
-import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { Visibility } from "@/generated/prisma";
 import { z } from "zod";
 
+import { PAGINATION } from "@/config/constants";
+import { Visibility } from "@/generated/prisma";
 import { loadContext } from "@/server/context/context.loader";
 import { assertPolicy } from "@/server/context/guards";
-import { isSuperAdmin, isOrgAdmin } from "@/server/context/permission";
-import { PAGINATION } from "@/config/constants";
+import { isOrgAdmin, isSuperAdmin } from "@/server/context/permission";
+import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 
 export const formulasRouter = createTRPCRouter({
-
   getMany: orgProcedure
     .input(
       z.object({
@@ -24,7 +23,7 @@ export const formulasRouter = createTRPCRouter({
         category: z.string().optional(),
         published: z.boolean().optional(),
         isSystem: z.boolean().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const { page, pageSize, search, category, published, isSystem } = input;
@@ -33,11 +32,14 @@ export const formulasRouter = createTRPCRouter({
       const visibilityFilter = isOrgAdmin(reqCtx)
         ? {}
         : {
-          OR: [
-            { visibility: Visibility.PUBLIC },
-            { visibility: Visibility.PRIVATE, createdBy: reqCtx.actor?.id ?? "" },
-          ],
-        };
+            OR: [
+              { visibility: Visibility.PUBLIC },
+              {
+                visibility: Visibility.PRIVATE,
+                createdBy: reqCtx.actor?.id ?? "",
+              },
+            ],
+          };
 
       const whereClause = {
         organizationId: input.organizationId || reqCtx.organization?.id,
@@ -81,7 +83,7 @@ export const formulasRouter = createTRPCRouter({
       z.object({
         organizationId: z.string().optional(),
         id: z.string(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const reqCtx = await loadContext(ctx.db, ctx.userId, {
@@ -90,7 +92,10 @@ export const formulasRouter = createTRPCRouter({
       });
 
       if (!reqCtx.formulaItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Formula not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Formula not found",
+        });
       }
 
       assertPolicy(reqCtx, "view", "formula");
@@ -122,7 +127,7 @@ export const formulasRouter = createTRPCRouter({
         visibility: z.nativeEnum(Visibility).default(Visibility.PRIVATE),
         isSystem: z.boolean().optional(),
         isPublished: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { reqCtx } = ctx;
@@ -140,7 +145,8 @@ export const formulasRouter = createTRPCRouter({
       return ctx.db.formulaRegistryItem.create({
         data: {
           ...formulaData,
-          displayExpression: input.displayExpression || input.expressionNotation,
+          displayExpression:
+            input.displayExpression || input.expressionNotation,
           organizationId: finalOrgId,
           createdBy: reqCtx.actor.id,
           isSystem: input.isSystem && isSuperAdmin(reqCtx) ? true : false,
@@ -174,7 +180,7 @@ export const formulasRouter = createTRPCRouter({
         visibility: z.nativeEnum(Visibility).optional(),
         isSystem: z.boolean().optional(),
         isPublished: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id, organizationId, ...data } = input;
@@ -185,7 +191,10 @@ export const formulasRouter = createTRPCRouter({
       });
 
       if (!reqCtx.formulaItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Formula not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Formula not found",
+        });
       }
 
       assertPolicy(reqCtx, "edit", "formula");
@@ -206,7 +215,7 @@ export const formulasRouter = createTRPCRouter({
       z.object({
         organizationId: z.string().optional(),
         id: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const reqCtx = await loadContext(ctx.db, ctx.userId, {
@@ -215,7 +224,10 @@ export const formulasRouter = createTRPCRouter({
       });
 
       if (!reqCtx.formulaItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Formula not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Formula not found",
+        });
       }
 
       assertPolicy(reqCtx, "delete", "formula");
@@ -241,7 +253,7 @@ export const formulasRouter = createTRPCRouter({
         outputVariable: z.any(),
         intermediateSteps: z.array(z.any()).optional(),
         tags: z.array(z.string()).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { reqCtx } = ctx;

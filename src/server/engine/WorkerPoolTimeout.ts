@@ -41,14 +41,13 @@
 //      isolation is a belt-and-suspenders approach for high-value deployments
 //    - Any future handler that does heavy CPU math
 // ═══════════════════════════════════════════════════════════════════════════
-
-import { Worker } from "node:worker_threads";
 import { join } from "node:path";
+import { Worker } from "node:worker_threads";
 
 export interface WorkerTimeoutOptions {
-    timeoutMs?: number;
-    /** Label used in the timeout error message. */
-    handlerType?: string;
+  timeoutMs?: number;
+  /** Label used in the timeout error message. */
+  handlerType?: string;
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -58,81 +57,90 @@ const DEFAULT_TIMEOUT_MS = 30_000;
  * is cheap and non-cloneable values can't sneak in.
  */
 interface WorkerRequest {
-    code: string;
-    scope: Record<string, number | boolean | string>;
-    timeoutMs: number;
+  code: string;
+  scope: Record<string, number | boolean | string>;
+  timeoutMs: number;
 }
 
 interface WorkerResponse {
-    ok: true;
-    result: unknown;
+  ok: true;
+  result: unknown;
 }
 
 interface WorkerError {
-    ok: false;
-    error: string;
-    errorName?: string;
+  ok: false;
+  error: string;
+  errorName?: string;
 }
 
 export class WorkerPoolTimeout {
-    /**
-     * Evaluate a piece of code (typically from CUSTOM_CODE or FORMULA) in
-     * a worker_thread with a hard timeout. Returns the code's result or
-     * throws if timed out / errored.
-     *
-     * The `code` string is evaluated as-is inside the worker via mathjs.
-     * Do NOT pass arbitrary user-supplied JavaScript here \u2014 the worker
-     * is isolated from your main memory but it's still executing in your
-     * Node runtime. Only pass mathjs-expression strings.
-     */
-    async runMathEvaluation(
-        code: string,
-        scope: Record<string, number | boolean | string>,
-        opts: WorkerTimeoutOptions = {}
-    ): Promise<unknown> {
-        const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-        const handlerType = opts.handlerType ?? "math_eval";
+  /**
+   * Evaluate a piece of code (typically from CUSTOM_CODE or FORMULA) in
+   * a worker_thread with a hard timeout. Returns the code's result or
+   * throws if timed out / errored.
+   *
+   * The `code` string is evaluated as-is inside the worker via mathjs.
+   * Do NOT pass arbitrary user-supplied JavaScript here \u2014 the worker
+   * is isolated from your main memory but it's still executing in your
+   * Node runtime. Only pass mathjs-expression strings.
+   */
+  async runMathEvaluation(
+    code: string,
+    scope: Record<string, number | boolean | string>,
+    opts: WorkerTimeoutOptions = {},
+  ): Promise<unknown> {
+    const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const handlerType = opts.handlerType ?? "math_eval";
 
-        // worker script path \u2014 see worker-mathjs-runner.js below
-        const workerPath = resolveWorkerScriptPath();
-        const worker = new Worker(workerPath);
+    // worker script path \u2014 see worker-mathjs-runner.js below
+    const workerPath = resolveWorkerScriptPath();
+    const worker = new Worker(workerPath);
 
-        let timer: ReturnType<typeof setTimeout> | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-        try {
-            return await new Promise<unknown>((resolve, reject) => {
-                timer = setTimeout(() => {
-                    // terminate() actually kills the thread, unlike Promise.race
-                    worker.terminate().catch(() => { /* best-effort */ });
-                    reject(new Error(
-                        `${handlerType} worker timed out after ${timeoutMs}ms. Expression: ${code.slice(0, 80)}${code.length > 80 ? "..." : ""}`
-                    ));
-                }, timeoutMs);
+    try {
+      return await new Promise<unknown>((resolve, reject) => {
+        timer = setTimeout(() => {
+          // terminate() actually kills the thread, unlike Promise.race
+          worker.terminate().catch(() => {
+            /* best-effort */
+          });
+          reject(
+            new Error(
+              `${handlerType} worker timed out after ${timeoutMs}ms. Expression: ${code.slice(0, 80)}${code.length > 80 ? "..." : ""}`,
+            ),
+          );
+        }, timeoutMs);
 
-                worker.once("message", (msg: WorkerResponse | WorkerError) => {
-                    if (msg.ok) resolve(msg.result);
-                    else reject(new Error(`${msg.errorName ?? "WorkerError"}: ${msg.error}`));
-                });
+        worker.once("message", (msg: WorkerResponse | WorkerError) => {
+          if (msg.ok) resolve(msg.result);
+          else
+            reject(
+              new Error(`${msg.errorName ?? "WorkerError"}: ${msg.error}`),
+            );
+        });
 
-                worker.once("error", (err) => {
-                    reject(err);
-                });
+        worker.once("error", (err) => {
+          reject(err);
+        });
 
-                worker.once("exit", (code) => {
-                    if (code !== 0 && code !== null) {
-                        reject(new Error(`Worker exited with code ${code}`));
-                    }
-                });
+        worker.once("exit", (code) => {
+          if (code !== 0 && code !== null) {
+            reject(new Error(`Worker exited with code ${code}`));
+          }
+        });
 
-                const req: WorkerRequest = { code, scope, timeoutMs };
-                worker.postMessage(req);
-            });
-        } finally {
-            if (timer) clearTimeout(timer);
-            // Ensure worker is terminated even on success path
-            worker.terminate().catch(() => { /* best-effort */ });
-        }
+        const req: WorkerRequest = { code, scope, timeoutMs };
+        worker.postMessage(req);
+      });
+    } finally {
+      if (timer) clearTimeout(timer);
+      // Ensure worker is terminated even on success path
+      worker.terminate().catch(() => {
+        /* best-effort */
+      });
     }
+  }
 }
 
 /**
@@ -147,7 +155,7 @@ export class WorkerPoolTimeout {
  * A simpler fallback: inline the worker code via `new Worker(new URL('./worker-mathjs-runner.js', import.meta.url))`.
  */
 function resolveWorkerScriptPath(): string {
-    // __dirname works in CommonJS. For ESM you'd use import.meta.url instead.
-    // Next.js compiles TS to CJS server-side so __dirname is safe here.
-    return join(__dirname, "worker-mathjs-runner.js");
+  // __dirname works in CommonJS. For ESM you'd use import.meta.url instead.
+  // Next.js compiles TS to CJS server-side so __dirname is safe here.
+  return join(__dirname, "worker-mathjs-runner.js");
 }

@@ -5,16 +5,18 @@
 
 "use client";
 
-import React from 'react';
+import React from "react";
+
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getSmoothStepPath,
   type EdgeProps,
+  getSmoothStepPath,
   useReactFlow,
-} from '@xyflow/react';
-import { X } from 'lucide-react';
-import { useWorkspaceCanvas } from '../store/workspace-canvas-store';
+} from "@xyflow/react";
+import { X } from "lucide-react";
+
+import { useWorkspaceCanvas } from "../store/workspace-canvas-store";
 
 export function WorkspaceEdge({
   id,
@@ -51,14 +53,18 @@ export function WorkspaceEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, strokeWidth: 2 }} />
+      <BaseEdge
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{ ...style, strokeWidth: 2 }}
+      />
       <EdgeLabelRenderer>
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             fontSize: 12,
-            pointerEvents: 'all',
+            pointerEvents: "all",
           }}
           className="nodrag nopan group"
         >

@@ -1,8 +1,9 @@
-import prisma from "@/lib/db";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import z from "zod";
+
 import { PAGINATION } from "@/config/constants";
 import { Visibility } from "@/generated/prisma";
+import prisma from "@/lib/db";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const workspacesRouter = createTRPCRouter({
   getMany: protectedProcedure
@@ -16,7 +17,7 @@ export const workspacesRouter = createTRPCRouter({
           .default(PAGINATION.DEFAULT_PAGE_SIZE),
         search: z.string().default(""),
         organizationId: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const { page, pageSize, search, organizationId } = input;
@@ -72,10 +73,11 @@ export const workspacesRouter = createTRPCRouter({
         description: z.string().optional(),
         visibility: z.nativeEnum(Visibility).default("PRIVATE"),
         isTemplate: z.boolean().default(false),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
-      const { organizationId, name, description, visibility, isTemplate } = input;
+      const { organizationId, name, description, visibility, isTemplate } =
+        input;
 
       return prisma.workspace.create({
         data: {
@@ -89,8 +91,8 @@ export const workspacesRouter = createTRPCRouter({
             create: {
               nodeType: "ROOT",
               name: "Canvas Root",
-            }
-          }
+            },
+          },
         },
       });
     }),

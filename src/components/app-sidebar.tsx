@@ -1,5 +1,9 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+
 import {
   CreditCardIcon,
   FolderOpenIcon,
@@ -8,9 +12,7 @@ import {
   LogOutIcon,
   StarIcon,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+
 import {
   Sidebar,
   SidebarContent,
@@ -22,8 +24,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { authClient } from "@/lib/auth-client";
 import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscription";
+import { authClient } from "@/lib/auth-client";
 
 const menuItems = [
   {
@@ -45,7 +47,7 @@ const menuItems = [
         url: "/executions",
       },
     ],
-  }
+  },
 ];
 
 export const AppSidebar = () => {
@@ -59,7 +61,13 @@ export const AppSidebar = () => {
         <SidebarMenuItem className="list-none flex items-center justify-center p-2">
           <SidebarMenuButton asChild className="gap-x-4 h-10 px-4">
             <Link href="/" prefetch>
-              <Image src="/logo.png" alt="Logo" width={120} height={120} className="w-120 h-120 object-contain" />
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={120}
+                height={120}
+                className="w-120 h-120 object-contain"
+              />
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -121,13 +129,15 @@ export const AppSidebar = () => {
             <SidebarMenuButton
               tooltip="Sign out"
               className="gap-x-4 h-10 px-4"
-              onClick={() => authClient.signOut({
-                fetchOptions: {
-                  onSuccess: () => {
-                    router.push("/login");
+              onClick={() =>
+                authClient.signOut({
+                  fetchOptions: {
+                    onSuccess: () => {
+                      router.push("/login");
+                    },
                   },
-                },
-              })}
+                })
+              }
             >
               <LogOutIcon className="h-4 w-4" />
               <span>Sign out</span>

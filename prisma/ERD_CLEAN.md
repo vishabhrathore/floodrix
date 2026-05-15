@@ -2,27 +2,27 @@
 erDiagram
   user {
     String id PK
-    String name 
-    String email 
-    Boolean emailVerified 
+    String name
+    String email
+    Boolean emailVerified
     String image Nullable
-    GlobalRole globalRole 
-    DateTime createdAt 
-    DateTime updatedAt 
+    GlobalRole globalRole
+    DateTime createdAt
+    DateTime updatedAt
     }
   session {
     String id PK
-    DateTime expiresAt 
-    String token 
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime expiresAt
+    String token
+    DateTime createdAt
+    DateTime updatedAt
     String ipAddress Nullable
     String userAgent Nullable
     }
   account {
     String id PK
-    String accountId 
-    String providerId 
+    String accountId
+    String providerId
     String accessToken Nullable
     String refreshToken Nullable
     String idToken Nullable
@@ -30,324 +30,324 @@ erDiagram
     DateTime refreshTokenExpiresAt Nullable
     String scope Nullable
     String password Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   verification {
     String id PK
-    String identifier 
-    String value 
-    DateTime expiresAt 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String identifier
+    String value
+    DateTime expiresAt
+    DateTime createdAt
+    DateTime updatedAt
     }
   organizations {
     String id PK
-    String name 
-    Boolean isPersonal 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    Boolean isPersonal
+    DateTime createdAt
+    DateTime updatedAt
     }
   organization_members {
     String id PK
-    OrgRole role 
-    DateTime createdAt 
+    OrgRole role
+    DateTime createdAt
     }
   calc_actors {
     String id PK
-    String displayName 
-    DateTime createdAt 
+    String displayName
+    DateTime createdAt
     }
   billing_plans {
     String id PK
-    String name 
-    Int maxRunsPerMonth 
+    String name
+    Int maxRunsPerMonth
     Int maxRunsPerWorkflow Nullable
     Int priceMonthly Nullable
     Int priceOneTime Nullable
-    String currency 
-    Boolean isActive 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String currency
+    Boolean isActive
+    DateTime createdAt
+    DateTime updatedAt
     }
   org_billing {
     String id PK
-    BillingType billingType 
+    BillingType billingType
     Int remainingRuns Nullable
-    BillingStatus status 
-    DateTime startedAt 
+    BillingStatus status
+    DateTime startedAt
     DateTime expiresAt Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   org_usage {
     String id PK
-    DateTime periodStart 
-    DateTime periodEnd 
-    Int totalRuns 
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime periodStart
+    DateTime periodEnd
+    Int totalRuns
+    DateTime createdAt
+    DateTime updatedAt
     }
   Workflow {
     String id PK
-    String name 
-    WorkflowStatus status 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    WorkflowStatus status
+    DateTime createdAt
+    DateTime updatedAt
     }
   Credential {
     String id PK
-    String name 
-    String value 
-    CredentialType type 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    String value
+    CredentialType type
+    DateTime createdAt
+    DateTime updatedAt
     }
   Node {
     String id PK
-    String name 
-    NodeType type 
-    Json position 
-    Json data 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String name
+    NodeType type
+    Json position
+    Json data
+    DateTime createdAt
+    DateTime updatedAt
     }
   Connection {
     String id PK
-    String fromOutput 
-    String toInput 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String fromOutput
+    String toInput
+    DateTime createdAt
+    DateTime updatedAt
     }
   Execution {
     String id PK
-    ExecutionStatus status 
+    ExecutionStatus status
     String error Nullable
     String errorStack Nullable
-    DateTime startedAt 
+    DateTime startedAt
     DateTime completedAt Nullable
-    String inngestEventId 
+    String inngestEventId
     Json output Nullable
     }
   calc_workflows {
     String id PK
-    String name 
-    String slug 
+    String name
+    String slug
     String description Nullable
     String category Nullable
-    Json tags 
-    Json metadata 
-    Json canvasState 
-    WorkflowStatus status 
-    Visibility visibility 
+    Json tags
+    Json metadata
+    Json canvasState
+    WorkflowStatus status
+    Visibility visibility
     String publicSlug Nullable
-    LibraryStatus libraryStatus 
+    LibraryStatus libraryStatus
     Int maxRunsPerUser Nullable
     Int windowSizeMin Nullable
     Int maxRunsTotal Nullable
     DateTime deletedAt Nullable
     DateTime publishedAt Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_versions {
     String id PK
-    Int version 
-    Json snapshot 
+    Int version
+    Json snapshot
     String changelog Nullable
-    DateTime publishedAt 
+    DateTime publishedAt
     }
   calc_drafts {
     String id PK
-    Json canvasState 
-    DateTime savedAt 
+    Json canvasState
+    DateTime savedAt
     }
   calc_nodes {
     String id PK
-    CalcNodeType type 
-    String label 
+    CalcNodeType type
+    String label
     String description Nullable
-    Float positionX 
-    Float positionY 
-    Json config 
-    Json style 
-    Int sortOrder 
+    Float positionX
+    Float positionY
+    Json config
+    Json style
+    Int sortOrder
     DateTime deletedAt Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_edges {
     String id PK
-    String sourceHandle 
-    String targetHandle 
+    String sourceHandle
+    String targetHandle
     Json condition Nullable
     String label Nullable
-    Json style 
-    Int sortOrder 
+    Json style
+    Int sortOrder
     DateTime deletedAt Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_variables {
     String id PK
-    String contextKey 
-    String displayLabel 
-    String notation 
-    VariableDataType dataType 
+    String contextKey
+    String displayLabel
+    String notation
+    VariableDataType dataType
     String unit Nullable
     Json defaultValue Nullable
     Json constraints Nullable
     VariableSourceType sourceType Nullable
-    VariableScope scope 
+    VariableScope scope
     String scopeGroupId Nullable
     String description Nullable
-    Int sortOrder 
+    Int sortOrder
     DateTime deletedAt Nullable
     }
   calc_collaborators {
     String id PK
-    CollaboratorPermission permission 
-    DateTime createdAt 
+    CollaboratorPermission permission
+    DateTime createdAt
     }
   formula_registry {
     String id PK
-    String slug 
-    String name 
+    String slug
+    String name
     String description Nullable
-    String category 
+    String category
     String subCategory Nullable
-    Json tags 
-    String expressionNotation 
-    String displayExpression 
-    Json inputVariables 
-    Json outputVariable 
-    Json intermediateSteps 
+    Json tags
+    String expressionNotation
+    String displayExpression
+    Json inputVariables
+    Json outputVariable
+    Json intermediateSteps
     String reference Nullable
     String sourceStandard Nullable
     Int yearIntroduced Nullable
     String region Nullable
     String applicability Nullable
     String limitations Nullable
-    Int currentVersion 
-    Boolean isPublished 
-    Boolean isSystem 
-    Visibility visibility 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Int currentVersion
+    Boolean isPublished
+    Boolean isSystem
+    Visibility visibility
+    DateTime createdAt
+    DateTime updatedAt
     DateTime deletedAt Nullable
     }
   formula_registry_versions {
     String id PK
-    Int version 
-    Json snapshot 
+    Int version
+    Json snapshot
     String changelog Nullable
-    DateTime createdAt 
+    DateTime createdAt
     }
   table_registry {
     String id PK
-    String slug 
-    String name 
+    String slug
+    String name
     String description Nullable
-    String category 
+    String category
     String subCategory Nullable
-    Json tags 
-    TableType tableType 
-    Json inputKeys 
-    Json outputKey 
-    Json columns 
-    Json data 
+    Json tags
+    TableType tableType
+    Json inputKeys
+    Json outputKey
+    Json columns
+    Json data
     Json interpolationConfig Nullable
-    String fallbackMode 
+    String fallbackMode
     Json fallbackValue Nullable
-    Boolean allowOverride 
-    Boolean showInOutput 
+    Boolean allowOverride
+    Boolean showInOutput
     String reference Nullable
     String sourceStandard Nullable
     String sourcePage Nullable
     String sourceImage Nullable
-    Int currentVersion 
-    Boolean isPublished 
-    Boolean isSystem 
-    Visibility visibility 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Int currentVersion
+    Boolean isPublished
+    Boolean isSystem
+    Visibility visibility
+    DateTime createdAt
+    DateTime updatedAt
     DateTime deletedAt Nullable
     }
   table_registry_versions {
     String id PK
-    Int version 
-    Json snapshot 
+    Int version
+    Json snapshot
     String changelog Nullable
-    DateTime createdAt 
+    DateTime createdAt
     }
   formula_registry_usages {
     String id PK
     Int pinnedVersion Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   table_registry_usages {
     String id PK
     Int pinnedVersion Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   workspaces {
     String id PK
-    String name 
+    String name
     String description Nullable
     String icon Nullable
     String color Nullable
-    Visibility visibility 
-    Boolean isTemplate 
-    Json metadata 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Visibility visibility
+    Boolean isTemplate
+    Json metadata
+    DateTime createdAt
+    DateTime updatedAt
     }
   workspace_nodes {
     String id PK
-    WorkspaceNodeType nodeType 
-    String name 
+    WorkspaceNodeType nodeType
+    String name
     String description Nullable
     String icon Nullable
     String color Nullable
     Int linkedVersion Nullable
     String externalUrl Nullable
     String noteContent Nullable
-    Int sortOrder 
-    Boolean isExpanded 
-    Boolean isLocked 
+    Int sortOrder
+    Boolean isExpanded
+    Boolean isLocked
     Float canvasX Nullable
     Float canvasY Nullable
-    Json metadata 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Json metadata
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_sessions {
     String id PK
-    Int versionNum 
-    SessionStatus status 
-    Json variables 
+    Int versionNum
+    SessionStatus status
+    Json variables
     String currentNodeId Nullable
     DateTime pausedAt Nullable
     String pauseReason Nullable
-    Json executionOrder 
-    Int currentIndex 
+    Json executionOrder
+    Int currentIndex
     Json inputSnapshot Nullable
     DateTime startedAt Nullable
     DateTime completedAt Nullable
     Int duration Nullable
     Json error Nullable
-    RunMode runMode 
-    Json metadata 
+    RunMode runMode
+    Json metadata
     String idempotencyKey Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_node_executions {
     String id PK
-    NodeExecutionStatus status 
-    Int stepNumber 
+    NodeExecutionStatus status
+    Int stepNumber
     Json inputVars Nullable
     Json outputVars Nullable
     Json result Nullable
@@ -358,103 +358,103 @@ erDiagram
     DateTime startedAt Nullable
     DateTime completedAt Nullable
     Int durationMs Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   workspace_sessions {
     String id PK
-    Json sharedVariables 
-    SessionStatus status 
-    DateTime startedAt 
+    Json sharedVariables
+    SessionStatus status
+    DateTime startedAt
     DateTime completedAt Nullable
     }
   workspace_session_runs {
     String id PK
-    Int sortOrder 
-    SessionStatus status 
-    DateTime createdAt 
+    Int sortOrder
+    SessionStatus status
+    DateTime createdAt
     }
   library_submissions {
     String id PK
-    SubmissionStatus status 
+    SubmissionStatus status
     String adminFeedback Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_ratings {
     String id PK
-    Int score 
+    Int score
     String review Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   calc_rating_aggregates {
     String id PK
-    Float averageRating 
-    Int ratingCount 
-    DateTime updatedAt 
+    Float averageRating
+    Int ratingCount
+    DateTime updatedAt
     }
   batch_jobs {
     String id PK
-    String fileName 
+    String fileName
     String fileUrl Nullable
-    Int totalRows 
-    Json columns 
-    Json columnMapping 
-    BatchStatus status 
-    Int processedRows 
-    Int successRows 
-    Int errorRows 
+    Int totalRows
+    Json columns
+    Json columnMapping
+    BatchStatus status
+    Int processedRows
+    Int successRows
+    Int errorRows
     String errorSummary Nullable
     String resultFileUrl Nullable
     DateTime startedAt Nullable
     DateTime completedAt Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   batch_row_executions {
     String id PK
-    Int rowNumber 
-    Json inputData 
-    BatchRowStatus status 
+    Int rowNumber
+    Json inputData
+    BatchRowStatus status
     Json outputData Nullable
     Json variables Nullable
     String error Nullable
     Int durationMs Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   uploaded_datasets {
     String id PK
-    String fileName 
-    String fileType 
-    Int fileSize 
-    String storageUrl 
-    Int rowCount 
-    Json columns 
+    String fileName
+    String fileType
+    Int fileSize
+    String storageUrl
+    Int rowCount
+    Json columns
     Json columnMapping Nullable
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
   node_templates {
     String id PK
-    CalcNodeType type 
-    String label 
+    CalcNodeType type
+    String label
     String description Nullable
-    Json config 
-    Json style 
+    Json config
+    Json style
     String category Nullable
-    Json tags 
-    Visibility visibility 
-    Boolean isSystem 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Json tags
+    Visibility visibility
+    Boolean isSystem
+    DateTime createdAt
+    DateTime updatedAt
     }
   audit_logs {
     String id PK
-    AuditResourceType resourceType 
-    String resourceId 
-    AuditAction action 
+    AuditResourceType resourceType
+    String resourceId
+    AuditAction action
     Json changes Nullable
     Json beforeSnapshot Nullable
     Json afterSnapshot Nullable
@@ -463,7 +463,7 @@ erDiagram
     String sessionId Nullable
     String batchId Nullable
     DateTime expiresAt Nullable
-    DateTime createdAt 
+    DateTime createdAt
     }
     "user" |o--|| "GlobalRole" : "enum:globalRole"
     "session" }o--|| user : "user"

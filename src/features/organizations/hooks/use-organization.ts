@@ -1,6 +1,12 @@
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { useTRPC } from "@/trpc/client";
+
 import { useOrganizationsParams } from "./use-organization-params";
 
 /**
@@ -55,7 +61,9 @@ export const useUpdateOrganizationStatus = () => {
       onSuccess: (data, variables) => {
         toast.success(`Organization status updated to ${variables.status}`);
         // Invalidate both the list and the specific organization's details
-        queryClient.invalidateQueries(trpc.organizations.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.organizations.getMany.queryOptions({}),
+        );
         queryClient.invalidateQueries(
           trpc.organizations.getOne.queryOptions({ id: variables.id }),
         );

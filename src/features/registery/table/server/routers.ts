@@ -1,15 +1,14 @@
-import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { Visibility, TableType } from "@/generated/prisma";
 import { z } from "zod";
 
+import { PAGINATION } from "@/config/constants";
+import { TableType, Visibility } from "@/generated/prisma";
 import { loadContext } from "@/server/context/context.loader";
 import { assertPolicy } from "@/server/context/guards";
 import { isOrgAdmin, isSuperAdmin } from "@/server/context/permission";
-import { PAGINATION } from "@/config/constants";
+import { createTRPCRouter, orgProcedure } from "@/trpc/init";
 
 export const tablesRouter = createTRPCRouter({
-
   // ──────────────────────────────────────────────────────────────────────────
   // GET MANY
   // ──────────────────────────────────────────────────────────────────────────
@@ -24,30 +23,43 @@ export const tablesRouter = createTRPCRouter({
         tableType: z.nativeEnum(TableType).nullish(),
         published: z.boolean().optional(),
         isSystem: z.boolean().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
-      const { page, pageSize, search, category, tableType, published, isSystem } = input;
+      const {
+        page,
+        pageSize,
+        search,
+        category,
+        tableType,
+        published,
+        isSystem,
+      } = input;
       const { reqCtx } = ctx;
 
       // Visibility filter logic matched to your permission file
       const visibilityFilter = isOrgAdmin(reqCtx)
         ? {}
         : {
-          OR: [
-            { visibility: Visibility.PUBLIC },
-            { visibility: Visibility.PRIVATE, createdBy: reqCtx.actor?.id ?? "" },
-          ],
-        };
+            OR: [
+              { visibility: Visibility.PUBLIC },
+              {
+                visibility: Visibility.PRIVATE,
+                createdBy: reqCtx.actor?.id ?? "",
+              },
+            ],
+          };
 
       const whereClause = {
         organizationId: input.organizationId || reqCtx.organization?.id,
         deletedAt: null,
         ...visibilityFilter,
-        OR: search ? [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { slug: { contains: search, mode: "insensitive" as const } },
-        ] : undefined,
+        OR: search
+          ? [
+              { name: { contains: search, mode: "insensitive" as const } },
+              { slug: { contains: search, mode: "insensitive" as const } },
+            ]
+          : undefined,
         ...(category && category !== "all" ? { category } : {}),
         ...(tableType ? { tableType } : {}),
         ...(published !== undefined ? { isPublished: published } : {}),
@@ -89,7 +101,8 @@ export const tablesRouter = createTRPCRouter({
         tableRegistryId: input.id,
       });
 
-      if (!reqCtx.tableItem) throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
+      if (!reqCtx.tableItem)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
 
       assertPolicy(reqCtx, "view", "table");
       return reqCtx.tableItem;
@@ -123,11 +136,15 @@ export const tablesRouter = createTRPCRouter({
         sourceImage: z.string().optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.nativeEnum(Visibility).default(Visibility.PRIVATE),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { reqCtx } = ctx;
-      if (!reqCtx.actor) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Actor not found." });
+      if (!reqCtx.actor)
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Actor not found.",
+        });
 
       const { organizationId, ...tableData } = input;
 
@@ -171,7 +188,7 @@ export const tablesRouter = createTRPCRouter({
         sourceImage: z.string().optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.nativeEnum(Visibility).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id, organizationId, ...data } = input;
@@ -181,7 +198,8 @@ export const tablesRouter = createTRPCRouter({
         tableRegistryId: id,
       });
 
-      if (!reqCtx.tableItem) throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
+      if (!reqCtx.tableItem)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
 
       assertPolicy(reqCtx, "edit", "table");
 
@@ -202,7 +220,8 @@ export const tablesRouter = createTRPCRouter({
         tableRegistryId: input.id,
       });
 
-      if (!reqCtx.tableItem) throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
+      if (!reqCtx.tableItem)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
 
       assertPolicy(reqCtx, "delete", "table");
 
@@ -231,7 +250,7 @@ export const tablesRouter = createTRPCRouter({
         data: z.any(),
         interpolationConfig: z.any().optional(),
         tags: z.array(z.string()).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { reqCtx } = ctx;

@@ -1,7 +1,8 @@
+import { TRPCError } from "@trpc/server";
+
+import { GlobalRole } from "@/generated/prisma";
 import prisma from "@/lib/db";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { GlobalRole } from "@/generated/prisma";
-import { TRPCError } from "@trpc/server";
 
 // Helper to ensure only super admins can access these routes
 const superAdminMiddleware = async (ctx: any) => {

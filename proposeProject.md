@@ -16,21 +16,21 @@ Workflows can be run interactively (pausing at INPUT nodes for user values) or i
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 15 (App Router, Turbopack) |
-| Language | TypeScript (strict) |
-| Database | PostgreSQL via Prisma ORM |
-| Auth | Better Auth (Google, GitHub, email) |
-| API | tRPC v11 + TanStack React Query |
-| Canvas | @xyflow/react (React Flow) v12 |
-| State | Zustand (canvas stores) + Jotai (preferences) |
-| Background Jobs | Inngest |
-| Math Engine | mathjs |
-| Styling | Tailwind CSS v4 |
-| UI Components | shadcn/ui + Radix primitives |
-| Linting | Biome |
-| Forms | React Hook Form + Zod v4 |
+| Layer           | Technology                                    |
+| --------------- | --------------------------------------------- |
+| Framework       | Next.js 15 (App Router, Turbopack)            |
+| Language        | TypeScript (strict)                           |
+| Database        | PostgreSQL via Prisma ORM                     |
+| Auth            | Better Auth (Google, GitHub, email)           |
+| API             | tRPC v11 + TanStack React Query               |
+| Canvas          | @xyflow/react (React Flow) v12                |
+| State           | Zustand (canvas stores) + Jotai (preferences) |
+| Background Jobs | Inngest                                       |
+| Math Engine     | mathjs                                        |
+| Styling         | Tailwind CSS v4                               |
+| UI Components   | shadcn/ui + Radix primitives                  |
+| Linting         | Biome                                         |
+| Forms           | React Hook Form + Zod v4                      |
 
 ---
 
@@ -69,6 +69,7 @@ Prisma client singleton using the `globalThis` pattern to survive Next.js hot re
 
 ```typescript
 import { PrismaClient } from "@/generated/prisma";
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 export const db = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
@@ -144,16 +145,16 @@ Registers all Inngest functions (batch processor, session cleanup cron) and expo
 
 Eight type definition files that provide TypeScript interfaces for the entire domain model. These are NOT duplicates of Prisma types — they add frontend-specific shapes, config interfaces per node type, and discriminated unions.
 
-| File | What it defines |
-|------|-----------------|
-| `workflow.ts` | `Workflow`, `WorkflowWithRelations`, `WorkflowCreateInput` — shapes for list views, editor, and forms |
-| `workspace.ts` | `WorkspaceNode`, `WorkspaceNodeData` (the store's internal type), `WorkspaceTreeItem` |
-| `execution.ts` | `ExecutionResult`, `SessionDetail`, `NodeExecutionResult` — what the runner UI consumes |
-| `registry.ts` | `ResolvedFormula`, `ResolvedTable`, `RegistryPickerItem` — for the formula/table pickers |
-| `variables.ts` | `WorkflowVariableWithUnit`, `VariableBinding`, `VariableCollision` — three-layer identity types |
-| `units.ts` | `Dimension`, `UnitDef`, `HandleDataType` — re-exported from engine but used on frontend |
+| File              | What it defines                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `workflow.ts`     | `Workflow`, `WorkflowWithRelations`, `WorkflowCreateInput` — shapes for list views, editor, and forms                                  |
+| `workspace.ts`    | `WorkspaceNode`, `WorkspaceNodeData` (the store's internal type), `WorkspaceTreeItem`                                                  |
+| `execution.ts`    | `ExecutionResult`, `SessionDetail`, `NodeExecutionResult` — what the runner UI consumes                                                |
+| `registry.ts`     | `ResolvedFormula`, `ResolvedTable`, `RegistryPickerItem` — for the formula/table pickers                                               |
+| `variables.ts`    | `WorkflowVariableWithUnit`, `VariableBinding`, `VariableCollision` — three-layer identity types                                        |
+| `units.ts`        | `Dimension`, `UnitDef`, `HandleDataType` — re-exported from engine but used on frontend                                                |
 | `node-configs.ts` | Per-node-type config interfaces: `InputNodeConfig`, `FormulaNodeConfig`, `DecisionNodeConfig`, etc. — discriminated union `NodeConfig` |
-| `audit.ts` | `AuditTimelineEntry`, `AuditBatchGroup`, `ExecutionHistoryItem` |
+| `audit.ts`        | `AuditTimelineEntry`, `AuditBatchGroup`, `ExecutionHistoryItem`                                                                        |
 
 ---
 
@@ -426,17 +427,17 @@ Wraps React Flow's `<Handle>` with data-type coloring and a hover tooltip. The h
 
 The visual vocabulary that node types compose:
 
-| Component | Where used | What it shows |
-|-----------|------------|---------------|
-| `VariablePill` | Formula, Display, Code | Variable name with type-colored dot: `● M = 24.1 Km²` |
-| `FormulaDisplay` | Formula, Multi-Formula | Green-tinted monospace expression: `Q = C × M^(3/4)` |
-| `FieldRow` | Input, Display, Loop | Label + value on one line with justified spacing |
-| `SectionLabel` | Formula, Code | Small uppercase divider: `VARIABLES`, `OUTPUTS` |
-| `TablePreview` | Lookup Table | Compact rows with highlighted match: `▸ 60–120 cm → 14` |
-| `ConditionDisplay` | Decision | Orange-tinted condition with TRUE/FALSE badge |
-| `ResultDisplay` | Formula, Lookup, Display | Prominent result bar: `Q_dicken = 152.06 Cumecs` |
-| `CodePreview` | Custom Code | Dark-themed code block with line numbers |
-| `EmptyState` | All (unconfigured) | "No formula configured" + "Select formula" button |
+| Component          | Where used               | What it shows                                           |
+| ------------------ | ------------------------ | ------------------------------------------------------- |
+| `VariablePill`     | Formula, Display, Code   | Variable name with type-colored dot: `● M = 24.1 Km²`   |
+| `FormulaDisplay`   | Formula, Multi-Formula   | Green-tinted monospace expression: `Q = C × M^(3/4)`    |
+| `FieldRow`         | Input, Display, Loop     | Label + value on one line with justified spacing        |
+| `SectionLabel`     | Formula, Code            | Small uppercase divider: `VARIABLES`, `OUTPUTS`         |
+| `TablePreview`     | Lookup Table             | Compact rows with highlighted match: `▸ 60–120 cm → 14` |
+| `ConditionDisplay` | Decision                 | Orange-tinted condition with TRUE/FALSE badge           |
+| `ResultDisplay`    | Formula, Lookup, Display | Prominent result bar: `Q_dicken = 152.06 Cumecs`        |
+| `CodePreview`      | Custom Code              | Dark-themed code block with line numbers                |
+| `EmptyState`       | All (unconfigured)       | "No formula configured" + "Select formula" button       |
 
 ### `src/features/workflow-canvas/nodes/types/core-nodes.tsx`
 
@@ -484,103 +485,103 @@ These files are the user-facing interfaces. They import from Tier 1–3 and comp
 
 ### Workflow Canvas UI
 
-| File | Role |
-|------|------|
-| `workflow-canvas.tsx` | Main component: mounts React Flow, connects store, registers node types, handles drag-to-add from palette |
-| `workflow-toolbar.tsx` | Top bar: Run button, Publish button, undo/redo, zoom controls, workflow name |
-| `workflow-sidebar.tsx` | Left panel: draggable node palette grouped by category (Core, Extended, Advanced), search filter |
-| `workflow-inspector.tsx` | Right panel: opens the config panel for the selected node, shows variable list |
-| `workflow-minimap.tsx` | React Flow minimap with custom node colors matching accents |
-| `edges/index.ts` | Edge types registry (default + conditional) |
-| `edges/default-edge.tsx` | Standard smooth-step edge with animation during execution |
-| `edges/conditional-edge.tsx` | Decision branch edge with "True"/"False" label pill |
-| `hooks/use-auto-save.ts` | Debounced save that triggers `flush()` after 1.5s of inactivity |
-| `hooks/use-execution.ts` | Manages the run lifecycle: start → poll → pause → submit input → resume → complete |
-| `hooks/use-node-config.ts` | Opens the inspector panel for the selected node, loads its config |
-| `hooks/use-keyboard-shortcuts.ts` | Ctrl+S (save), Delete (remove node), Ctrl+Z (undo), Ctrl+Shift+Z (redo) |
+| File                              | Role                                                                                                      |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `workflow-canvas.tsx`             | Main component: mounts React Flow, connects store, registers node types, handles drag-to-add from palette |
+| `workflow-toolbar.tsx`            | Top bar: Run button, Publish button, undo/redo, zoom controls, workflow name                              |
+| `workflow-sidebar.tsx`            | Left panel: draggable node palette grouped by category (Core, Extended, Advanced), search filter          |
+| `workflow-inspector.tsx`          | Right panel: opens the config panel for the selected node, shows variable list                            |
+| `workflow-minimap.tsx`            | React Flow minimap with custom node colors matching accents                                               |
+| `edges/index.ts`                  | Edge types registry (default + conditional)                                                               |
+| `edges/default-edge.tsx`          | Standard smooth-step edge with animation during execution                                                 |
+| `edges/conditional-edge.tsx`      | Decision branch edge with "True"/"False" label pill                                                       |
+| `hooks/use-auto-save.ts`          | Debounced save that triggers `flush()` after 1.5s of inactivity                                           |
+| `hooks/use-execution.ts`          | Manages the run lifecycle: start → poll → pause → submit input → resume → complete                        |
+| `hooks/use-node-config.ts`        | Opens the inspector panel for the selected node, loads its config                                         |
+| `hooks/use-keyboard-shortcuts.ts` | Ctrl+S (save), Delete (remove node), Ctrl+Z (undo), Ctrl+Shift+Z (redo)                                   |
 
 ### Workspace Canvas UI
 
-| File | Role |
-|------|------|
-| `workspace-canvas.tsx` | Main component: React Flow canvas with folder/link node types |
-| `workspace-toolbar.tsx` | Top bar: add folder, add link, search, view toggle (canvas/tree) |
-| `workspace-tree-panel.tsx` | Sidebar: traditional collapsible folder tree (alternative to canvas view) |
-| `nodes/folder-node.tsx` | Folder block on canvas: icon, name, child count badge, expand/collapse |
-| `nodes/workflow-link-node.tsx` | Workflow link block: icon, name, attached workflow indicator, click to open |
-| `nodes/note-node.tsx` | Markdown annotation block |
-| `nodes/separator-node.tsx` | Visual divider line |
-| `dialogs/attach-workflow-dialog.tsx` | Picker: search workflows, preview, attach with version pinning |
-| `dialogs/create-folder-dialog.tsx` | Name input + emoji icon picker |
-| `dialogs/folder-context-menu.tsx` | Right-click: rename, change icon, add subfolder, add link, move, delete |
+| File                                 | Role                                                                        |
+| ------------------------------------ | --------------------------------------------------------------------------- |
+| `workspace-canvas.tsx`               | Main component: React Flow canvas with folder/link node types               |
+| `workspace-toolbar.tsx`              | Top bar: add folder, add link, search, view toggle (canvas/tree)            |
+| `workspace-tree-panel.tsx`           | Sidebar: traditional collapsible folder tree (alternative to canvas view)   |
+| `nodes/folder-node.tsx`              | Folder block on canvas: icon, name, child count badge, expand/collapse      |
+| `nodes/workflow-link-node.tsx`       | Workflow link block: icon, name, attached workflow indicator, click to open |
+| `nodes/note-node.tsx`                | Markdown annotation block                                                   |
+| `nodes/separator-node.tsx`           | Visual divider line                                                         |
+| `dialogs/attach-workflow-dialog.tsx` | Picker: search workflows, preview, attach with version pinning              |
+| `dialogs/create-folder-dialog.tsx`   | Name input + emoji icon picker                                              |
+| `dialogs/folder-context-menu.tsx`    | Right-click: rename, change icon, add subfolder, add link, move, delete     |
 
 ### Execution Runner UI
 
-| File | Role |
-|------|------|
-| `execution-runner.tsx` | Full-page step-by-step runner (modeled after the HydroFlow sample) |
-| `execution-sidebar.tsx` | Step list with status dots (pending/running/completed/errored/waiting) |
-| `execution-progress.tsx` | Progress bar strip showing percentage and current step label |
-| `execution-inspector.tsx` | Live variables panel: shows all computed values in real time |
-| `step-cards/input-step-card.tsx` | Input form with field labels, units, validation — the "Confirm & Continue" button triggers `submitInput()` |
-| `step-cards/formula-step-card.tsx` | Shows formula, variable substitution table, and computed result |
-| `step-cards/lookup-step-card.tsx` | Full table with highlighted match row and selected value |
-| `step-cards/decision-step-card.tsx` | Condition evaluation, branch cards, variables set |
-| `step-cards/display-step-card.tsx` | Ranked method cards, IRC check, adopted design value |
-| `step-cards/generic-step-card.tsx` | Fallback for node types without a custom card |
-| `hooks/use-execution-session.ts` | State machine managing the session lifecycle |
-| `hooks/use-execution-polling.ts` | Polls batch job progress every 2s |
+| File                                | Role                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `execution-runner.tsx`              | Full-page step-by-step runner (modeled after the HydroFlow sample)                                         |
+| `execution-sidebar.tsx`             | Step list with status dots (pending/running/completed/errored/waiting)                                     |
+| `execution-progress.tsx`            | Progress bar strip showing percentage and current step label                                               |
+| `execution-inspector.tsx`           | Live variables panel: shows all computed values in real time                                               |
+| `step-cards/input-step-card.tsx`    | Input form with field labels, units, validation — the "Confirm & Continue" button triggers `submitInput()` |
+| `step-cards/formula-step-card.tsx`  | Shows formula, variable substitution table, and computed result                                            |
+| `step-cards/lookup-step-card.tsx`   | Full table with highlighted match row and selected value                                                   |
+| `step-cards/decision-step-card.tsx` | Condition evaluation, branch cards, variables set                                                          |
+| `step-cards/display-step-card.tsx`  | Ranked method cards, IRC check, adopted design value                                                       |
+| `step-cards/generic-step-card.tsx`  | Fallback for node types without a custom card                                                              |
+| `hooks/use-execution-session.ts`    | State machine managing the session lifecycle                                                               |
+| `hooks/use-execution-polling.ts`    | Polls batch job progress every 2s                                                                          |
 
 ### Node Configuration Panels
 
 Each panel opens in the right sidebar (workflow-inspector.tsx) when a node is selected. They provide the full configuration UI for each node type.
 
-| File | What it configures |
-|------|--------------------|
-| `input-config-panel.tsx` | Add/remove/reorder fields, set labels, units (with dimension dropdown), defaults, validation rules, hints |
-| `formula-config-panel.tsx` | Toggle registry vs inline, registry picker with search, inline mathjs editor with variable autocomplete, variable bindings panel |
-| `lookup-config-panel.tsx` | Table data editor (add/remove rows, set ranges/values), match mode selector, fallback behavior, registry reference |
-| `interpolation-config-panel.tsx` | Curve digitizer (click points on uploaded image), interpolation method selector (linear/cubic/step), extrapolation mode |
-| `decision-config-panel.tsx` | Condition expression editor with variable autocomplete, true/false branch labels, variables set per branch |
-| `display-config-panel.tsx` | Add/remove comparison variables, selection rule (max/min/average/custom), custom expression editor, result variable name |
-| `validation-config-panel.tsx` | Add/remove checks, expression + severity (error/warning/info) + message per check, on-error behavior |
-| `code-config-panel.tsx` | Full mathjs editor with syntax highlighting, variable context sidebar, output variable declarations |
-| `unit-conversion-panel.tsx` | Input variable picker, input unit, output variable name, output unit, live preview of conversion factor |
-| `subworkflow-config-panel.tsx` | Workflow picker, version selector, input mapping (parent vars → child vars), output mapping (child vars → parent vars) |
-| `loop-config-panel.tsx` | Data source selector (uploaded dataset, manual array, range), iterator variable name, child nodes selector |
-| `variable-binding-panel.tsx` | Shows notation collisions ("C is used by 3 variables"), lets user pick which context key each notation symbol maps to |
+| File                             | What it configures                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `input-config-panel.tsx`         | Add/remove/reorder fields, set labels, units (with dimension dropdown), defaults, validation rules, hints                        |
+| `formula-config-panel.tsx`       | Toggle registry vs inline, registry picker with search, inline mathjs editor with variable autocomplete, variable bindings panel |
+| `lookup-config-panel.tsx`        | Table data editor (add/remove rows, set ranges/values), match mode selector, fallback behavior, registry reference               |
+| `interpolation-config-panel.tsx` | Curve digitizer (click points on uploaded image), interpolation method selector (linear/cubic/step), extrapolation mode          |
+| `decision-config-panel.tsx`      | Condition expression editor with variable autocomplete, true/false branch labels, variables set per branch                       |
+| `display-config-panel.tsx`       | Add/remove comparison variables, selection rule (max/min/average/custom), custom expression editor, result variable name         |
+| `validation-config-panel.tsx`    | Add/remove checks, expression + severity (error/warning/info) + message per check, on-error behavior                             |
+| `code-config-panel.tsx`          | Full mathjs editor with syntax highlighting, variable context sidebar, output variable declarations                              |
+| `unit-conversion-panel.tsx`      | Input variable picker, input unit, output variable name, output unit, live preview of conversion factor                          |
+| `subworkflow-config-panel.tsx`   | Workflow picker, version selector, input mapping (parent vars → child vars), output mapping (child vars → parent vars)           |
+| `loop-config-panel.tsx`          | Data source selector (uploaded dataset, manual array, range), iterator variable name, child nodes selector                       |
+| `variable-binding-panel.tsx`     | Shows notation collisions ("C is used by 3 variables"), lets user pick which context key each notation symbol maps to            |
 
 ### Registry UI
 
-| File | Role |
-|------|------|
-| `formula-registry-page.tsx` | Browse, search, filter by category/system/published. Grid of formula cards. |
-| `table-registry-page.tsx` | Browse tables with type badges (range, interpolation, multi-key). |
-| `formula-editor.tsx` | Full editor: name, expression (mathjs), display expression (pretty), input/output variables, reference, region, tags |
-| `table-editor.tsx` | Table data editor, interpolation config, chart preview for curves |
-| `registry-picker.tsx` | Inline picker used inside formula/lookup config panels — search + preview + select |
-| `impact-analysis-dialog.tsx` | Before publishing: shows floating vs pinned workflows, warns about breaking changes |
-| `curve-digitizer.tsx` | Upload a scanned IRC figure, click points to digitize, export as (x,y) array |
+| File                         | Role                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `formula-registry-page.tsx`  | Browse, search, filter by category/system/published. Grid of formula cards.                                          |
+| `table-registry-page.tsx`    | Browse tables with type badges (range, interpolation, multi-key).                                                    |
+| `formula-editor.tsx`         | Full editor: name, expression (mathjs), display expression (pretty), input/output variables, reference, region, tags |
+| `table-editor.tsx`           | Table data editor, interpolation config, chart preview for curves                                                    |
+| `registry-picker.tsx`        | Inline picker used inside formula/lookup config panels — search + preview + select                                   |
+| `impact-analysis-dialog.tsx` | Before publishing: shows floating vs pinned workflows, warns about breaking changes                                  |
+| `curve-digitizer.tsx`        | Upload a scanned IRC figure, click points to digitize, export as (x,y) array                                         |
 
 ### Batch Processing UI
 
-| File | Role |
-|------|------|
-| `batch-upload.tsx` | Drag-drop zone for Excel/CSV, file validation, column preview |
-| `batch-column-mapper.tsx` | Map file columns to workflow variables, auto-detect units from headers |
-| `batch-progress.tsx` | Real-time progress bar, row count, ETA, cancel button |
-| `batch-results.tsx` | Results table with per-row status, expand to see computed values, error messages |
-| `batch-download.tsx` | Export button: downloads CSV/XLSX with result columns appended |
+| File                      | Role                                                                             |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| `batch-upload.tsx`        | Drag-drop zone for Excel/CSV, file validation, column preview                    |
+| `batch-column-mapper.tsx` | Map file columns to workflow variables, auto-detect units from headers           |
+| `batch-progress.tsx`      | Real-time progress bar, row count, ETA, cancel button                            |
+| `batch-results.tsx`       | Results table with per-row status, expand to see computed values, error messages |
+| `batch-download.tsx`      | Export button: downloads CSV/XLSX with result columns appended                   |
 
 ### History & Audit UI
 
-| File | Role |
-|------|------|
+| File                         | Role                                                                               |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
 | `execution-history-page.tsx` | User's past runs: workflow name, status, duration, Qd value preview, re-run button |
-| `session-detail-page.tsx` | Full step-by-step review: every node's inputs, computation, and output |
-| `session-compare.tsx` | Side-by-side diff: variable name, Run A value, Run B value, % change |
-| `workflow-timeline.tsx` | Chronological change log grouped by batch operations |
-| `audit-log-viewer.tsx` | Raw filterable log: resource type, action, user, date range |
+| `session-detail-page.tsx`    | Full step-by-step review: every node's inputs, computation, and output             |
+| `session-compare.tsx`        | Side-by-side diff: variable name, Run A value, Run B value, % change               |
+| `workflow-timeline.tsx`      | Chronological change log grouped by batch operations                               |
+| `audit-log-viewer.tsx`       | Raw filterable log: resource type, action, user, date range                        |
 
 ---
 
@@ -588,65 +589,65 @@ Each panel opens in the right sidebar (workflow-inspector.tsx) when a node is se
 
 ### App Pages (`src/app/`)
 
-| Route | What renders |
-|-------|-------------|
-| `/` | Landing page or dashboard (list of recent workflows + workspaces) |
-| `/login`, `/signup` | Auth pages |
-| `/workflows` | Workflow list with create button |
-| `/workflows/[id]/editor` | Workflow canvas editor (mounts workflow-canvas.tsx) |
-| `/workflows/[id]/run` | Execution runner (mounts execution-runner.tsx) |
-| `/workflows/[id]/history` | Execution history filtered to this workflow |
-| `/workflows/[id]/settings` | Workflow metadata, collaborators, danger zone |
-| `/workspaces` | Workspace list |
-| `/workspaces/[id]` | Workspace canvas + tree panel |
-| `/registry` | Registry landing (formulas + tables tabs) |
-| `/registry/formulas/[id]` | Formula detail + version history |
-| `/registry/tables/[id]` | Table detail + version history |
-| `/history` | All execution history for the user |
-| `/history/[sessionId]` | Session detail view |
-| `/history/compare` | Session comparison (sessionA + sessionB in query params) |
-| `/batch` | Batch job list |
-| `/batch/[jobId]` | Batch job detail + results |
-| `/settings` | User preferences |
-| `/settings/org` | Organization settings |
+| Route                      | What renders                                                      |
+| -------------------------- | ----------------------------------------------------------------- |
+| `/`                        | Landing page or dashboard (list of recent workflows + workspaces) |
+| `/login`, `/signup`        | Auth pages                                                        |
+| `/workflows`               | Workflow list with create button                                  |
+| `/workflows/[id]/editor`   | Workflow canvas editor (mounts workflow-canvas.tsx)               |
+| `/workflows/[id]/run`      | Execution runner (mounts execution-runner.tsx)                    |
+| `/workflows/[id]/history`  | Execution history filtered to this workflow                       |
+| `/workflows/[id]/settings` | Workflow metadata, collaborators, danger zone                     |
+| `/workspaces`              | Workspace list                                                    |
+| `/workspaces/[id]`         | Workspace canvas + tree panel                                     |
+| `/registry`                | Registry landing (formulas + tables tabs)                         |
+| `/registry/formulas/[id]`  | Formula detail + version history                                  |
+| `/registry/tables/[id]`    | Table detail + version history                                    |
+| `/history`                 | All execution history for the user                                |
+| `/history/[sessionId]`     | Session detail view                                               |
+| `/history/compare`         | Session comparison (sessionA + sessionB in query params)          |
+| `/batch`                   | Batch job list                                                    |
+| `/batch/[jobId]`           | Batch job detail + results                                        |
+| `/settings`                | User preferences                                                  |
+| `/settings/org`            | Organization settings                                             |
 
 ### Layout Components (`src/components/layout/`)
 
-| File | Role |
-|------|------|
+| File              | Role                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------- |
 | `app-sidebar.tsx` | Main navigation: Workflows, Workspaces, Registry, History, Batch, Settings. Collapsible. |
-| `app-header.tsx` | Top bar: breadcrumbs, search, user avatar, org switcher |
-| `breadcrumb.tsx` | Dynamic breadcrumbs from route segments |
-| `page-header.tsx` | Title + description + action buttons for list pages |
+| `app-header.tsx`  | Top bar: breadcrumbs, search, user avatar, org switcher                                  |
+| `breadcrumb.tsx`  | Dynamic breadcrumbs from route segments                                                  |
+| `page-header.tsx` | Title + description + action buttons for list pages                                      |
 
 ### Shared Components (`src/components/shared/`)
 
-| File | Role |
-|------|------|
-| `empty-state.tsx` | Centered illustration + message + CTA button for empty lists |
-| `loading-skeleton.tsx` | Animated placeholder shapes matching each page layout |
-| `error-boundary.tsx` | Catches render errors, shows retry button |
-| `confirm-dialog.tsx` | "Are you sure?" modal with customizable title, message, and button labels |
-| `file-dropzone.tsx` | Drag-and-drop file upload with progress, type validation, size limits |
-| `search-input.tsx` | Debounced search field with clear button |
-| `status-badge.tsx` | Colored pill for workflow status (Draft, Published, Archived), session status, etc. |
-| `variable-autocomplete.tsx` | Text input with dropdown showing available variables from the workflow context |
-| `unit-selector.tsx` | Grouped dropdown: dimensions → units within each dimension |
-| `formula-editor.tsx` | CodeMirror or Monaco-based mathjs editor with syntax highlighting and variable context |
-| `json-viewer.tsx` | Collapsible JSON tree for debugging configs and results |
+| File                        | Role                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `empty-state.tsx`           | Centered illustration + message + CTA button for empty lists                           |
+| `loading-skeleton.tsx`      | Animated placeholder shapes matching each page layout                                  |
+| `error-boundary.tsx`        | Catches render errors, shows retry button                                              |
+| `confirm-dialog.tsx`        | "Are you sure?" modal with customizable title, message, and button labels              |
+| `file-dropzone.tsx`         | Drag-and-drop file upload with progress, type validation, size limits                  |
+| `search-input.tsx`          | Debounced search field with clear button                                               |
+| `status-badge.tsx`          | Colored pill for workflow status (Draft, Published, Archived), session status, etc.    |
+| `variable-autocomplete.tsx` | Text input with dropdown showing available variables from the workflow context         |
+| `unit-selector.tsx`         | Grouped dropdown: dimensions → units within each dimension                             |
+| `formula-editor.tsx`        | CodeMirror or Monaco-based mathjs editor with syntax highlighting and variable context |
+| `json-viewer.tsx`           | Collapsible JSON tree for debugging configs and results                                |
 
 ---
 
 ## Documentation (`docs/`)
 
-| File | Status | Purpose |
-|------|--------|---------|
-| `ARCHITECTURE.md` | ✅ Built | System overview, execution flow diagrams, query count analysis |
-| `SCHEMA-REFERENCE.md` | ✅ Built | Every table explained in plain language |
-| `NODE-TYPES.md` | Not yet | All 20 node types with their config JSON schemas and execution behavior |
-| `UNIT-SYSTEM.md` | Not yet | Canonical units, conversion boundaries, how batch mode detects units |
-| `VARIABLE-SYSTEM.md` | Not yet | Three-layer identity, collision resolution flow, binding UI |
-| `REGISTRY-SYSTEM.md` | Not yet | Formula/table library, version pinning flow, impact analysis |
+| File                  | Status   | Purpose                                                                 |
+| --------------------- | -------- | ----------------------------------------------------------------------- |
+| `ARCHITECTURE.md`     | ✅ Built | System overview, execution flow diagrams, query count analysis          |
+| `SCHEMA-REFERENCE.md` | ✅ Built | Every table explained in plain language                                 |
+| `NODE-TYPES.md`       | Not yet  | All 20 node types with their config JSON schemas and execution behavior |
+| `UNIT-SYSTEM.md`      | Not yet  | Canonical units, conversion boundaries, how batch mode detects units    |
+| `VARIABLE-SYSTEM.md`  | Not yet  | Three-layer identity, collision resolution flow, binding UI             |
+| `REGISTRY-SYSTEM.md`  | Not yet  | Formula/table library, version pinning flow, impact analysis            |
 
 ---
 

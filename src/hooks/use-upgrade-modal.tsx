@@ -1,5 +1,7 @@
-import { TRPCClientError } from "@trpc/client";
 import { useState } from "react";
+
+import { TRPCClientError } from "@trpc/client";
+
 import { UpgradeModal } from "@/components/upgrade-modal";
 
 export const useUpgradeModal = () => {

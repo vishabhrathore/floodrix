@@ -12,42 +12,48 @@
 //  You don't need to modify DatabaseListener itself. You just need to wire
 //  the poll → store sync in the runner page or a small effect hook.
 // ═══════════════════════════════════════════════════════════════════════════
-
 // ─── Add this hook to workflow-runner.tsx or the run page ─────────────────
 //
 // This keeps canvas highlights in sync with what the server sees.
-
 import { useEffect } from "react";
-import { useTRPC } from "@/trpc/client";
+
 import { useQuery } from "@tanstack/react-query";
+
 import { useExecutionHighlightStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
+import { useTRPC } from "@/trpc/client";
 
 export function useExecutionHighlightSync(sessionId: string | null) {
-    const trpc = useTRPC();
-    const syncHighlights = useExecutionHighlightStore((s) => s.syncExecutionHighlights);
-    const setActiveNode = useExecutionHighlightStore((s) => s.setActiveExecutionNode);
-    const clearHighlights = useExecutionHighlightStore((s) => s.clearExecutionHighlights);
+  const trpc = useTRPC();
+  const syncHighlights = useExecutionHighlightStore(
+    (s) => s.syncExecutionHighlights,
+  );
+  const setActiveNode = useExecutionHighlightStore(
+    (s) => s.setActiveExecutionNode,
+  );
+  const clearHighlights = useExecutionHighlightStore(
+    (s) => s.clearExecutionHighlights,
+  );
 
-    const { data } = useQuery(
-        trpc.calcExecution.getSession.queryOptions(
-            { sessionId: sessionId! },
-            {
-                enabled: !!sessionId,
-                refetchInterval: 1500,
-            }
-        )
-    );
+  const { data } = useQuery(
+    trpc.calcExecution.getSession.queryOptions(
+      { sessionId: sessionId! },
+      {
+        enabled: !!sessionId,
+        refetchInterval: 1500,
+      },
+    ),
+  );
 
-    useEffect(() => {
-        if (!data) return;
-        syncHighlights(data.nodeExecutions);
-        setActiveNode(data.currentNodeId);
-    }, [data, syncHighlights, setActiveNode]);
+  useEffect(() => {
+    if (!data) return;
+    syncHighlights(data.nodeExecutions);
+    setActiveNode(data.currentNodeId);
+  }, [data, syncHighlights, setActiveNode]);
 
-    // Clear when sessionId becomes null (run ended / panel closed)
-    useEffect(() => {
-        if (!sessionId) clearHighlights();
-    }, [sessionId, clearHighlights]);
+  // Clear when sessionId becomes null (run ended / panel closed)
+  useEffect(() => {
+    if (!sessionId) clearHighlights();
+  }, [sessionId, clearHighlights]);
 }
 
 // ─── Usage in the run page or runner component ────────────────────────────

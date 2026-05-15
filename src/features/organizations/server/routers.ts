@@ -1,9 +1,10 @@
-import prisma from "@/lib/db";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { TRPCError } from "@trpc/server";
 import z from "zod";
+
 import { PAGINATION } from "@/config/constants";
 import { BillingStatus, GlobalRole } from "@/generated/prisma";
-import { TRPCError } from "@trpc/server";
+import prisma from "@/lib/db";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const organizationsRouter = createTRPCRouter({
   getMany: protectedProcedure
@@ -17,7 +18,7 @@ export const organizationsRouter = createTRPCRouter({
           .default(PAGINATION.DEFAULT_PAGE_SIZE),
         search: z.string().default(""),
         status: z.string().default(""),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const { page, pageSize, search, status } = input;
@@ -52,13 +53,13 @@ export const organizationsRouter = createTRPCRouter({
             },
             // Fetch the active billing plan for the badges
             billing: {
-              orderBy: { createdAt: 'desc' },
+              orderBy: { createdAt: "desc" },
               take: 1,
               include: {
                 plan: {
-                  select: { name: true }
-                }
-              }
+                  select: { name: true },
+                },
+              },
             },
           },
           orderBy: {
@@ -103,7 +104,7 @@ export const organizationsRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1, "Organization name is required"),
         isPersonal: z.boolean().default(false),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Create org and automatically add the creator as an OWNER
@@ -123,8 +124,8 @@ export const organizationsRouter = createTRPCRouter({
             create: {
               userId: ctx.auth.user.id,
               displayName: ctx.auth.user.name || "Admin",
-            }
-          }
+            },
+          },
         },
       });
     }),
@@ -134,7 +135,7 @@ export const organizationsRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         status: z.nativeEnum(BillingStatus), // ACTIVE, CANCELED, EXPIRED
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       if (ctx.auth.user.globalRole !== GlobalRole.SUPER_ADMIN) {

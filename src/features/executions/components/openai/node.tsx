@@ -1,11 +1,13 @@
 "use client";
 
-import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useState } from "react";
-import { BaseExecutionNode } from "../base-execution-node";
-import { OpenAiDialog, OpenAiFormValues } from "./dialog";
+
+import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
+
 import { useNodeStatus } from "../../hooks/use-node-status";
+import { BaseExecutionNode } from "../base-execution-node";
 import { fetchOpenAiRealtimeToken } from "./actions";
+import { OpenAiDialog, OpenAiFormValues } from "./dialog";
 
 type OpenAiNodeData = {
   variableName?: string;
@@ -30,18 +32,20 @@ export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
   const handleOpenSettings = () => setDialogOpen(true);
 
   const handleSubmit = (values: OpenAiFormValues) => {
-    setNodes((nodes) => nodes.map((node) => {
-      if (node.id === props.id) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...values,
-          }
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.id === props.id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...values,
+            },
+          };
         }
-      }
-      return node;
-    }))
+        return node;
+      }),
+    );
   };
 
   const nodeData = props.data;
@@ -68,7 +72,7 @@ export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
         onDoubleClick={handleOpenSettings}
       />
     </>
-  )
+  );
 });
 
 OpenAiNode.displayName = "OpenAiNode";

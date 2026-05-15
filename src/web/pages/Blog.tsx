@@ -1,29 +1,49 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Calendar, Clock, ArrowUpRight, Search, FileText, ChevronRight, Hash } from 'lucide-react';
-import Link from 'next/link';
-import { BLOGS } from '../constants';
-import { useSectionTheme } from '../hooks/useSectionTheme';
+import React, { useState } from "react";
+
+import Link from "next/link";
+
+import {
+  ArrowUpRight,
+  Calendar,
+  ChevronRight,
+  Clock,
+  FileText,
+  Hash,
+  Search,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+
+import { BLOGS } from "../constants";
+import { useSectionTheme } from "../hooks/useSectionTheme";
 
 const Blog: React.FC = () => {
-  const containerRef = useSectionTheme<HTMLDivElement>('blog-container', 'light');
-  const [activeFilter, setActiveFilter] = useState('All');
+  const containerRef = useSectionTheme<HTMLDivElement>(
+    "blog-container",
+    "light",
+  );
+  const [activeFilter, setActiveFilter] = useState("All");
 
-  const categories = ['All', ...Array.from(new Set(BLOGS.map(b => b.category)))];
+  const categories = [
+    "All",
+    ...Array.from(new Set(BLOGS.map((b) => b.category))),
+  ];
 
-  const filtered = activeFilter === 'All'
-    ? BLOGS
-    : BLOGS.filter(b => b.category === activeFilter);
+  const filtered =
+    activeFilter === "All"
+      ? BLOGS
+      : BLOGS.filter((b) => b.category === activeFilter);
 
   const featuredPost = filtered[0];
   const remainingPosts = filtered.slice(1);
 
   return (
-    <div ref={containerRef} className="pt-32 md:pt-40 pb-48 bg-[#ffffff] min-h-screen selection:bg-brand-red/10 selection:text-brand-dark">
+    <div
+      ref={containerRef}
+      className="pt-32 md:pt-40 pb-48 bg-[#ffffff] min-h-screen selection:bg-brand-red/10 selection:text-brand-dark"
+    >
       <div className="w-full px-6 md:px-20 lg:px-32">
-
         {/* ── Formal Header (ARUP Style) ── */}
         <header className="mb-24">
           <div className="max-w-4xl mb-16">
@@ -31,8 +51,9 @@ const Blog: React.FC = () => {
               Insights
             </h1>
             <p className="text-xl md:text-2xl text-gray-500 font-sans font-light leading-relaxed">
-              Our experts share their insights, gained from shaping the built environment.
-              Explore our ideas for creating a low carbon, resilient, and more equitable future.
+              Our experts share their insights, gained from shaping the built
+              environment. Explore our ideas for creating a low carbon,
+              resilient, and more equitable future.
             </p>
           </div>
 
@@ -44,9 +65,10 @@ const Blog: React.FC = () => {
                 onClick={() => setActiveFilter(cat)}
                 className={`
                   px-6 py-2 text-[13px] font-sans transition-all rounded-full border
-                  ${activeFilter === cat
-                    ? 'bg-brand-dark text-white border-brand-dark'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-brand-dark hover:text-brand-dark'
+                  ${
+                    activeFilter === cat
+                      ? "bg-brand-dark text-white border-brand-dark"
+                      : "bg-white text-gray-500 border-gray-200 hover:border-brand-dark hover:text-brand-dark"
                   }
                 `}
               >
@@ -67,7 +89,10 @@ const Blog: React.FC = () => {
             {/* ── Featured Analysis (Rounded [2.5rem]) ── */}
             {featuredPost && (
               <section className="mb-32 group">
-                <Link href={`/blog/${featuredPost.id}`} className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+                <Link
+                  href={`/blog/${featuredPost.id}`}
+                  className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center"
+                >
                   <div className="lg:col-span-7 overflow-hidden rounded-[2.5rem] relative aspect-[16/9] shadow-xl shadow-black/5">
                     <img
                       src={featuredPost.image}
@@ -109,7 +134,11 @@ const Blog: React.FC = () => {
                   key={post.id}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{
+                    delay: idx * 0.1,
+                    duration: 0.8,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   viewport={{ once: true }}
                   className="group"
                 >
@@ -155,10 +184,13 @@ const Blog: React.FC = () => {
             <div>
               <h2 className="text-4xl font-serif text-brand-dark tracking-tight leading-tight mb-8">
                 Stay updated with the <br />
-                <span className="italic text-brand-red">Technical Dispatch.</span>
+                <span className="italic text-brand-red">
+                  Technical Dispatch.
+                </span>
               </h2>
               <p className="text-lg text-gray-500 font-sans font-light leading-relaxed max-w-md">
-                Formal notification of regulatory updates, peer-reviewed analysis, and case documentation.
+                Formal notification of regulatory updates, peer-reviewed
+                analysis, and case documentation.
               </p>
             </div>
 
@@ -174,7 +206,6 @@ const Blog: React.FC = () => {
             </div>
           </div>
         </section>
-
       </div>
     </div>
   );

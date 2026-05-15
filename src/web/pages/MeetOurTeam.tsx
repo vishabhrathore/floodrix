@@ -1,29 +1,51 @@
 "use client";
 
-import React, { cloneElement } from 'react';
-import { motion } from 'motion/react';
-import { Linkedin, Mail, ArrowRight, GraduationCap, Globe, Award, Droplets, Shield, Briefcase } from 'lucide-react';
-import { TEAM } from '../constants';
-import CommonHero from '../components/CommonHero';
-import Link from 'next/link';
+import React, { cloneElement } from "react";
+
+import Link from "next/link";
+
+import {
+  ArrowRight,
+  Award,
+  Briefcase,
+  Droplets,
+  Globe,
+  GraduationCap,
+  Linkedin,
+  Mail,
+  Shield,
+} from "lucide-react";
+import { motion } from "motion/react";
+
+import CommonHero from "../components/CommonHero";
+import { TEAM } from "../constants";
 
 const MeetOurTeam: React.FC = () => {
   const heroData = {
     category: "Our People",
     headline: (
       <>
-        The engineers <span className="italic text-brand-red">behind the work.</span>
+        The engineers{" "}
+        <span className="italic text-brand-red">behind the work.</span>
       </>
     ),
     description:
       "FloodRix is built on domain-specific engineering expertise. Our team combines advanced academic training with hands-on delivery experience across highway drainage, groundwater, irrigation, and hydraulic structures — the four disciplines that define our practice.",
     backgroundText: "TEAM",
     stats: [
-      { value: "15+", label: "Engineers", detail: "Water resources specialists" },
+      {
+        value: "15+",
+        label: "Engineers",
+        detail: "Water resources specialists",
+      },
       { value: "10+", label: "Years", detail: "Average domain experience" },
       { value: "60+", label: "Projects", detail: "Delivered across India" },
-      { value: "100%", label: "IRC / CWC", detail: "Code-compliant deliverables" },
-    ]
+      {
+        value: "100%",
+        label: "IRC / CWC",
+        detail: "Code-compliant deliverables",
+      },
+    ],
   };
 
   return (
@@ -90,24 +112,36 @@ const MeetOurTeam: React.FC = () => {
                       <div className="flex items-start gap-4">
                         <GraduationCap className="w-5 h-5 text-gray-300 shrink-0 mt-1" />
                         <div>
-                          <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-1">Education</p>
-                          <p className="text-sm font-medium text-brand-dark">{member.edu}</p>
+                          <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-1">
+                            Education
+                          </p>
+                          <p className="text-sm font-medium text-brand-dark">
+                            {member.edu}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-4">
                         <Globe className="w-5 h-5 text-gray-300 shrink-0 mt-1" />
                         <div>
-                          <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-1">Expertise Region</p>
-                          <p className="text-sm font-medium text-brand-dark">{member.region}</p>
+                          <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-1">
+                            Expertise Region
+                          </p>
+                          <p className="text-sm font-medium text-brand-dark">
+                            {member.region}
+                          </p>
                         </div>
                       </div>
                     </div>
                     <div className="bg-gray-50/80 rounded-xl p-5 border border-gray-100 mb-8">
-                      <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-1.5">Primary Reference Project</p>
-                      <p className="text-sm font-bold text-brand-dark leading-snug">{member.notableProject}</p>
+                      <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest mb-1.5">
+                        Primary Reference Project
+                      </p>
+                      <p className="text-sm font-bold text-brand-dark leading-snug">
+                        {member.notableProject}
+                      </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {member.expertise.map(exp => (
+                      {member.expertise.map((exp) => (
                         <span
                           key={exp}
                           className="px-3 py-1 border border-gray-200 text-gray-500 rounded-full text-[9px] font-mono font-medium uppercase tracking-widest hover:border-brand-dark hover:text-brand-dark transition-colors cursor-default"
@@ -128,7 +162,6 @@ const MeetOurTeam: React.FC = () => {
       <section className="px-6 md:px-20 lg:px-32 py-40 border-t border-gray-100 bg-white">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-24 items-start">
-
             {/* ── Left: Narrative ── */}
             <div className="lg:col-span-5">
               <div className="flex items-center gap-4 mb-12">
@@ -144,7 +177,9 @@ const MeetOurTeam: React.FC = () => {
               </h2>
 
               <p className="text-gray-500 text-lg font-light leading-relaxed mb-12 max-w-md">
-                Engage our senior engineers for high-level project diagnostics. We provide the technical certainty required for complex infrastructure through rigorous analysis and peer review.
+                Engage our senior engineers for high-level project diagnostics.
+                We provide the technical certainty required for complex
+                infrastructure through rigorous analysis and peer review.
               </p>
 
               <div className="space-y-6 mb-16">
@@ -154,8 +189,13 @@ const MeetOurTeam: React.FC = () => {
                   "Regulatory Submission Strategy",
                   "Hydraulic Structural Diagnostics",
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 border-b border-gray-50 pb-4 last:border-0">
-                    <span className="text-brand-red font-serif italic text-lg leading-none">0{idx + 1}</span>
+                  <div
+                    key={idx}
+                    className="flex items-center gap-4 border-b border-gray-50 pb-4 last:border-0"
+                  >
+                    <span className="text-brand-red font-serif italic text-lg leading-none">
+                      0{idx + 1}
+                    </span>
                     <span className="text-[11px] font-mono font-bold text-brand-dark/80 uppercase tracking-widest">
                       {item}
                     </span>
@@ -165,7 +205,10 @@ const MeetOurTeam: React.FC = () => {
 
               <button className="group flex items-center gap-6 px-12 py-6 bg-brand-dark text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-brand-red transition-all duration-500 shadow-2xl">
                 Submit Project Enquiry
-                <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform duration-500" />
+                <ArrowRight
+                  size={14}
+                  className="group-hover:translate-x-2 transition-transform duration-500"
+                />
               </button>
             </div>
 
@@ -203,7 +246,9 @@ const MeetOurTeam: React.FC = () => {
                     className="flex items-start gap-8 p-10 bg-white border border-gray-100 rounded-[2.5rem] hover:border-brand-red/20 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.05)] transition-all duration-700 group"
                   >
                     <div className="w-12 h-12 shrink-0 flex items-center justify-center text-brand-red bg-brand-red/5 rounded-2xl group-hover:bg-brand-red group-hover:text-white transition-all duration-500">
-                      {cloneElement(box.icon as React.ReactElement<any>, { size: 20 })}
+                      {cloneElement(box.icon as React.ReactElement<any>, {
+                        size: 20,
+                      })}
                     </div>
 
                     <div className="flex-1">
@@ -223,7 +268,6 @@ const MeetOurTeam: React.FC = () => {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
       </section>

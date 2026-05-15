@@ -1,5 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import z from "zod";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -19,18 +26,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
 
 const formSchema = z.object({
   variableName: z
     .string()
     .min(1, { message: "Variable name is required" })
-    .regex(/^[A-Za-z_$][A-Za-z0-9_$]*$/, { 
-      message: "Variable name must start with a letter or underscore and container only letters, numbers, and underscores",
+    .regex(/^[A-Za-z_$][A-Za-z0-9_$]*$/, {
+      message:
+        "Variable name must start with a letter or underscore and container only letters, numbers, and underscores",
     }),
   username: z.string().optional(),
   content: z
@@ -47,7 +50,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: z.infer<typeof formSchema>) => void;
   defaultValues?: Partial<DiscordFormValues>;
-};
+}
 
 export const DiscordDialog = ({
   open,
@@ -105,10 +108,7 @@ export const DiscordDialog = ({
                 <FormItem>
                   <FormLabel>Variable Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="myDiscord"
-                      {...field}
-                    />
+                    <Input placeholder="myDiscord" {...field} />
                   </FormControl>
                   <FormDescription>
                     Use this name to reference the result in other nodes:{" "}
@@ -132,7 +132,8 @@ export const DiscordDialog = ({
                     />
                   </FormControl>
                   <FormDescription>
-                    Get this from Discord: Channel Settings → Integrations → Webhooks
+                    Get this from Discord: Channel Settings → Integrations →
+                    Webhooks
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -143,22 +144,22 @@ export const DiscordDialog = ({
               control={form.control}
               name="content"
               render={({ field }) => (
-              <FormItem>
-                <FormLabel>Message Content</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Summary: {{myGemini.text}}"
-                    className="min-h-[80px] font-mono text-sm"
-                    {...field}
-                  />
-                </FormControl>
+                <FormItem>
+                  <FormLabel>Message Content</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Summary: {{myGemini.text}}"
+                      className="min-h-[80px] font-mono text-sm"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormDescription>
                     The message to send. Use {"{{variables}}"} for simple values
                     or {"{{json variable}}"} to stringify objects
                   </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+                  <FormMessage />
+                </FormItem>
+              )}
             />
             <FormField
               control={form.control}
@@ -167,10 +168,7 @@ export const DiscordDialog = ({
                 <FormItem>
                   <FormLabel>Bot Username (Optional)</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Workflow Bot"
-                      {...field}
-                    />
+                    <Input placeholder="Workflow Bot" {...field} />
                   </FormControl>
                   <FormDescription>
                     Override the webhook's default username

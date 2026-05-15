@@ -1,4 +1,8 @@
-export type WorkspaceNodeType = 'FOLDER' | 'CALCULATOR_LINK' | 'EXTERNAL_LINK' | 'ROOT';
+export type WorkspaceNodeType =
+  | "FOLDER"
+  | "CALCULATOR_LINK"
+  | "EXTERNAL_LINK"
+  | "ROOT";
 
 export interface WorkspaceNodeJSON {
   id: string;
@@ -22,17 +26,18 @@ export interface WorkspaceJSON {
 
 /**
  * WORKSPACE_HIERARCHY
- * 
+ *
  * This constant serves as the structural blueprint for the platform's workspaces,
  * mimicking the tree-like hierarchy found in the Prisma WorkspaceNode model.
- * Each branch represents a technical domain or sub-domain, with calculators 
+ * Each branch represents a technical domain or sub-domain, with calculators
  * always serving as the terminal (leaf) nodes.
  */
 export const WORKSPACE_HIERARCHY: WorkspaceJSON[] = [
   {
     id: "ws-hydrology",
     name: "Hydrology & Stormwater",
-    description: "Advanced hydrological modeling and stormwater management toolsets for urban and rural catchments.",
+    description:
+      "Advanced hydrological modeling and stormwater management toolsets for urban and rural catchments.",
     icon: "droplets",
     nodes: [
       {
@@ -51,30 +56,31 @@ export const WORKSPACE_HIERARCHY: WorkspaceJSON[] = [
                 id: "node-rational",
                 type: "CALCULATOR_LINK",
                 name: "Rational Method Analysis",
-                calculatorId: "calc-rational"
+                calculatorId: "calc-rational",
               },
               {
                 id: "node-dicken",
                 type: "CALCULATOR_LINK",
                 name: "Dicken's Empirical Method",
-                calculatorId: "calc-dicken"
+                calculatorId: "calc-dicken",
               },
               {
                 id: "node-ryves",
                 type: "CALCULATOR_LINK",
                 name: "Ryve's Empirical Method",
-                calculatorId: "calc-ryves"
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                calculatorId: "calc-ryves",
+              },
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     id: "ws-structural",
     name: "Structural Assurance",
-    description: "Specialized structural engineering toolsets for bridge design, foundations, and reinforced concrete.",
+    description:
+      "Specialized structural engineering toolsets for bridge design, foundations, and reinforced concrete.",
     icon: "building2",
     nodes: [
       {
@@ -92,12 +98,12 @@ export const WORKSPACE_HIERARCHY: WorkspaceJSON[] = [
                 id: "node-flexure",
                 type: "CALCULATOR_LINK",
                 name: "Flexural Strength Verification",
-                calculatorId: "calc-flexure"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+                calculatorId: "calc-flexure",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];

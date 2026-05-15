@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useHeaderStore, SectionTheme } from '@/web/store/useHeaderStore';
+import { useEffect, useRef } from "react";
+
+import { SectionTheme, useHeaderStore } from "@/web/store/useHeaderStore";
 
 /**
  * Drop this into any section component.
@@ -17,21 +18,24 @@ import { useHeaderStore, SectionTheme } from '@/web/store/useHeaderStore';
  *   const ref = useSectionTheme('about', 'light');
  *   return <section ref={ref} className="bg-white">…</section>
  */
-export function useSectionTheme<T extends HTMLElement = HTMLElement>(id: string, theme: SectionTheme) {
-    const ref = useRef<T>(null);
-    const registerSection = useHeaderStore(s => s.registerSection);
-    const unregisterSection = useHeaderStore(s => s.unregisterSection);
+export function useSectionTheme<T extends HTMLElement = HTMLElement>(
+  id: string,
+  theme: SectionTheme,
+) {
+  const ref = useRef<T>(null);
+  const registerSection = useHeaderStore((s) => s.registerSection);
+  const unregisterSection = useHeaderStore((s) => s.unregisterSection);
 
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-        registerSection(id, el, theme);
-        return () => unregisterSection(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, theme]); // re-register if theme or id changes
+    registerSection(id, el, theme);
+    return () => unregisterSection(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, theme]); // re-register if theme or id changes
 
-    return ref;
+  return ref;
 }
 
 /**
@@ -42,13 +46,13 @@ export function useSectionTheme<T extends HTMLElement = HTMLElement>(id: string,
  *   return <footer ref={ref} className="bg-black">…</footer>
  */
 export function useFooterTheme<T extends HTMLElement = HTMLElement>() {
-    const ref = useRef<T>(null);
-    const registerFooter = useHeaderStore(s => s.registerFooter);
+  const ref = useRef<T>(null);
+  const registerFooter = useHeaderStore((s) => s.registerFooter);
 
-    useEffect(() => {
-        registerFooter(ref.current);
-        return () => registerFooter(null);
-    }, [registerFooter]);
+  useEffect(() => {
+    registerFooter(ref.current);
+    return () => registerFooter(null);
+  }, [registerFooter]);
 
-    return ref;
+  return ref;
 }

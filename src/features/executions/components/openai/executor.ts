@@ -1,6 +1,7 @@
-import Handlebars from "handlebars";
-import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { generateText } from "ai";
+import Handlebars from "handlebars";
+
 import type { NodeExecutor } from "@/features/executions/types";
 import prisma from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
@@ -27,7 +28,6 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
   step,
   publish,
 }) => {
-
   if (!data.variableName) {
     throw new Error("OpenAi node: Variable name is missing");
   }
@@ -64,11 +64,11 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
 
   try {
     const { text } = await generateText({
-        model: openai("gpt-4"),
-        system: systemPrompt,
-        prompt: userPrompt,
+      model: openai("gpt-4"),
+      system: systemPrompt,
+      prompt: userPrompt,
     });
-    
+
     // Realtime status updates removed
 
     return {
@@ -76,8 +76,8 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
       [data.variableName]: {
         text,
       },
-    }
+    };
   } catch (error) {
-     throw error;
+    throw error;
   }
 };

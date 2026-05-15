@@ -1,1675 +1,2123 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FloodRix | Engineering Hydraulics Platform</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
-        rel="stylesheet">
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
-        :root {
-            --red: #fb3640;
-            --red-d: #d42b34;
-            --red-faint: rgba(251, 54, 64, 0.07);
-            --blue: #247ba0;
-            --teal: #0d9488;
-            --dark: #191919;
-            --dark2: #111;
-            --bg: #f4f5f7;
-            --white: #fff;
-            --border: #e5e7eb;
-            --muted: #6b7280;
-            --text: #111827;
-            --shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        html {
-            font-size: clamp(13px, 0.2vw+12.5px, 16px);
-            scroll-behavior: smooth
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh
-        }
-
-        h1,
-        h2,
-        h3,
-        h4,
-        h5 {
-            font-family: 'Outfit', sans-serif;
-            line-height: 1.15
-        }
-
-        /* ═══ HEADER ═══ */
-        .hdr {
-            background: var(--dark2);
-            height: 58px;
-            padding: 0 28px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            position: sticky;
-            top: 0;
-            z-index: 300;
-            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.5)
-        }
-
-        .hdr-logo {
-            font-family: 'Outfit', sans-serif;
-            font-size: 21px;
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: -0.5px
-        }
-
-        .hdr-logo span {
-            color: var(--red)
-        }
-
-        .hdr-tag {
-            font-size: 9px;
-            color: #555;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-top: 1px
-        }
-
-        .hdr-right {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .badge {
-            background: rgba(251, 54, 64, 0.14);
-            border: 1px solid rgba(251, 54, 64, 0.28);
-            color: var(--red);
-            padding: 4px 11px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: .5px
-        }
-
-        .hdr-mode-btn {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #aaa;
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: .15s;
-            font-family: 'Outfit', sans-serif
-        }
-
-        .hdr-mode-btn.active,
-        .hdr-mode-btn:hover {
-            background: var(--red);
-            border-color: var(--red);
-            color: #fff
-        }
-
-        /* ═══ LAYOUT ═══ */
-        .shell {
-            display: flex;
-            min-height: calc(100vh - 58px)
-        }
-
-        /* ═══ LEFT NAV ═══ */
-        .sidenav {
-            width: 260px;
-            background: var(--white);
-            border-right: 1px solid var(--border);
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            position: sticky;
-            top: 58px;
-            height: calc(100vh - 58px);
-            overflow-y: auto
-        }
-
-        .sidenav::-webkit-scrollbar {
-            width: 4px
-        }
-
-        .sidenav::-webkit-scrollbar-thumb {
-            background: #e5e7eb;
-            border-radius: 2px
-        }
-
-        .nav-section {
-            padding: 16px 14px 6px;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #9ca3af
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 14px;
-            cursor: pointer;
-            border-radius: 0;
-            transition: background .12s;
-            border-left: 3px solid transparent;
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: 500
-        }
-
-        .nav-item:hover {
-            background: #fafafa;
-            color: var(--text)
-        }
-
-        .nav-item.active {
-            background: var(--red-faint);
-            border-left-color: var(--red);
-            color: var(--red);
-            font-weight: 600
-        }
-
-        .nav-item .nav-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            flex-shrink: 0
-        }
-
-        .nav-item.active .nav-icon {
-            background: rgba(251, 54, 64, .12)
-        }
-
-        .nav-item:not(.active) .nav-icon {
-            background: #f9fafb
-        }
-
-        .nav-divider {
-            height: 1px;
-            background: var(--border);
-            margin: 8px 0
-        }
-
-        /* ═══ MAIN CONTENT ═══ */
-        .main {
-            flex: 1;
-            padding: 28px 32px;
-            min-width: 0
-        }
-
-        /* ═══ BREADCRUMB ═══ */
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 22px;
-            flex-wrap: wrap
-        }
-
-        .bc-item {
-            font-size: 12px;
-            color: var(--muted);
-            cursor: pointer;
-            transition: .12s
-        }
-
-        .bc-item:hover {
-            color: var(--red)
-        }
-
-        .bc-item.active {
-            color: var(--text);
-            font-weight: 600;
-            cursor: default
-        }
-
-        .bc-sep {
-            color: #d1d5db;
-            font-size: 11px
-        }
-
-        .bc-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--red);
-            margin-right: 2px;
-            display: inline-block
-        }
-
-        /* ═══ PAGE TITLE ═══ */
-        .page-title {
-            font-size: clamp(22px, 2.5vw, 30px);
-            font-weight: 800;
-            color: var(--dark);
-            letter-spacing: -0.5px;
-            margin-bottom: 6px
-        }
-
-        .page-sub {
-            font-size: 13px;
-            color: var(--muted);
-            margin-bottom: 24px;
-            max-width: 500px;
-            line-height: 1.5
-        }
-
-        /* ═══ CHOICE GRID ═══ */
-        .choice-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 14px;
-            margin-bottom: 8px
-        }
-
-        .choice-card {
-            background: var(--white);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 20px 18px;
-            cursor: pointer;
-            transition: all .18s;
-            position: relative;
-            overflow: hidden
-        }
-
-        .choice-card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--border);
-            transition: .18s
-        }
-
-        .choice-card:hover {
-            border-color: var(--red);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md)
-        }
-
-        .choice-card:hover::before {
-            background: var(--red)
-        }
-
-        .choice-card.selected {
-            border-color: var(--red);
-            background: var(--red-faint)
-        }
-
-        .choice-card.selected::before {
-            background: var(--red)
-        }
-
-        .choice-card.disabled {
-            opacity: .4;
-            cursor: not-allowed
-        }
-
-        .choice-card.disabled:hover {
-            transform: none;
-            border-color: var(--border)
-        }
-
-        .cc-icon {
-            font-size: 24px;
-            margin-bottom: 10px
-        }
-
-        .cc-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--dark);
-            font-family: 'Outfit', sans-serif;
-            margin-bottom: 4px
-        }
-
-        .cc-desc {
-            font-size: 11px;
-            color: var(--muted);
-            line-height: 1.5
-        }
-
-        .cc-tag {
-            display: inline-block;
-            margin-top: 8px;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            padding: 3px 8px;
-            border-radius: 4px
-        }
-
-        .cc-tag.soon {
-            background: #f3f4f6;
-            color: #9ca3af
-        }
-
-        .cc-tag.irc {
-            background: #dbeafe;
-            color: #1d4ed8
-        }
-
-        .cc-tag.active {
-            background: rgba(251, 54, 64, .1);
-            color: var(--red)
-        }
-
-        .choice-card.selected .cc-tag.active {
-            background: rgba(251, 54, 64, .2)
-        }
-
-        .cc-check {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--red);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            opacity: 0;
-            transition: .15s
-        }
-
-        .choice-card.selected .cc-check {
-            opacity: 1
-        }
-
-        /* ═══ SECTION DIVIDER ═══ */
-        .sdiv {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin: 24px 0 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .sdiv::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border)
-        }
-
-        /* ═══ FORMULA TREE PATH ═══ */
-        .tree-path {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap
-        }
-
-        .tp-node {
-            background: #f9fafb;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 5px
-        }
-
-        .tp-node.active {
-            background: rgba(251, 54, 64, .08);
-            border-color: var(--red);
-            color: var(--red)
-        }
-
-        .tp-node.root {
-            background: var(--dark);
-            color: #fff;
-            border-color: var(--dark)
-        }
-
-        .tp-arrow {
-            color: #d1d5db;
-            font-size: 12px;
-            font-weight: 700
-        }
-
-        /* ═══ INPUT SECTION ═══ */
-        .input-card {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 16px;
-            overflow: hidden
-        }
-
-        .ic-head {
-            padding: 14px 20px;
-            border-bottom: 1px solid #f3f4f6;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #fafbfc
-        }
-
-        .ic-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            flex-shrink: 0
-        }
-
-        .ic-red {
-            background: rgba(251, 54, 64, .1)
-        }
-
-        .ic-blue {
-            background: rgba(36, 123, 160, .1)
-        }
-
-        .ic-teal {
-            background: rgba(13, 148, 136, .1)
-        }
-
-        .ic-head h3 {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--dark)
-        }
-
-        .ic-head p {
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 2px
-        }
-
-        .ic-body {
-            padding: 20px
-        }
-
-        .field-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 14px
-        }
-
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 5px
-        }
-
-        .field label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #374151;
-            text-transform: uppercase;
-            letter-spacing: .5px
-        }
-
-        .field .hint {
-            font-size: 10px;
-            color: #9ca3af;
-            line-height: 1.4
-        }
-
-        .iw {
-            display: flex;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1.5px solid #d1d5db;
-            transition: border-color .15s
-        }
-
-        .iw:focus-within {
-            border-color: var(--red)
-        }
-
-        .iw input,
-        .iw select {
-            flex: 1;
-            padding: 9px 11px;
-            border: none;
-            outline: none;
-            font-size: 13px;
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            color: var(--dark);
-            background: #fff;
-            min-width: 0
-        }
-
-        .iw select {
-            cursor: pointer
-        }
-
-        .iw .unit {
-            background: #f9fafb;
-            padding: 9px 10px;
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--muted);
-            border-left: 1px solid #d1d5db;
-            white-space: nowrap;
-            letter-spacing: .5px;
-            text-transform: uppercase
-        }
-
-        .field-note {
-            background: #fffbeb;
-            border: 1px solid #fde68a;
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 11px;
-            color: #92400e;
-            margin-top: 2px
-        }
-
-        /* ═══ BUTTONS ═══ */
-        .btn-row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-top: 20px;
-            flex-wrap: wrap
-        }
-
-        .btn-calc {
-            background: var(--red);
-            color: #fff;
-            border: none;
-            padding: 11px 28px;
-            border-radius: 8px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all .15s;
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            box-shadow: 0 4px 12px rgba(251, 54, 64, .3)
-        }
-
-        .btn-calc:hover {
-            background: var(--red-d);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(251, 54, 64, .35)
-        }
-
-        .btn-calc:disabled {
-            background: #9ca3af;
-            box-shadow: none;
-            transform: none;
-            cursor: default
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1.5px solid var(--border);
-            color: var(--muted);
-            padding: 11px 20px;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: .15s
-        }
-
-        .btn-outline:hover {
-            border-color: var(--red);
-            color: var(--red)
-        }
-
-        .btn-back {
-            background: transparent;
-            border: none;
-            color: var(--muted);
-            padding: 6px 0;
-            font-size: 13px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-family: 'Inter', sans-serif
-        }
-
-        .btn-back:hover {
-            color: var(--red)
-        }
-
-        /* ═══ RESULT ═══ */
-        .result-banner {
-            background: var(--dark2);
-            border-radius: 14px;
-            padding: 24px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 16px
-        }
-
-        .rb-left .rb-lbl {
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #555;
-            margin-bottom: 6px
-        }
-
-        .rb-left .rb-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            font-family: 'Outfit', sans-serif
-        }
-
-        .rb-left .rb-path {
-            font-size: 11px;
-            color: #6b7280;
-            margin-top: 3px
-        }
-
-        .rb-val {
-            font-family: 'Outfit', sans-serif;
-            font-size: clamp(40px, 5vw, 58px);
-            font-weight: 800;
-            color: var(--red);
-            line-height: 1
-        }
-
-        .rb-unit {
-            font-size: 16px;
-            color: #6b7280;
-            margin-left: 6px
-        }
-
-        /* ═══ WORKING TABLE ═══ */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --red: #fb3640;
+        --red-d: #d42b34;
+        --red-faint: rgba(251, 54, 64, 0.07);
+        --blue: #247ba0;
+        --teal: #0d9488;
+        --dark: #191919;
+        --dark2: #111;
+        --bg: #f4f5f7;
+        --white: #fff;
+        --border: #e5e7eb;
+        --muted: #6b7280;
+        --text: #111827;
+        --shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+      }
+
+      html {
+        font-size: clamp(13px, 0.2vw+12.5px, 16px);
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5 {
+        font-family: "Outfit", sans-serif;
+        line-height: 1.15;
+      }
+
+      /* ═══ HEADER ═══ */
+      .hdr {
+        background: var(--dark2);
+        height: 58px;
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: sticky;
+        top: 0;
+        z-index: 300;
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+      }
+
+      .hdr-logo {
+        font-family: "Outfit", sans-serif;
+        font-size: 21px;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.5px;
+      }
+
+      .hdr-logo span {
+        color: var(--red);
+      }
+
+      .hdr-tag {
+        font-size: 9px;
+        color: #555;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-top: 1px;
+      }
+
+      .hdr-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .badge {
+        background: rgba(251, 54, 64, 0.14);
+        border: 1px solid rgba(251, 54, 64, 0.28);
+        color: var(--red);
+        padding: 4px 11px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .hdr-mode-btn {
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #aaa;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.15s;
+        font-family: "Outfit", sans-serif;
+      }
+
+      .hdr-mode-btn.active,
+      .hdr-mode-btn:hover {
+        background: var(--red);
+        border-color: var(--red);
+        color: #fff;
+      }
+
+      /* ═══ LAYOUT ═══ */
+      .shell {
+        display: flex;
+        min-height: calc(100vh - 58px);
+      }
+
+      /* ═══ LEFT NAV ═══ */
+      .sidenav {
+        width: 260px;
+        background: var(--white);
+        border-right: 1px solid var(--border);
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 58px;
+        height: calc(100vh - 58px);
+        overflow-y: auto;
+      }
+
+      .sidenav::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .sidenav::-webkit-scrollbar-thumb {
+        background: #e5e7eb;
+        border-radius: 2px;
+      }
+
+      .nav-section {
+        padding: 16px 14px 6px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #9ca3af;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        cursor: pointer;
+        border-radius: 0;
+        transition: background 0.12s;
+        border-left: 3px solid transparent;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      .nav-item:hover {
+        background: #fafafa;
+        color: var(--text);
+      }
+
+      .nav-item.active {
+        background: var(--red-faint);
+        border-left-color: var(--red);
+        color: var(--red);
+        font-weight: 600;
+      }
+
+      .nav-item .nav-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+
+      .nav-item.active .nav-icon {
+        background: rgba(251, 54, 64, 0.12);
+      }
+
+      .nav-item:not(.active) .nav-icon {
+        background: #f9fafb;
+      }
+
+      .nav-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 8px 0;
+      }
+
+      /* ═══ MAIN CONTENT ═══ */
+      .main {
+        flex: 1;
+        padding: 28px 32px;
+        min-width: 0;
+      }
+
+      /* ═══ BREADCRUMB ═══ */
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+      }
+
+      .bc-item {
+        font-size: 12px;
+        color: var(--muted);
+        cursor: pointer;
+        transition: 0.12s;
+      }
+
+      .bc-item:hover {
+        color: var(--red);
+      }
+
+      .bc-item.active {
+        color: var(--text);
+        font-weight: 600;
+        cursor: default;
+      }
+
+      .bc-sep {
+        color: #d1d5db;
+        font-size: 11px;
+      }
+
+      .bc-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--red);
+        margin-right: 2px;
+        display: inline-block;
+      }
+
+      /* ═══ PAGE TITLE ═══ */
+      .page-title {
+        font-size: clamp(22px, 2.5vw, 30px);
+        font-weight: 800;
+        color: var(--dark);
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+      }
+
+      .page-sub {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 24px;
+        max-width: 500px;
+        line-height: 1.5;
+      }
+
+      /* ═══ CHOICE GRID ═══ */
+      .choice-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+        margin-bottom: 8px;
+      }
+
+      .choice-card {
+        background: var(--white);
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 18px;
+        cursor: pointer;
+        transition: all 0.18s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .choice-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--border);
+        transition: 0.18s;
+      }
+
+      .choice-card:hover {
+        border-color: var(--red);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .choice-card:hover::before {
+        background: var(--red);
+      }
+
+      .choice-card.selected {
+        border-color: var(--red);
+        background: var(--red-faint);
+      }
+
+      .choice-card.selected::before {
+        background: var(--red);
+      }
+
+      .choice-card.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .choice-card.disabled:hover {
+        transform: none;
+        border-color: var(--border);
+      }
+
+      .cc-icon {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .cc-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--dark);
+        font-family: "Outfit", sans-serif;
+        margin-bottom: 4px;
+      }
+
+      .cc-desc {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .cc-tag {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+
+      .cc-tag.soon {
+        background: #f3f4f6;
+        color: #9ca3af;
+      }
+
+      .cc-tag.irc {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .cc-tag.active {
+        background: rgba(251, 54, 64, 0.1);
+        color: var(--red);
+      }
+
+      .choice-card.selected .cc-tag.active {
+        background: rgba(251, 54, 64, 0.2);
+      }
+
+      .cc-check {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--red);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        opacity: 0;
+        transition: 0.15s;
+      }
+
+      .choice-card.selected .cc-check {
+        opacity: 1;
+      }
+
+      /* ═══ SECTION DIVIDER ═══ */
+      .sdiv {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 24px 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sdiv::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* ═══ FORMULA TREE PATH ═══ */
+      .tree-path {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .tp-node {
+        background: #f9fafb;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .tp-node.active {
+        background: rgba(251, 54, 64, 0.08);
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      .tp-node.root {
+        background: var(--dark);
+        color: #fff;
+        border-color: var(--dark);
+      }
+
+      .tp-arrow {
+        color: #d1d5db;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      /* ═══ INPUT SECTION ═══ */
+      .input-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+      }
+
+      .ic-head {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fafbfc;
+      }
+
+      .ic-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+      }
+
+      .ic-red {
+        background: rgba(251, 54, 64, 0.1);
+      }
+
+      .ic-blue {
+        background: rgba(36, 123, 160, 0.1);
+      }
+
+      .ic-teal {
+        background: rgba(13, 148, 136, 0.1);
+      }
+
+      .ic-head h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--dark);
+      }
+
+      .ic-head p {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .ic-body {
+        padding: 20px;
+      }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .field label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .field .hint {
+        font-size: 10px;
+        color: #9ca3af;
+        line-height: 1.4;
+      }
+
+      .iw {
+        display: flex;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1.5px solid #d1d5db;
+        transition: border-color 0.15s;
+      }
+
+      .iw:focus-within {
+        border-color: var(--red);
+      }
+
+      .iw input,
+      .iw select {
+        flex: 1;
+        padding: 9px 11px;
+        border: none;
+        outline: none;
+        font-size: 13px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        color: var(--dark);
+        background: #fff;
+        min-width: 0;
+      }
+
+      .iw select {
+        cursor: pointer;
+      }
+
+      .iw .unit {
+        background: #f9fafb;
+        padding: 9px 10px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--muted);
+        border-left: 1px solid #d1d5db;
+        white-space: nowrap;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+
+      .field-note {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 11px;
+        color: #92400e;
+        margin-top: 2px;
+      }
+
+      /* ═══ BUTTONS ═══ */
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+
+      .btn-calc {
+        background: var(--red);
+        color: #fff;
+        border: none;
+        padding: 11px 28px;
+        border-radius: 8px;
+        font-family: "Outfit", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        box-shadow: 0 4px 12px rgba(251, 54, 64, 0.3);
+      }
+
+      .btn-calc:hover {
+        background: var(--red-d);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(251, 54, 64, 0.35);
+      }
+
+      .btn-calc:disabled {
+        background: #9ca3af;
+        box-shadow: none;
+        transform: none;
+        cursor: default;
+      }
+
+      .btn-outline {
+        background: transparent;
+        border: 1.5px solid var(--border);
+        color: var(--muted);
+        padding: 11px 20px;
+        border-radius: 8px;
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+
+      .btn-outline:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      .btn-back {
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        padding: 6px 0;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-family: "Inter", sans-serif;
+      }
+
+      .btn-back:hover {
+        color: var(--red);
+      }
+
+      /* ═══ RESULT ═══ */
+      .result-banner {
+        background: var(--dark2);
+        border-radius: 14px;
+        padding: 24px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .rb-left .rb-lbl {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #555;
+        margin-bottom: 6px;
+      }
+
+      .rb-left .rb-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+        font-family: "Outfit", sans-serif;
+      }
+
+      .rb-left .rb-path {
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 3px;
+      }
+
+      .rb-val {
+        font-family: "Outfit", sans-serif;
+        font-size: clamp(40px, 5vw, 58px);
+        font-weight: 800;
+        color: var(--red);
+        line-height: 1;
+      }
+
+      .rb-unit {
+        font-size: 16px;
+        color: #6b7280;
+        margin-left: 6px;
+      }
+
+      /* ═══ WORKING TABLE ═══ */
+      .working-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+
+      @media (max-width: 700px) {
         .working-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-            margin-bottom: 20px
-        }
-
-        @media(max-width:700px) {
-            .working-grid {
-                grid-template-columns: 1fr
-            }
-        }
-
-        .wtbl {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px
-        }
-
-        .wtbl th {
-            background: #f9fafb;
-            color: var(--muted);
-            padding: 8px 12px;
-            text-align: left;
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 2px solid var(--border)
-        }
-
-        .wtbl td {
-            padding: 9px 12px;
-            border-bottom: 1px solid #f3f4f6;
-            font-family: 'JetBrains Mono', monospace
-        }
-
-        .wtbl td:first-child {
-            color: var(--blue);
-            font-weight: 600;
-            font-size: 13px
-        }
-
-        .wtbl td:nth-child(3) {
-            font-weight: 700;
-            font-size: 13px;
-            color: var(--dark)
-        }
-
-        .wtbl td:last-child {
-            color: var(--muted);
-            font-family: 'Inter', sans-serif;
-            font-size: 11px
-        }
-
-        .wtbl tr.result-row td {
-            background: rgba(251, 54, 64, .05);
-            font-weight: 700
-        }
-
-        .wtbl tr.result-row td:first-child {
-            color: var(--red)
-        }
-
-        .wtbl tr.result-row td:nth-child(3) {
-            color: var(--red);
-            font-size: 15px
-        }
-
-        .formula-pill {
-            background: #f0fdf8;
-            border: 1.5px solid #6ee7b7;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 14px
-        }
-
-        .fp-lbl {
-            font-size: 9px;
-            font-weight: 700;
-            color: #059669;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-bottom: 5px
-        }
-
-        .fp-expr {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            color: #064e3b;
-            font-weight: 600
-        }
-
-        .fp-ref {
-            font-size: 10px;
-            color: var(--muted);
-            margin-top: 3px
-        }
-
-        /* ═══ CHART ═══ */
-        .chart-area {
-            height: 210px;
-            position: relative
-        }
-
-        .chart-tip {
-            position: absolute;
-            background: var(--dark);
-            color: #fff;
-            padding: 6px 11px;
-            border-radius: 7px;
-            font-size: 11px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity .15s;
-            font-family: 'JetBrains Mono', monospace;
-            white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
-            z-index: 10
-        }
-
-        /* ═══ LOOKUP TABLE ═══ */
-        .ltbl {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px
-        }
-
-        .ltbl th {
-            background: rgba(36, 123, 160, .08);
-            color: var(--blue);
-            padding: 9px 13px;
-            text-align: left;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .8px;
-            border-bottom: 2px solid rgba(36, 123, 160, .2)
-        }
-
-        .ltbl td {
-            padding: 9px 13px;
-            border-bottom: 1px solid #f3f4f6;
-            color: #374151
-        }
-
-        .ltbl tr.sel td {
-            background: rgba(251, 54, 64, .05);
-            font-weight: 700
-        }
-
-        .ltbl tr.sel td:first-child::before {
-            content: '▶ ';
-            color: var(--red)
-        }
-
-        .ltbl tr.sel td:first-child {
-            color: var(--red)
-        }
-
-        /* ═══ WATERWAY CARDS ═══ */
-        .ww-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-            gap: 12px;
-            margin-bottom: 16px
-        }
-
-        .ww-c {
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            padding: 14px 15px;
-            background: #fff
-        }
-
-        .ww-c.best {
-            border-color: var(--teal);
-            background: rgba(13, 148, 136, .04)
-        }
-
-        .ww-c .wc-lbl {
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px
-        }
-
-        .ww-c .wc-val {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--dark);
-            font-family: 'Outfit', sans-serif
-        }
-
-        .ww-c .wc-unit {
-            font-size: 12px;
-            color: var(--muted);
-            margin-left: 3px
-        }
-
-        .ww-c .wc-sub {
-            font-size: 10px;
-            color: var(--muted);
-            margin-top: 3px;
-            line-height: 1.4
-        }
-
-        .ww-c.best .wc-val {
-            color: var(--teal)
-        }
-
-        /* ═══ NOTE BAR ═══ */
-        .note {
-            background: #f8fafc;
-            border-left: 3px solid var(--red);
-            border-radius: 0 8px 8px 0;
-            padding: 10px 14px;
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.6;
-            margin-top: 12px
-        }
-
-        .note strong {
-            color: var(--text)
-        }
-
-        /* ═══ EXCEL UPLOAD PANEL ═══ */
-        .excel-panel {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden
-        }
-
-        .excel-head {
-            padding: 16px 20px;
-            border-bottom: 1px solid #f3f4f6;
-            background: #fafbfc;
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .excel-head h3 {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--dark)
-        }
-
-        .excel-head p {
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 2px
-        }
-
-        .excel-body {
-            padding: 24px
-        }
-
-        .drop-zone {
-            border: 2px dashed #d1d5db;
-            border-radius: 10px;
-            padding: 36px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all .2s;
-            background: #fafafa
-        }
-
-        .drop-zone:hover,
-        .drop-zone.drag {
-            border-color: var(--red);
-            background: var(--red-faint)
-        }
-
-        .dz-icon {
-            font-size: 32px;
-            margin-bottom: 10px
-        }
-
-        .dz-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 4px
-        }
-
-        .dz-sub {
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.5
-        }
-
-        .dz-btn {
-            display: inline-block;
-            margin-top: 12px;
-            background: var(--dark);
-            color: #fff;
-            padding: 8px 20px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'Outfit', sans-serif
-        }
-
-        #excelInput {
-            display: none
-        }
-
-        .excel-status {
-            margin-top: 16px;
-            padding: 14px 16px;
-            background: #f0fdf4;
-            border: 1px solid #86efac;
-            border-radius: 8px;
-            display: none;
-            align-items: center;
-            gap: 10px
-        }
-
-        .excel-status.show {
-            display: flex
-        }
-
-        .excel-status .es-icon {
-            font-size: 20px
-        }
-
-        .excel-status .es-text {
-            font-size: 13px;
-            color: #166534
-        }
-
-        .excel-status .es-filename {
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px
-        }
-
-        .excel-template {
-            margin-top: 14px;
-            background: #fffbeb;
-            border: 1px solid #fde68a;
-            border-radius: 8px;
-            padding: 12px 14px
-        }
-
-        .et-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #92400e;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: .8px
-        }
-
-        .et-cols {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap
-        }
-
-        .et-col {
-            background: #fff;
-            border: 1px solid #fde68a;
-            border-radius: 5px;
-            padding: 4px 10px;
-            font-size: 10px;
-            font-weight: 600;
-            color: #78350f;
-            font-family: 'JetBrains Mono', monospace
-        }
-
-        /* ═══ ANIMATIONS ═══ */
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-8px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0)
-            }
-        }
-
-        .anim-up {
-            animation: fadeUp .28s ease both
-        }
-
-        .anim-in {
-            animation: slideIn .2s ease both
-        }
-
-        /* ═══ CARD ═══ */
-        .card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            margin-bottom: 18px
-        }
-
-        .card-hd {
-            padding: 14px 20px;
-            border-bottom: 1px solid #f3f4f6;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #fafbfc
-        }
-
-        .card-hd h3 {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--dark)
-        }
-
-        .card-hd p {
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 2px
-        }
-
-        .card-bd {
-            padding: 18px 20px
-        }
-
-        /* ═══ RESPONSIVE ═══ */
-        @media(max-width:768px) {
-            .sidenav {
-                display: none
-            }
-
-            .main {
-                padding: 18px 16px
-            }
-        }
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .wtbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .wtbl th {
+        background: #f9fafb;
+        color: var(--muted);
+        padding: 8px 12px;
+        text-align: left;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 2px solid var(--border);
+      }
+
+      .wtbl td {
+        padding: 9px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .wtbl td:first-child {
+        color: var(--blue);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .wtbl td:nth-child(3) {
+        font-weight: 700;
+        font-size: 13px;
+        color: var(--dark);
+      }
+
+      .wtbl td:last-child {
+        color: var(--muted);
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+      }
+
+      .wtbl tr.result-row td {
+        background: rgba(251, 54, 64, 0.05);
+        font-weight: 700;
+      }
+
+      .wtbl tr.result-row td:first-child {
+        color: var(--red);
+      }
+
+      .wtbl tr.result-row td:nth-child(3) {
+        color: var(--red);
+        font-size: 15px;
+      }
+
+      .formula-pill {
+        background: #f0fdf8;
+        border: 1.5px solid #6ee7b7;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 14px;
+      }
+
+      .fp-lbl {
+        font-size: 9px;
+        font-weight: 700;
+        color: #059669;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+
+      .fp-expr {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        color: #064e3b;
+        font-weight: 600;
+      }
+
+      .fp-ref {
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      /* ═══ CHART ═══ */
+      .chart-area {
+        height: 210px;
+        position: relative;
+      }
+
+      .chart-tip {
+        position: absolute;
+        background: var(--dark);
+        color: #fff;
+        padding: 6px 11px;
+        border-radius: 7px;
+        font-size: 11px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s;
+        font-family: "JetBrains Mono", monospace;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+
+      /* ═══ LOOKUP TABLE ═══ */
+      .ltbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .ltbl th {
+        background: rgba(36, 123, 160, 0.08);
+        color: var(--blue);
+        padding: 9px 13px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        border-bottom: 2px solid rgba(36, 123, 160, 0.2);
+      }
+
+      .ltbl td {
+        padding: 9px 13px;
+        border-bottom: 1px solid #f3f4f6;
+        color: #374151;
+      }
+
+      .ltbl tr.sel td {
+        background: rgba(251, 54, 64, 0.05);
+        font-weight: 700;
+      }
+
+      .ltbl tr.sel td:first-child::before {
+        content: "▶ ";
+        color: var(--red);
+      }
+
+      .ltbl tr.sel td:first-child {
+        color: var(--red);
+      }
+
+      /* ═══ WATERWAY CARDS ═══ */
+      .ww-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .ww-c {
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 15px;
+        background: #fff;
+      }
+
+      .ww-c.best {
+        border-color: var(--teal);
+        background: rgba(13, 148, 136, 0.04);
+      }
+
+      .ww-c .wc-lbl {
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+      }
+
+      .ww-c .wc-val {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--dark);
+        font-family: "Outfit", sans-serif;
+      }
+
+      .ww-c .wc-unit {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 3px;
+      }
+
+      .ww-c .wc-sub {
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 3px;
+        line-height: 1.4;
+      }
+
+      .ww-c.best .wc-val {
+        color: var(--teal);
+      }
+
+      /* ═══ NOTE BAR ═══ */
+      .note {
+        background: #f8fafc;
+        border-left: 3px solid var(--red);
+        border-radius: 0 8px 8px 0;
+        padding: 10px 14px;
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+        margin-top: 12px;
+      }
+
+      .note strong {
+        color: var(--text);
+      }
+
+      /* ═══ EXCEL UPLOAD PANEL ═══ */
+      .excel-panel {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .excel-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f3f4f6;
+        background: #fafbfc;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .excel-head h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--dark);
+      }
+
+      .excel-head p {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .excel-body {
+        padding: 24px;
+      }
+
+      .drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 10px;
+        padding: 36px 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #fafafa;
+      }
+
+      .drop-zone:hover,
+      .drop-zone.drag {
+        border-color: var(--red);
+        background: var(--red-faint);
+      }
+
+      .dz-icon {
+        font-size: 32px;
+        margin-bottom: 10px;
+      }
+
+      .dz-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 4px;
+      }
+
+      .dz-sub {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .dz-btn {
+        display: inline-block;
+        margin-top: 12px;
+        background: var(--dark);
+        color: #fff;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: "Outfit", sans-serif;
+      }
+
+      #excelInput {
+        display: none;
+      }
+
+      .excel-status {
+        margin-top: 16px;
+        padding: 14px 16px;
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 8px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .excel-status.show {
+        display: flex;
+      }
+
+      .excel-status .es-icon {
+        font-size: 20px;
+      }
+
+      .excel-status .es-text {
+        font-size: 13px;
+        color: #166534;
+      }
+
+      .excel-status .es-filename {
+        font-weight: 700;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+      }
+
+      .excel-template {
+        margin-top: 14px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 8px;
+        padding: 12px 14px;
+      }
+
+      .et-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #92400e;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+
+      .et-cols {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .et-col {
+        background: #fff;
+        border: 1px solid #fde68a;
+        border-radius: 5px;
+        padding: 4px 10px;
+        font-size: 10px;
+        font-weight: 600;
+        color: #78350f;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* ═══ ANIMATIONS ═══ */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .anim-up {
+        animation: fadeUp 0.28s ease both;
+      }
+
+      .anim-in {
+        animation: slideIn 0.2s ease both;
+      }
+
+      /* ═══ CARD ═══ */
+      .card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-bottom: 18px;
+      }
+
+      .card-hd {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fafbfc;
+      }
+
+      .card-hd h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--dark);
+      }
+
+      .card-hd p {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .card-bd {
+        padding: 18px 20px;
+      }
+
+      /* ═══ RESPONSIVE ═══ */
+      @media (max-width: 768px) {
+        .sidenav {
+          display: none;
+        }
+
+        .main {
+          padding: 18px 16px;
+        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
+  <body>
     <!-- HEADER -->
     <header class="hdr">
-        <div>
-            <div class="hdr-logo">Flood<span>Rix</span></div>
-            <div class="hdr-tag">Engineering Hydraulics Platform</div>
-        </div>
-        <div class="hdr-right">
-            <button class="hdr-mode-btn active" id="modeManual" onclick="setMode('manual')">Manual</button>
-            <button class="hdr-mode-btn" id="modeBatch" onclick="setMode('batch')">Batch / Excel</button>
-            <span class="badge">IRC:SP:13-2004</span>
-        </div>
+      <div>
+        <div class="hdr-logo">Flood<span>Rix</span></div>
+        <div class="hdr-tag">Engineering Hydraulics Platform</div>
+      </div>
+      <div class="hdr-right">
+        <button
+          class="hdr-mode-btn active"
+          id="modeManual"
+          onclick="setMode('manual')"
+        >
+          Manual
+        </button>
+        <button class="hdr-mode-btn" id="modeBatch" onclick="setMode('batch')">
+          Batch / Excel
+        </button>
+        <span class="badge">IRC:SP:13-2004</span>
+      </div>
     </header>
 
     <div class="shell">
+      <!-- SIDENAV -->
+      <nav class="sidenav">
+        <div class="nav-section">Calculators</div>
+        <div class="nav-item active" id="nav-flood" onclick="navTo('flood')">
+          <div class="nav-icon">🌊</div>
+          Flood Discharge
+        </div>
+        <div class="nav-item" id="nav-scour" onclick="navTo('scour')">
+          <div class="nav-icon">⚓</div>
+          Scour Assessment
+        </div>
+        <div class="nav-item" id="nav-rainfall" onclick="navTo('rainfall')">
+          <div class="nav-icon">🌧</div>
+          Rainfall Analysis
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-section">Tools</div>
+        <div class="nav-item" id="nav-batch" onclick="setMode('batch')">
+          <div class="nav-icon">📊</div>
+          Batch Calculator
+        </div>
+        <div
+          class="nav-item"
+          id="nav-history"
+          style="opacity: 0.45; cursor: not-allowed"
+        >
+          <div class="nav-icon">📋</div>
+          History
+        </div>
+      </nav>
 
-        <!-- SIDENAV -->
-        <nav class="sidenav">
-            <div class="nav-section">Calculators</div>
-            <div class="nav-item active" id="nav-flood" onclick="navTo('flood')">
-                <div class="nav-icon">🌊</div>Flood Discharge
-            </div>
-            <div class="nav-item" id="nav-scour" onclick="navTo('scour')">
-                <div class="nav-icon">⚓</div>Scour Assessment
-            </div>
-            <div class="nav-item" id="nav-rainfall" onclick="navTo('rainfall')">
-                <div class="nav-icon">🌧</div>Rainfall Analysis
-            </div>
-            <div class="nav-divider"></div>
-            <div class="nav-section">Tools</div>
-            <div class="nav-item" id="nav-batch" onclick="setMode('batch')">
-                <div class="nav-icon">📊</div>Batch Calculator
-            </div>
-            <div class="nav-item" id="nav-history" style="opacity:.45;cursor:not-allowed">
-                <div class="nav-icon">📋</div>History
-            </div>
-        </nav>
-
-        <!-- MAIN -->
-        <main class="main" id="mainContent"></main>
-
+      <!-- MAIN -->
+      <main class="main" id="mainContent"></main>
     </div>
 
     <script>
-        // ══════════════════════════════════════════════════════
-        //  TREE DEFINITION
-        // ══════════════════════════════════════════════════════
-        const TREE = {
-            flood: {
-                label: 'Flood Discharge', icon: '🌊',
-                desc: 'IRC-compliant peak flood estimation for bridge site design',
-                children: {
-                    empirical: {
-                        label: 'Empirical Method', icon: '📐',
-                        desc: 'Catchment area based formulas — quick estimation using field parameters',
-                        children: {
-                            indian: {
-                                label: 'Indian Formulas', icon: '🇮🇳',
-                                desc: 'Formulas developed specifically for Indian catchment conditions',
-                                children: {
-                                    dicken: { label: "Dicken's Formula", icon: 'ƒ', formula: 'dicken', leaf: true },
-                                    ryve: { label: "Ryve's Formula", icon: 'ƒ', formula: 'ryve', leaf: true },
-                                    ingli: { label: "Ingli's Formula", icon: 'ƒ', formula: 'ingli', leaf: true },
-                                    creager: { label: "Creager's Formula", icon: 'ƒ', formula: 'creager', leaf: true },
-                                    rational: { label: 'Modified Rational', icon: 'ƒ', formula: 'rational', leaf: true },
-                                }
-                            },
-                            uk: {
-                                label: 'UK / International', icon: '🇬🇧',
-                                desc: 'CIRIA / FSR methods from UK Flood Studies Report',
-                                children: {
-                                    feh: { label: 'FEH Method', icon: 'ƒ', formula: 'feh', leaf: true },
-                                    fia: { label: 'FIA Formula', icon: 'ƒ', formula: 'fia', leaf: true },
-                                }
-                            }
-                        }
+      // ══════════════════════════════════════════════════════
+      //  TREE DEFINITION
+      // ══════════════════════════════════════════════════════
+      const TREE = {
+        flood: {
+          label: "Flood Discharge",
+          icon: "🌊",
+          desc: "IRC-compliant peak flood estimation for bridge site design",
+          children: {
+            empirical: {
+              label: "Empirical Method",
+              icon: "📐",
+              desc: "Catchment area based formulas — quick estimation using field parameters",
+              children: {
+                indian: {
+                  label: "Indian Formulas",
+                  icon: "🇮🇳",
+                  desc: "Formulas developed specifically for Indian catchment conditions",
+                  children: {
+                    dicken: {
+                      label: "Dicken's Formula",
+                      icon: "ƒ",
+                      formula: "dicken",
+                      leaf: true,
                     },
-                    unit_hydrograph: {
-                        label: 'Unit Hydrograph', icon: '📈',
-                        desc: 'Synthetic unit hydrograph method — CWC / Snyder / SCS',
-                        children: {
-                            snyder: { label: 'Snyder UH', icon: 'ƒ', formula: 'snyder', leaf: true },
-                            scs: { label: 'SCS Curve No.', icon: 'ƒ', formula: 'scs', leaf: true },
-                            cwc: { label: 'CWC Method', icon: 'ƒ', formula: 'cwc', leaf: true },
-                        }
+                    ryve: {
+                      label: "Ryve's Formula",
+                      icon: "ƒ",
+                      formula: "ryve",
+                      leaf: true,
                     },
-                    frequency: {
-                        label: 'Flood Frequency', icon: '📉',
-                        desc: 'Statistical analysis of historical flood data — Gumbel / LP-III',
-                        children: {
-                            gumbel: { label: 'Gumbel EV-I', icon: 'ƒ', formula: 'gumbel', leaf: true },
-                            lpiii: { label: 'Log-Pearson III', icon: 'ƒ', formula: 'lpiii', leaf: true },
-                        }
-                    }
-                }
-            },
-            scour: {
-                label: 'Scour Assessment', icon: '⚓',
-                desc: 'Bridge scour depth estimation at piers, abutments and approaches',
-                children: {
-                    pier_scour: {
-                        label: 'Pier Scour', icon: '🔩', desc: 'HEC-18 / Laursen pier scour formula', children: {
-                            hec18: { label: 'HEC-18 Method', icon: 'ƒ', formula: 'hec18', leaf: true },
-                            lacey: { label: "Lacey's Regime", icon: 'ƒ', formula: 'lacey_scour', leaf: true },
-                        }
+                    ingli: {
+                      label: "Ingli's Formula",
+                      icon: "ƒ",
+                      formula: "ingli",
+                      leaf: true,
                     },
-                    abutment: {
-                        label: 'Abutment Scour', icon: '🧱', desc: 'FHWA abutment scour formulae', children: {
-                            fhwa: { label: 'FHWA Method', icon: 'ƒ', formula: 'fhwa_ab', leaf: true },
-                        }
+                    creager: {
+                      label: "Creager's Formula",
+                      icon: "ƒ",
+                      formula: "creager",
+                      leaf: true,
                     },
-                }
-            },
-            rainfall: {
-                label: 'Rainfall Analysis', icon: '🌧',
-                desc: 'IDF curves, depth-duration-frequency and areal rainfall estimation',
-                children: {
-                    idf: {
-                        label: 'IDF Curve', icon: '📊', desc: 'Intensity-Duration-Frequency analysis', children: {
-                            modified_bernard: { label: 'Modified Bernard', icon: 'ƒ', formula: 'm_bernard', leaf: true },
-                        }
+                    rational: {
+                      label: "Modified Rational",
+                      icon: "ƒ",
+                      formula: "rational",
+                      leaf: true,
                     },
-                    arf: {
-                        label: 'Areal Reduction', icon: '🗺', desc: 'Point-to-areal rainfall conversion', children: {
-                            arf_fsr: { label: 'FSR Method', icon: 'ƒ', formula: 'arf_fsr', leaf: true },
-                        }
-                    },
-                }
-            }
-        };
-
-        // ══════════════════════════════════════════════════════
-        //  FORMULA DEFINITIONS — fields, formula, chart
-        // ══════════════════════════════════════════════════════
-        const FORMULAS = {
-            dicken: {
-                name: "Dicken's Formula", expr: 'Q = C × M^(3/4)',
-                ref: 'Cl.4.2, IRC:SP:13-2004  ·  1865',
-                region: 'Central & Northern India',
-                fields: [
-                    { key: 'M', label: 'Catchment Area', unit: 'Km²', def: 24.1, hint: 'Total drainage area upstream of bridge' },
-                    { key: 'annual_rain', label: 'Annual Average Rainfall', unit: 'cm', def: 120, hint: 'From rainfall records' },
-                ],
-                lookup: {
-                    title: "Dicken's Constant (C)",
-                    sub: 'Based on annual average rainfall — Cl.4.2, IRC:SP:13-2004',
-                    cols: ['Annual Rainfall', 'C Value', 'Remarks'],
-                    rows: [['< 60 cm', '11', 'Dry regions'], ['60–120 cm', '14', 'Moderate rainfall'], ['120–140 cm', '15', 'High rainfall'], ['> 140 cm', '22', 'Western Ghats']],
-                    fn: r => r.annual_rain < 60 ? 0 : r.annual_rain < 120 ? 1 : r.annual_rain < 140 ? 2 : 3,
-                    valFn: r => r.annual_rain < 60 ? 11 : r.annual_rain < 120 ? 14 : r.annual_rain < 140 ? 15 : 22,
+                  },
                 },
-                calc(r) {
-                    const C = this.lookup.valFn(r);
-                    const Q = C * Math.pow(r.M, 0.75);
-                    return {
-                        Q, vars: [
-                            { k: 'M', d: 'Catchment Area', v: r.M, u: 'Km²' },
-                            { k: 'C', d: "Dicken's Constant (lookup)", v: C, u: '' },
-                            { k: 'Q', d: 'Q = C × M^(3/4)', v: fmt(Q), u: 'Cumecs', result: true }
-                        ],
-                        chartFn: x => C * Math.pow(x, 0.75), chartX: r.M,
-                        chartXLabel: 'Catchment Area M (Km²)', chartYLabel: 'Q (Cumecs)'
-                    };
-                }
-            },
-
-            ryve: {
-                name: "Ryve's Formula", expr: 'Q = C × M^(2/3)',
-                ref: 'Cl.4.3, IRC:SP:13-2004  ·  1884',
-                region: 'Tamil Nadu, Karnataka, Andhra Pradesh',
-                fields: [
-                    { key: 'M', label: 'Catchment Area', unit: 'Km²', def: 24.1 },
-                    { key: 'dist_coast', label: 'Distance from Coast', unit: 'Km', def: 41, hint: 'Determines Ryve\'s C value' },
-                ],
-                lookup: {
-                    title: "Ryve's Constant (C)",
-                    sub: 'Based on distance from coastline — Cl.4.3, IRC:SP:13-2004',
-                    cols: ['Zone', 'Distance', 'C Value'],
-                    rows: [['Coastal', '≤ 25 Km', '6.8'], ['Inland', '25–160 Km', '8.5'], ['Hilly (limited)', 'Any', '10.0'], ['Krishna Basin', 'CWC', '15.0']],
-                    fn: r => r.dist_coast <= 25 ? 0 : r.dist_coast <= 160 ? 1 : 2,
-                    valFn: r => r.dist_coast <= 25 ? 6.8 : r.dist_coast <= 160 ? 8.5 : 10.0,
+                uk: {
+                  label: "UK / International",
+                  icon: "🇬🇧",
+                  desc: "CIRIA / FSR methods from UK Flood Studies Report",
+                  children: {
+                    feh: {
+                      label: "FEH Method",
+                      icon: "ƒ",
+                      formula: "feh",
+                      leaf: true,
+                    },
+                    fia: {
+                      label: "FIA Formula",
+                      icon: "ƒ",
+                      formula: "fia",
+                      leaf: true,
+                    },
+                  },
                 },
-                calc(r) {
-                    const C = this.lookup.valFn(r);
-                    const Q = C * Math.pow(r.M, 2 / 3);
-                    return {
-                        Q, vars: [
-                            { k: 'M', d: 'Catchment Area', v: r.M, u: 'Km²' },
-                            { k: 'dist_coast', d: 'Distance from Coast', v: r.dist_coast, u: 'Km' },
-                            { k: 'C', d: "Ryve's C (from lookup)", v: C, u: '' },
-                            { k: 'Q', d: 'Q = C × M^(2/3)', v: fmt(Q), u: 'Cumecs', result: true }
-                        ],
-                        chartFn: x => C * Math.pow(x, 2 / 3), chartX: r.M,
-                        chartXLabel: 'Catchment Area M (Km²)', chartYLabel: 'Q (Cumecs)'
-                    };
-                }
+              },
             },
-
-            ingli: {
-                name: "Ingli's Formula", expr: 'Q = 125M / √(M+10)',
-                ref: 'Cl.4.4, IRC:SP:13-2004  ·  1930',
-                region: 'Western Ghats, Maharashtra',
-                fields: [
-                    { key: 'M', label: 'Catchment Area', unit: 'Km²', def: 24.1, hint: 'For Western Ghats catchments' },
-                ],
-                calc(r) {
-                    const Q = 125 * r.M / Math.sqrt(r.M + 10);
-                    return {
-                        Q, vars: [
-                            { k: 'M', d: 'Catchment Area', v: r.M, u: 'Km²' },
-                            { k: '√(M+10)', d: 'Square root term', v: fmt(Math.sqrt(r.M + 10)), u: '' },
-                            { k: 'Q', d: 'Q = 125M / √(M+10)', v: fmt(Q), u: 'Cumecs', result: true }
-                        ],
-                        chartFn: x => 125 * x / Math.sqrt(x + 10), chartX: r.M,
-                        chartXLabel: 'Catchment Area M (Km²)', chartYLabel: 'Q (Cumecs)'
-                    };
-                }
+            unit_hydrograph: {
+              label: "Unit Hydrograph",
+              icon: "📈",
+              desc: "Synthetic unit hydrograph method — CWC / Snyder / SCS",
+              children: {
+                snyder: {
+                  label: "Snyder UH",
+                  icon: "ƒ",
+                  formula: "snyder",
+                  leaf: true,
+                },
+                scs: {
+                  label: "SCS Curve No.",
+                  icon: "ƒ",
+                  formula: "scs",
+                  leaf: true,
+                },
+                cwc: {
+                  label: "CWC Method",
+                  icon: "ƒ",
+                  formula: "cwc",
+                  leaf: true,
+                },
+              },
             },
-
-            creager: {
-                name: "Creager's Formula", expr: 'Q = C·(0.386A)^0.894·(0.386A)^(-0.048)',
-                ref: 'IRC:SP:13-2004',
-                region: 'Moderate Floods (C = 40–130)',
-                fields: [
-                    { key: 'M', label: 'Catchment Area', unit: 'Km²', def: 24.1 },
-                    { key: 'C_cf', label: "Creager's Constant", unit: '—', def: 65, hint: '40–130; 65 for moderate floods' },
-                ],
-                calc(r) {
-                    const Q = r.C_cf * Math.pow(0.386 * r.M, 0.894) * Math.pow(0.386 * r.M, -0.048);
-                    return {
-                        Q, vars: [
-                            { k: 'A', d: 'Catchment Area', v: r.M, u: 'Km²' },
-                            { k: 'C', d: "Creager's Constant", v: r.C_cf, u: '' },
-                            { k: '0.386A', d: '0.386 × A', v: fmt(0.386 * r.M), u: '' },
-                            { k: 'Q', d: 'Q = C·(0.386A)^0.894·(0.386A)^(-0.048)', v: fmt(Q), u: 'Cumecs', result: true }
-                        ],
-                        chartFn: x => r.C_cf * Math.pow(0.386 * x, 0.894) * Math.pow(0.386 * x, -0.048), chartX: r.M,
-                        chartXLabel: 'Catchment Area A (Km²)', chartYLabel: 'Q (Cumecs)'
-                    };
-                }
+            frequency: {
+              label: "Flood Frequency",
+              icon: "📉",
+              desc: "Statistical analysis of historical flood data — Gumbel / LP-III",
+              children: {
+                gumbel: {
+                  label: "Gumbel EV-I",
+                  icon: "ƒ",
+                  formula: "gumbel",
+                  leaf: true,
+                },
+                lpiii: {
+                  label: "Log-Pearson III",
+                  icon: "ƒ",
+                  formula: "lpiii",
+                  leaf: true,
+                },
+              },
             },
-
-            fuller: {
-                name: "Fuller's Formula", expr: 'QTP = 1.88 · M^0.8 · (1 + 0.8 log T)',
-                ref: 'IRC:SP:13-2004',
-                region: 'Peak 24-hr flood (Cf = 0.18–1.88)',
-                fields: [
-                    { key: 'M', label: 'Catchment Area', unit: 'Km²', def: 24.1 },
-                    { key: 'T_return', label: 'Return Period', unit: 'years', def: 100, hint: 'Design return period' },
-                ],
-                calc(r) {
-                    const Q = 1.88 * Math.pow(r.M, 0.8) * (1 + 0.8 * Math.log10(r.T_return));
-                    const pts = [2, 5, 10, 25, 50, 100, 200, 500].map(t => ({ x: t, y: 1.88 * Math.pow(r.M, 0.8) * (1 + 0.8 * Math.log10(t)) }));
-                    return {
-                        Q, vars: [
-                            { k: 'M', d: 'Catchment Area', v: r.M, u: 'Km²' },
-                            { k: 'T', d: 'Return Period', v: r.T_return, u: 'yr' },
-                            { k: 'M^0.8', d: 'M^0.8', v: fmt(Math.pow(r.M, 0.8)), u: '' },
-                            { k: 'log T', d: 'log₁₀(T)', v: fmt(Math.log10(r.T_return)), u: '' },
-                            { k: 'Q', d: 'QTP = 1.88·M^0.8·(1+0.8·logT)', v: fmt(Q), u: 'Cumecs', result: true }
-                        ],
-                        chartPts: pts, chartX: r.T_return,
-                        chartXLabel: 'Return Period T (years)', chartYLabel: 'Q (Cumecs)'
-                    };
-                }
+          },
+        },
+        scour: {
+          label: "Scour Assessment",
+          icon: "⚓",
+          desc: "Bridge scour depth estimation at piers, abutments and approaches",
+          children: {
+            pier_scour: {
+              label: "Pier Scour",
+              icon: "🔩",
+              desc: "HEC-18 / Laursen pier scour formula",
+              children: {
+                hec18: {
+                  label: "HEC-18 Method",
+                  icon: "ƒ",
+                  formula: "hec18",
+                  leaf: true,
+                },
+                lacey: {
+                  label: "Lacey's Regime",
+                  icon: "ƒ",
+                  formula: "lacey_scour",
+                  leaf: true,
+                },
+              },
             },
-
-            rational: {
-                name: 'Modified Rational Method', expr: 'Q = 0.028 · P · f · A · Ic',
-                ref: 'Cl.4.7.9, IRC:SP:13-2004',
-                region: 'Catchments ≤ 25 sq.km.',
-                notice: 'Only valid for catchments up to 25 sq.km. For larger areas use other empirical methods.',
-                fields: [
-                    { key: 'M', label: 'Catchment Area', unit: 'Km²', def: 24.1 },
-                    { key: 'L', label: 'Basin Length', unit: 'Km', def: 1.506, hint: 'Longest water travel path' },
-                    { key: 'H_high', label: 'Highest Elevation', unit: 'm', def: 209 },
-                    { key: 'H_low', label: 'Lowest Elevation', unit: 'm', def: 167 },
-                    { key: 'F_24hr', label: '24-hr Rainfall (100-yr)', unit: 'cm', def: 25.1, hint: 'From IMD isopluvial maps' },
-                    { key: 'P', label: 'Runoff Coefficient (P)', unit: '—', def: 0.40, hint: 'Table 4.1, IRC:SP:13-2004' },
-                    { key: 'f', label: 'Areal Reduction (f)', unit: '—', def: 0.90, hint: 'Fig 4.2, IRC:SP:13-2004' },
-                ],
-                calc(r) {
-                    const H = r.H_high - r.H_low;
-                    const tc_c = Math.pow(0.87 * Math.pow(r.L, 3) / H, 0.385);
-                    const tc = Math.max(2.72, tc_c);
-                    const Ic = (r.F_24hr / 24) * (25 / (tc + 1));
-                    const Q = 0.028 * r.P * r.f * r.M * Ic;
-                    const pts = Array.from({ length: 20 }, (_, i) => { const t = 0.5 + i * 0.5; return { x: t, y: 0.028 * r.P * r.f * r.M * (r.F_24hr / 24) * (25 / (t + 1)) }; });
-                    return {
-                        Q, vars: [
-                            { k: 'H', d: 'Elevation difference', v: fmt(H), u: 'm' },
-                            { k: 'tc_calc', d: '(0.87·L³/H)^0.385', v: fmt(tc_c), u: 'hr' },
-                            { k: 'tc', d: 'Adopted tc (min 2.72 hr)', v: fmt(tc), u: 'hr' },
-                            { k: 'Ic', d: 'Ic = (F/24)·(25/(tc+1))', v: fmt(Ic), u: 'cm/hr' },
-                            { k: 'P', d: 'Runoff Coefficient', v: r.P, u: '' },
-                            { k: 'f', d: 'Areal Reduction Factor', v: r.f, u: '' },
-                            { k: 'Q', d: 'Q = 0.028·P·f·A·Ic', v: fmt(Q), u: 'Cumecs', result: true }
-                        ],
-                        chartPts: pts, chartX: tc,
-                        chartXLabel: 'Time of Concentration tc (hr)', chartYLabel: 'Q (Cumecs)'
-                    };
-                }
+            abutment: {
+              label: "Abutment Scour",
+              icon: "🧱",
+              desc: "FHWA abutment scour formulae",
+              children: {
+                fhwa: {
+                  label: "FHWA Method",
+                  icon: "ƒ",
+                  formula: "fhwa_ab",
+                  leaf: true,
+                },
+              },
             },
+          },
+        },
+        rainfall: {
+          label: "Rainfall Analysis",
+          icon: "🌧",
+          desc: "IDF curves, depth-duration-frequency and areal rainfall estimation",
+          children: {
+            idf: {
+              label: "IDF Curve",
+              icon: "📊",
+              desc: "Intensity-Duration-Frequency analysis",
+              children: {
+                modified_bernard: {
+                  label: "Modified Bernard",
+                  icon: "ƒ",
+                  formula: "m_bernard",
+                  leaf: true,
+                },
+              },
+            },
+            arf: {
+              label: "Areal Reduction",
+              icon: "🗺",
+              desc: "Point-to-areal rainfall conversion",
+              children: {
+                arf_fsr: {
+                  label: "FSR Method",
+                  icon: "ƒ",
+                  formula: "arf_fsr",
+                  leaf: true,
+                },
+              },
+            },
+          },
+        },
+      };
 
-            // Stubs for coming soon
-            feh: { name: 'FEH Method', expr: 'Q = QMED × GEH(T)', ref: 'UK Flood Estimation Handbook', region: 'UK Catchments', stub: true, fields: [] },
-            fia: { name: 'FIA Formula', expr: 'Q = C · A^0.77', ref: 'FIA Report', region: 'UK / International', stub: true, fields: [] },
-            snyder: { name: "Snyder's UH", expr: 'Qp = 2.78 · Cp · A / tp', ref: 'Snyder 1938', region: 'General', stub: true, fields: [] },
-            scs: { name: 'SCS Curve Number', expr: 'Q = (P-Ia)² / (P-Ia+S)', ref: 'SCS-CN Method', region: 'General', stub: true, fields: [] },
-            cwc: { name: 'CWC Method', expr: 'CWC-SUH', ref: 'CWC India', region: 'India', stub: true, fields: [] },
-            gumbel: { name: 'Gumbel EV-I', expr: 'xT = x̄ + KσT', ref: 'Gumbel 1941', region: 'General', stub: true, fields: [] },
-            lpiii: { name: 'Log-Pearson III', expr: 'log xT = ȳ + KSy', ref: 'Bulletin 17C', region: 'General', stub: true, fields: [] },
-            hec18: { name: 'HEC-18 Pier Scour', expr: 'ys = 2.0·y1·K1...', ref: 'HEC-18, FHWA', region: 'General', stub: true, fields: [] },
-            lacey_scour: { name: "Lacey's Scour", expr: 'R = 0.473·(Q/f)^(1/3)', ref: 'IRC:78-2000', region: 'India', stub: true, fields: [] },
-            fhwa_ab: { name: 'FHWA Abutment Scour', expr: 'ys = 2.27·(L/y1)^0.43', ref: 'HEC-18', region: 'General', stub: true, fields: [] },
-            m_bernard: { name: 'Modified Bernard', expr: 'i = CT^x / t^n', ref: 'Bernard 1932', region: 'General', stub: true, fields: [] },
-            arf_fsr: { name: 'FSR ARF Method', expr: 'ARF = 1 - 0.00115A^0.4', ref: 'UK FSR', region: 'General', stub: true, fields: [] },
-        };
+      // ══════════════════════════════════════════════════════
+      //  FORMULA DEFINITIONS — fields, formula, chart
+      // ══════════════════════════════════════════════════════
+      const FORMULAS = {
+        dicken: {
+          name: "Dicken's Formula",
+          expr: "Q = C × M^(3/4)",
+          ref: "Cl.4.2, IRC:SP:13-2004  ·  1865",
+          region: "Central & Northern India",
+          fields: [
+            {
+              key: "M",
+              label: "Catchment Area",
+              unit: "Km²",
+              def: 24.1,
+              hint: "Total drainage area upstream of bridge",
+            },
+            {
+              key: "annual_rain",
+              label: "Annual Average Rainfall",
+              unit: "cm",
+              def: 120,
+              hint: "From rainfall records",
+            },
+          ],
+          lookup: {
+            title: "Dicken's Constant (C)",
+            sub: "Based on annual average rainfall — Cl.4.2, IRC:SP:13-2004",
+            cols: ["Annual Rainfall", "C Value", "Remarks"],
+            rows: [
+              ["< 60 cm", "11", "Dry regions"],
+              ["60–120 cm", "14", "Moderate rainfall"],
+              ["120–140 cm", "15", "High rainfall"],
+              ["> 140 cm", "22", "Western Ghats"],
+            ],
+            fn: (r) =>
+              r.annual_rain < 60
+                ? 0
+                : r.annual_rain < 120
+                  ? 1
+                  : r.annual_rain < 140
+                    ? 2
+                    : 3,
+            valFn: (r) =>
+              r.annual_rain < 60
+                ? 11
+                : r.annual_rain < 120
+                  ? 14
+                  : r.annual_rain < 140
+                    ? 15
+                    : 22,
+          },
+          calc(r) {
+            const C = this.lookup.valFn(r);
+            const Q = C * Math.pow(r.M, 0.75);
+            return {
+              Q,
+              vars: [
+                { k: "M", d: "Catchment Area", v: r.M, u: "Km²" },
+                { k: "C", d: "Dicken's Constant (lookup)", v: C, u: "" },
+                {
+                  k: "Q",
+                  d: "Q = C × M^(3/4)",
+                  v: fmt(Q),
+                  u: "Cumecs",
+                  result: true,
+                },
+              ],
+              chartFn: (x) => C * Math.pow(x, 0.75),
+              chartX: r.M,
+              chartXLabel: "Catchment Area M (Km²)",
+              chartYLabel: "Q (Cumecs)",
+            };
+          },
+        },
 
-        // ══════════════════════════════════════════════════════
-        //  STATE
-        // ══════════════════════════════════════════════════════
-        let state = {
-            mode: 'manual',        // 'manual' | 'batch'
-            currentModule: 'flood',// flood | scour | rainfall
-            path: [],              // e.g. ['flood','empirical','indian','dicken']
-            result: null
-        };
+        ryve: {
+          name: "Ryve's Formula",
+          expr: "Q = C × M^(2/3)",
+          ref: "Cl.4.3, IRC:SP:13-2004  ·  1884",
+          region: "Tamil Nadu, Karnataka, Andhra Pradesh",
+          fields: [
+            { key: "M", label: "Catchment Area", unit: "Km²", def: 24.1 },
+            {
+              key: "dist_coast",
+              label: "Distance from Coast",
+              unit: "Km",
+              def: 41,
+              hint: "Determines Ryve's C value",
+            },
+          ],
+          lookup: {
+            title: "Ryve's Constant (C)",
+            sub: "Based on distance from coastline — Cl.4.3, IRC:SP:13-2004",
+            cols: ["Zone", "Distance", "C Value"],
+            rows: [
+              ["Coastal", "≤ 25 Km", "6.8"],
+              ["Inland", "25–160 Km", "8.5"],
+              ["Hilly (limited)", "Any", "10.0"],
+              ["Krishna Basin", "CWC", "15.0"],
+            ],
+            fn: (r) => (r.dist_coast <= 25 ? 0 : r.dist_coast <= 160 ? 1 : 2),
+            valFn: (r) =>
+              r.dist_coast <= 25 ? 6.8 : r.dist_coast <= 160 ? 8.5 : 10.0,
+          },
+          calc(r) {
+            const C = this.lookup.valFn(r);
+            const Q = C * Math.pow(r.M, 2 / 3);
+            return {
+              Q,
+              vars: [
+                { k: "M", d: "Catchment Area", v: r.M, u: "Km²" },
+                {
+                  k: "dist_coast",
+                  d: "Distance from Coast",
+                  v: r.dist_coast,
+                  u: "Km",
+                },
+                { k: "C", d: "Ryve's C (from lookup)", v: C, u: "" },
+                {
+                  k: "Q",
+                  d: "Q = C × M^(2/3)",
+                  v: fmt(Q),
+                  u: "Cumecs",
+                  result: true,
+                },
+              ],
+              chartFn: (x) => C * Math.pow(x, 2 / 3),
+              chartX: r.M,
+              chartXLabel: "Catchment Area M (Km²)",
+              chartYLabel: "Q (Cumecs)",
+            };
+          },
+        },
 
-        // ══════════════════════════════════════════════════════
-        //  NAVIGATION
-        // ══════════════════════════════════════════════════════
-        function navTo(module) {
-            state.currentModule = module;
-            state.path = [];
-            state.result = null;
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById('nav-' + module)?.classList.add('active');
-            render();
+        ingli: {
+          name: "Ingli's Formula",
+          expr: "Q = 125M / √(M+10)",
+          ref: "Cl.4.4, IRC:SP:13-2004  ·  1930",
+          region: "Western Ghats, Maharashtra",
+          fields: [
+            {
+              key: "M",
+              label: "Catchment Area",
+              unit: "Km²",
+              def: 24.1,
+              hint: "For Western Ghats catchments",
+            },
+          ],
+          calc(r) {
+            const Q = (125 * r.M) / Math.sqrt(r.M + 10);
+            return {
+              Q,
+              vars: [
+                { k: "M", d: "Catchment Area", v: r.M, u: "Km²" },
+                {
+                  k: "√(M+10)",
+                  d: "Square root term",
+                  v: fmt(Math.sqrt(r.M + 10)),
+                  u: "",
+                },
+                {
+                  k: "Q",
+                  d: "Q = 125M / √(M+10)",
+                  v: fmt(Q),
+                  u: "Cumecs",
+                  result: true,
+                },
+              ],
+              chartFn: (x) => (125 * x) / Math.sqrt(x + 10),
+              chartX: r.M,
+              chartXLabel: "Catchment Area M (Km²)",
+              chartYLabel: "Q (Cumecs)",
+            };
+          },
+        },
+
+        creager: {
+          name: "Creager's Formula",
+          expr: "Q = C·(0.386A)^0.894·(0.386A)^(-0.048)",
+          ref: "IRC:SP:13-2004",
+          region: "Moderate Floods (C = 40–130)",
+          fields: [
+            { key: "M", label: "Catchment Area", unit: "Km²", def: 24.1 },
+            {
+              key: "C_cf",
+              label: "Creager's Constant",
+              unit: "—",
+              def: 65,
+              hint: "40–130; 65 for moderate floods",
+            },
+          ],
+          calc(r) {
+            const Q =
+              r.C_cf *
+              Math.pow(0.386 * r.M, 0.894) *
+              Math.pow(0.386 * r.M, -0.048);
+            return {
+              Q,
+              vars: [
+                { k: "A", d: "Catchment Area", v: r.M, u: "Km²" },
+                { k: "C", d: "Creager's Constant", v: r.C_cf, u: "" },
+                { k: "0.386A", d: "0.386 × A", v: fmt(0.386 * r.M), u: "" },
+                {
+                  k: "Q",
+                  d: "Q = C·(0.386A)^0.894·(0.386A)^(-0.048)",
+                  v: fmt(Q),
+                  u: "Cumecs",
+                  result: true,
+                },
+              ],
+              chartFn: (x) =>
+                r.C_cf *
+                Math.pow(0.386 * x, 0.894) *
+                Math.pow(0.386 * x, -0.048),
+              chartX: r.M,
+              chartXLabel: "Catchment Area A (Km²)",
+              chartYLabel: "Q (Cumecs)",
+            };
+          },
+        },
+
+        fuller: {
+          name: "Fuller's Formula",
+          expr: "QTP = 1.88 · M^0.8 · (1 + 0.8 log T)",
+          ref: "IRC:SP:13-2004",
+          region: "Peak 24-hr flood (Cf = 0.18–1.88)",
+          fields: [
+            { key: "M", label: "Catchment Area", unit: "Km²", def: 24.1 },
+            {
+              key: "T_return",
+              label: "Return Period",
+              unit: "years",
+              def: 100,
+              hint: "Design return period",
+            },
+          ],
+          calc(r) {
+            const Q =
+              1.88 * Math.pow(r.M, 0.8) * (1 + 0.8 * Math.log10(r.T_return));
+            const pts = [2, 5, 10, 25, 50, 100, 200, 500].map((t) => ({
+              x: t,
+              y: 1.88 * Math.pow(r.M, 0.8) * (1 + 0.8 * Math.log10(t)),
+            }));
+            return {
+              Q,
+              vars: [
+                { k: "M", d: "Catchment Area", v: r.M, u: "Km²" },
+                { k: "T", d: "Return Period", v: r.T_return, u: "yr" },
+                { k: "M^0.8", d: "M^0.8", v: fmt(Math.pow(r.M, 0.8)), u: "" },
+                {
+                  k: "log T",
+                  d: "log₁₀(T)",
+                  v: fmt(Math.log10(r.T_return)),
+                  u: "",
+                },
+                {
+                  k: "Q",
+                  d: "QTP = 1.88·M^0.8·(1+0.8·logT)",
+                  v: fmt(Q),
+                  u: "Cumecs",
+                  result: true,
+                },
+              ],
+              chartPts: pts,
+              chartX: r.T_return,
+              chartXLabel: "Return Period T (years)",
+              chartYLabel: "Q (Cumecs)",
+            };
+          },
+        },
+
+        rational: {
+          name: "Modified Rational Method",
+          expr: "Q = 0.028 · P · f · A · Ic",
+          ref: "Cl.4.7.9, IRC:SP:13-2004",
+          region: "Catchments ≤ 25 sq.km.",
+          notice:
+            "Only valid for catchments up to 25 sq.km. For larger areas use other empirical methods.",
+          fields: [
+            { key: "M", label: "Catchment Area", unit: "Km²", def: 24.1 },
+            {
+              key: "L",
+              label: "Basin Length",
+              unit: "Km",
+              def: 1.506,
+              hint: "Longest water travel path",
+            },
+            { key: "H_high", label: "Highest Elevation", unit: "m", def: 209 },
+            { key: "H_low", label: "Lowest Elevation", unit: "m", def: 167 },
+            {
+              key: "F_24hr",
+              label: "24-hr Rainfall (100-yr)",
+              unit: "cm",
+              def: 25.1,
+              hint: "From IMD isopluvial maps",
+            },
+            {
+              key: "P",
+              label: "Runoff Coefficient (P)",
+              unit: "—",
+              def: 0.4,
+              hint: "Table 4.1, IRC:SP:13-2004",
+            },
+            {
+              key: "f",
+              label: "Areal Reduction (f)",
+              unit: "—",
+              def: 0.9,
+              hint: "Fig 4.2, IRC:SP:13-2004",
+            },
+          ],
+          calc(r) {
+            const H = r.H_high - r.H_low;
+            const tc_c = Math.pow((0.87 * Math.pow(r.L, 3)) / H, 0.385);
+            const tc = Math.max(2.72, tc_c);
+            const Ic = (r.F_24hr / 24) * (25 / (tc + 1));
+            const Q = 0.028 * r.P * r.f * r.M * Ic;
+            const pts = Array.from({ length: 20 }, (_, i) => {
+              const t = 0.5 + i * 0.5;
+              return {
+                x: t,
+                y: 0.028 * r.P * r.f * r.M * (r.F_24hr / 24) * (25 / (t + 1)),
+              };
+            });
+            return {
+              Q,
+              vars: [
+                { k: "H", d: "Elevation difference", v: fmt(H), u: "m" },
+                { k: "tc_calc", d: "(0.87·L³/H)^0.385", v: fmt(tc_c), u: "hr" },
+                { k: "tc", d: "Adopted tc (min 2.72 hr)", v: fmt(tc), u: "hr" },
+                {
+                  k: "Ic",
+                  d: "Ic = (F/24)·(25/(tc+1))",
+                  v: fmt(Ic),
+                  u: "cm/hr",
+                },
+                { k: "P", d: "Runoff Coefficient", v: r.P, u: "" },
+                { k: "f", d: "Areal Reduction Factor", v: r.f, u: "" },
+                {
+                  k: "Q",
+                  d: "Q = 0.028·P·f·A·Ic",
+                  v: fmt(Q),
+                  u: "Cumecs",
+                  result: true,
+                },
+              ],
+              chartPts: pts,
+              chartX: tc,
+              chartXLabel: "Time of Concentration tc (hr)",
+              chartYLabel: "Q (Cumecs)",
+            };
+          },
+        },
+
+        // Stubs for coming soon
+        feh: {
+          name: "FEH Method",
+          expr: "Q = QMED × GEH(T)",
+          ref: "UK Flood Estimation Handbook",
+          region: "UK Catchments",
+          stub: true,
+          fields: [],
+        },
+        fia: {
+          name: "FIA Formula",
+          expr: "Q = C · A^0.77",
+          ref: "FIA Report",
+          region: "UK / International",
+          stub: true,
+          fields: [],
+        },
+        snyder: {
+          name: "Snyder's UH",
+          expr: "Qp = 2.78 · Cp · A / tp",
+          ref: "Snyder 1938",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        scs: {
+          name: "SCS Curve Number",
+          expr: "Q = (P-Ia)² / (P-Ia+S)",
+          ref: "SCS-CN Method",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        cwc: {
+          name: "CWC Method",
+          expr: "CWC-SUH",
+          ref: "CWC India",
+          region: "India",
+          stub: true,
+          fields: [],
+        },
+        gumbel: {
+          name: "Gumbel EV-I",
+          expr: "xT = x̄ + KσT",
+          ref: "Gumbel 1941",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        lpiii: {
+          name: "Log-Pearson III",
+          expr: "log xT = ȳ + KSy",
+          ref: "Bulletin 17C",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        hec18: {
+          name: "HEC-18 Pier Scour",
+          expr: "ys = 2.0·y1·K1...",
+          ref: "HEC-18, FHWA",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        lacey_scour: {
+          name: "Lacey's Scour",
+          expr: "R = 0.473·(Q/f)^(1/3)",
+          ref: "IRC:78-2000",
+          region: "India",
+          stub: true,
+          fields: [],
+        },
+        fhwa_ab: {
+          name: "FHWA Abutment Scour",
+          expr: "ys = 2.27·(L/y1)^0.43",
+          ref: "HEC-18",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        m_bernard: {
+          name: "Modified Bernard",
+          expr: "i = CT^x / t^n",
+          ref: "Bernard 1932",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+        arf_fsr: {
+          name: "FSR ARF Method",
+          expr: "ARF = 1 - 0.00115A^0.4",
+          ref: "UK FSR",
+          region: "General",
+          stub: true,
+          fields: [],
+        },
+      };
+
+      // ══════════════════════════════════════════════════════
+      //  STATE
+      // ══════════════════════════════════════════════════════
+      let state = {
+        mode: "manual", // 'manual' | 'batch'
+        currentModule: "flood", // flood | scour | rainfall
+        path: [], // e.g. ['flood','empirical','indian','dicken']
+        result: null,
+      };
+
+      // ══════════════════════════════════════════════════════
+      //  NAVIGATION
+      // ══════════════════════════════════════════════════════
+      function navTo(module) {
+        state.currentModule = module;
+        state.path = [];
+        state.result = null;
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((el) => el.classList.remove("active"));
+        document.getElementById("nav-" + module)?.classList.add("active");
+        render();
+      }
+
+      function setMode(mode) {
+        state.mode = mode;
+        document
+          .getElementById("modeManual")
+          .classList.toggle("active", mode === "manual");
+        document
+          .getElementById("modeBatch")
+          .classList.toggle("active", mode === "batch");
+        document
+          .getElementById("nav-batch")
+          ?.classList.toggle("active", mode === "batch");
+        render();
+      }
+
+      function selectPath(key) {
+        state.path = [...state.path, key];
+        state.result = null;
+        render();
+        // scroll to top of main
+        document.getElementById("mainContent").scrollTop = 0;
+      }
+
+      function goBack(idx) {
+        state.path = state.path.slice(0, idx);
+        state.result = null;
+        render();
+      }
+
+      // ══════════════════════════════════════════════════════
+      //  RENDER
+      // ══════════════════════════════════════════════════════
+      function render() {
+        const main = document.getElementById("mainContent");
+
+        if (state.mode === "batch") {
+          renderBatch(main);
+          return;
         }
 
-        function setMode(mode) {
-            state.mode = mode;
-            document.getElementById('modeManual').classList.toggle('active', mode === 'manual');
-            document.getElementById('modeBatch').classList.toggle('active', mode === 'batch');
-            document.getElementById('nav-batch')?.classList.toggle('active', mode === 'batch');
-            render();
+        // Resolve current node in tree
+        const module = TREE[state.currentModule];
+        let node = module;
+        for (const key of state.path) {
+          node = node.children?.[key];
+          if (!node) break;
         }
 
-        function selectPath(key) {
-            state.path = [...state.path, key];
-            state.result = null;
-            render();
-            // scroll to top of main
-            document.getElementById('mainContent').scrollTop = 0;
-        }
+        // Build HTML
+        let html = "";
 
-        function goBack(idx) {
-            state.path = state.path.slice(0, idx);
-            state.result = null;
-            render();
-        }
+        // Breadcrumb
+        html += buildBreadcrumb();
 
-        // ══════════════════════════════════════════════════════
-        //  RENDER
-        // ══════════════════════════════════════════════════════
-        function render() {
-            const main = document.getElementById('mainContent');
-
-            if (state.mode === 'batch') { renderBatch(main); return; }
-
-            // Resolve current node in tree
-            const module = TREE[state.currentModule];
-            let node = module;
-            for (const key of state.path) {
-                node = node.children?.[key];
-                if (!node) break;
-            }
-
-            // Build HTML
-            let html = '';
-
-            // Breadcrumb
-            html += buildBreadcrumb();
-
-            // If leaf → calculator
-            if (node?.leaf) {
-                html += buildCalculator(node);
-            } else {
-                // Title
-                html += `<div class="anim-up">
+        // If leaf → calculator
+        if (node?.leaf) {
+          html += buildCalculator(node);
+        } else {
+          // Title
+          html += `<div class="anim-up">
       <div class="page-title">${node?.label || module.label}</div>
       <div class="page-sub">${node?.desc || module.desc}</div>
     </div>`;
 
-                // Tree path display
-                if (state.path.length > 0) {
-                    html += buildTreePath();
-                }
+          // Tree path display
+          if (state.path.length > 0) {
+            html += buildTreePath();
+          }
 
-                // Choice cards
-                if (node?.children) {
-                    html += `<div class="sdiv">Select Method</div>`;
-                    html += `<div class="choice-grid anim-up">`;
-                    for (const [key, child] of Object.entries(node.children)) {
-                        const isLeaf = child.leaf;
-                        const fDef = isLeaf ? FORMULAS[child.formula] : null;
-                        const isStub = fDef?.stub;
-                        html += `
-          <div class="choice-card ${isStub ? 'disabled' : ''}" onclick="${isStub ? '' : 'selectPath(\'' + key + '\')'}">
+          // Choice cards
+          if (node?.children) {
+            html += `<div class="sdiv">Select Method</div>`;
+            html += `<div class="choice-grid anim-up">`;
+            for (const [key, child] of Object.entries(node.children)) {
+              const isLeaf = child.leaf;
+              const fDef = isLeaf ? FORMULAS[child.formula] : null;
+              const isStub = fDef?.stub;
+              html += `
+          <div class="choice-card ${isStub ? "disabled" : ""}" onclick="${isStub ? "" : "selectPath('" + key + "')"}">
             <div class="cc-check">✓</div>
-            <div class="cc-icon">${child.icon || '◆'}</div>
+            <div class="cc-icon">${child.icon || "◆"}</div>
             <div class="cc-title">${child.label}</div>
-            <div class="cc-desc">${fDef ? (fDef.expr + (fDef.region ? '<br><em>' + fDef.region + '</em>' : '')) : (child.desc || '')}</div>
+            <div class="cc-desc">${fDef ? fDef.expr + (fDef.region ? "<br><em>" + fDef.region + "</em>" : "") : child.desc || ""}</div>
             ${isStub ? '<span class="cc-tag soon">Coming Soon</span>' : '<span class="cc-tag active">Available</span>'}
           </div>`;
-                    }
-                    html += `</div>`;
-                }
             }
-
-            main.innerHTML = html;
-
-            // If calculator leaf, init inputs
-            if (node?.leaf && FORMULAS[node.formula] && !FORMULAS[node.formula].stub) {
-                initCalculator(node.formula);
-            }
+            html += `</div>`;
+          }
         }
 
-        // ── BREADCRUMB ──
-        function buildBreadcrumb() {
-            const labels = {
-                flood: 'Flood Discharge', scour: 'Scour Assessment', rainfall: 'Rainfall Analysis',
-                empirical: 'Empirical', unit_hydrograph: 'Unit Hydrograph', frequency: 'Flood Frequency',
-                indian: 'Indian Formulas', uk: 'UK / International', peer_scour: 'Pier Scour', abutment: 'Abutment Scour',
-                idf: 'IDF Curve', arf: 'Areal Reduction',
-                dicken: "Dicken's", ryve: "Ryve's", ingli: "Ingli's", creager: "Creager's", rational: 'Mod. Rational',
-                fuller: "Fuller's", feh: 'FEH', fia: 'FIA', snyder: 'Snyder UH', scs: 'SCS-CN', cwc: 'CWC',
-                gumbel: 'Gumbel EV-I', lpiii: 'Log-Pearson III', hec18: 'HEC-18', lacey_scour: "Lacey's Scour",
-                fhwa_ab: 'FHWA Abutment', m_bernard: 'Modified Bernard', arf_fsr: 'FSR ARF'
-            };
+        main.innerHTML = html;
 
-            const crumbs = [{ label: 'Home', idx: -1 }, { label: labels[state.currentModule] || state.currentModule, idx: 0 },
-            ...state.path.map((k, i) => ({ label: labels[k] || k, idx: i + 1 }))];
+        // If calculator leaf, init inputs
+        if (
+          node?.leaf &&
+          FORMULAS[node.formula] &&
+          !FORMULAS[node.formula].stub
+        ) {
+          initCalculator(node.formula);
+        }
+      }
 
-            return `<div class="breadcrumb anim-in">
-    ${crumbs.map((c, i) => {
-                const isLast = i === crumbs.length - 1;
-                return `${i > 0 ? '<span class="bc-sep">›</span>' : ''}
-        <span class="bc-item ${isLast ? 'active' : ''}" onclick="${c.idx === -1 ? "goBack(0);state.currentModule=state.currentModule;render()" :
-                        isLast ? '' : `goBack(${c.idx - 1})`
-                    }">${isLast ? `<span class="bc-dot"></span>` : ''}${c.label}</span>`;
-            }).join('')}
+      // ── BREADCRUMB ──
+      function buildBreadcrumb() {
+        const labels = {
+          flood: "Flood Discharge",
+          scour: "Scour Assessment",
+          rainfall: "Rainfall Analysis",
+          empirical: "Empirical",
+          unit_hydrograph: "Unit Hydrograph",
+          frequency: "Flood Frequency",
+          indian: "Indian Formulas",
+          uk: "UK / International",
+          peer_scour: "Pier Scour",
+          abutment: "Abutment Scour",
+          idf: "IDF Curve",
+          arf: "Areal Reduction",
+          dicken: "Dicken's",
+          ryve: "Ryve's",
+          ingli: "Ingli's",
+          creager: "Creager's",
+          rational: "Mod. Rational",
+          fuller: "Fuller's",
+          feh: "FEH",
+          fia: "FIA",
+          snyder: "Snyder UH",
+          scs: "SCS-CN",
+          cwc: "CWC",
+          gumbel: "Gumbel EV-I",
+          lpiii: "Log-Pearson III",
+          hec18: "HEC-18",
+          lacey_scour: "Lacey's Scour",
+          fhwa_ab: "FHWA Abutment",
+          m_bernard: "Modified Bernard",
+          arf_fsr: "FSR ARF",
+        };
+
+        const crumbs = [
+          { label: "Home", idx: -1 },
+          { label: labels[state.currentModule] || state.currentModule, idx: 0 },
+          ...state.path.map((k, i) => ({ label: labels[k] || k, idx: i + 1 })),
+        ];
+
+        return `<div class="breadcrumb anim-in">
+    ${crumbs
+      .map((c, i) => {
+        const isLast = i === crumbs.length - 1;
+        return `${i > 0 ? '<span class="bc-sep">›</span>' : ""}
+        <span class="bc-item ${isLast ? "active" : ""}" onclick="${
+          c.idx === -1
+            ? "goBack(0);state.currentModule=state.currentModule;render()"
+            : isLast
+              ? ""
+              : `goBack(${c.idx - 1})`
+        }">${isLast ? `<span class="bc-dot"></span>` : ""}${c.label}</span>`;
+      })
+      .join("")}
   </div>`;
-        }
+      }
 
-        // ── TREE PATH ──
-        function buildTreePath() {
-            const labels = {
-                flood: 'Flood Discharge', empirical: 'Empirical', unit_hydrograph: 'Unit Hydrograph',
-                frequency: 'Flood Frequency', indian: 'Indian', uk: 'UK',
-                dicken: "Dicken's", ryve: "Ryve's", ingli: "Ingli's", creager: "Creager's", rational: 'Rational', fuller: "Fuller's"
-            };
-            const nodes = [TREE[state.currentModule].label, ...state.path.map(k => labels[k] || k)];
-            return `<div class="tree-path anim-in">
-    ${nodes.map((n, i) => `${i > 0 ? '<span class="tp-arrow">→</span>' : ''}
-      <span class="tp-node ${i === 0 ? 'root' : i === nodes.length - 1 ? 'active' : ''}">${n}</span>`).join('')}
+      // ── TREE PATH ──
+      function buildTreePath() {
+        const labels = {
+          flood: "Flood Discharge",
+          empirical: "Empirical",
+          unit_hydrograph: "Unit Hydrograph",
+          frequency: "Flood Frequency",
+          indian: "Indian",
+          uk: "UK",
+          dicken: "Dicken's",
+          ryve: "Ryve's",
+          ingli: "Ingli's",
+          creager: "Creager's",
+          rational: "Rational",
+          fuller: "Fuller's",
+        };
+        const nodes = [
+          TREE[state.currentModule].label,
+          ...state.path.map((k) => labels[k] || k),
+        ];
+        return `<div class="tree-path anim-in">
+    ${nodes
+      .map(
+        (n, i) => `${i > 0 ? '<span class="tp-arrow">→</span>' : ""}
+      <span class="tp-node ${i === 0 ? "root" : i === nodes.length - 1 ? "active" : ""}">${n}</span>`,
+      )
+      .join("")}
   </div>`;
-        }
+      }
 
-        // ── CALCULATOR ──
-        function buildCalculator(node) {
-            const fDef = FORMULAS[node.formula];
-            if (!fDef || fDef.stub) return `<div class="notice">⚠ This method is coming soon.</div>`;
+      // ── CALCULATOR ──
+      function buildCalculator(node) {
+        const fDef = FORMULAS[node.formula];
+        if (!fDef || fDef.stub)
+          return `<div class="notice">⚠ This method is coming soon.</div>`;
 
-            let html = `<div class="anim-up">
+        let html = `<div class="anim-up">
     <div class="page-title">${fDef.name}</div>
     <div class="page-sub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--blue);font-weight:600">${fDef.expr}</span>
@@ -1679,14 +2127,14 @@
     </div>
   </div>`;
 
-            html += buildTreePath();
+        html += buildTreePath();
 
-            if (fDef.notice) {
-                html += `<div class="notice anim-in">⚠ ${fDef.notice}</div>`;
-            }
+        if (fDef.notice) {
+          html += `<div class="notice anim-in">⚠ ${fDef.notice}</div>`;
+        }
 
-            // Input card
-            html += `<div class="input-card anim-up">
+        // Input card
+        html += `<div class="input-card anim-up">
     <div class="ic-head">
       <div class="ic-icon ic-red">⌨</div>
       <div><h3>Input Parameters</h3><p>Enter values for ${fDef.name}</p></div>
@@ -1700,46 +2148,58 @@
     </div>
   </div>`;
 
-            // Result placeholder
-            html += `<div id="resultSection" style="display:none"></div>`;
+        // Result placeholder
+        html += `<div id="resultSection" style="display:none"></div>`;
 
-            return html;
-        }
+        return html;
+      }
 
-        function initCalculator(formula) {
-            const fDef = FORMULAS[formula];
-            const grid = document.getElementById('fieldGrid');
-            if (!grid) return;
-            grid.innerHTML = fDef.fields.map(f => `
+      function initCalculator(formula) {
+        const fDef = FORMULAS[formula];
+        const grid = document.getElementById("fieldGrid");
+        if (!grid) return;
+        grid.innerHTML = fDef.fields
+          .map(
+            (f) => `
     <div class="field">
       <label>${f.label}</label>
-      ${f.hint ? `<div class="hint">${f.hint}</div>` : ''}
+      ${f.hint ? `<div class="hint">${f.hint}</div>` : ""}
       <div class="iw">
         <input type="number" step="any" id="f_${f.key}" value="${f.def ?? 0}">
-        ${f.unit && f.unit !== '—' ? `<span class="unit">${f.unit}</span>` : ''}
+        ${f.unit && f.unit !== "—" ? `<span class="unit">${f.unit}</span>` : ""}
       </div>
-    </div>`).join('');
+    </div>`,
+          )
+          .join("");
+      }
+
+      function runCalculation(formula) {
+        const fDef = FORMULAS[formula];
+        const vals = {};
+        fDef.fields.forEach((f) => {
+          vals[f.key] =
+            parseFloat(document.getElementById("f_" + f.key)?.value) || 0;
+        });
+
+        let result;
+        try {
+          result = fDef.calc(vals);
+        } catch (e) {
+          alert("Calculation error: " + e.message);
+          return;
         }
 
-        function runCalculation(formula) {
-            const fDef = FORMULAS[formula];
-            const vals = {};
-            fDef.fields.forEach(f => { vals[f.key] = parseFloat(document.getElementById('f_' + f.key)?.value) || 0; });
+        const section = document.getElementById("resultSection");
+        section.style.display = "block";
 
-            let result;
-            try { result = fDef.calc(vals); } catch (e) { alert('Calculation error: ' + e.message); return; }
+        // Waterway
+        const Qd = result.Q;
+        const P_lacey = 4.8 * Math.sqrt(Qd);
+        const W_linear = 4.5 * Math.sqrt(Qd);
+        const W_cwc = 8.95 * Math.pow(Qd, 1 / 3);
+        const ww_min = Math.min(P_lacey, W_linear);
 
-            const section = document.getElementById('resultSection');
-            section.style.display = 'block';
-
-            // Waterway
-            const Qd = result.Q;
-            const P_lacey = 4.8 * Math.sqrt(Qd);
-            const W_linear = 4.5 * Math.sqrt(Qd);
-            const W_cwc = 8.95 * Math.pow(Qd, 1 / 3);
-            const ww_min = Math.min(P_lacey, W_linear);
-
-            section.innerHTML = `
+        section.innerHTML = `
     <!-- RESULT BANNER -->
     <div class="result-banner anim-up">
       <div class="rb-left">
@@ -1766,45 +2226,53 @@
           <table class="wtbl">
             <thead><tr><th>Var</th><th>Description</th><th>Value</th><th>Unit</th></tr></thead>
             <tbody>
-              ${result.vars.map(v => `
-                <tr class="${v.result ? 'result-row' : ''}">
+              ${result.vars
+                .map(
+                  (v) => `
+                <tr class="${v.result ? "result-row" : ""}">
                   <td>${v.k}</td>
                   <td style="font-family:'Inter',sans-serif;color:#374151">${v.d}</td>
                   <td>${v.v}</td>
                   <td style="font-family:'Inter',sans-serif">${v.u}</td>
-                </tr>`).join('')}
+                </tr>`,
+                )
+                .join("")}
             </tbody>
           </table>
         </div>
       </div>
 
       <div class="card" style="margin-bottom:0">
-        <div class="card-hd"><div class="ic-icon ic-blue" style="font-size:15px">📊</div><div><h3>Q vs ${result.chartXLabel?.split(' ')[0] || 'Parameter'}</h3><p>Sensitivity curve</p></div></div>
+        <div class="card-hd"><div class="ic-icon ic-blue" style="font-size:15px">📊</div><div><h3>Q vs ${result.chartXLabel?.split(" ")[0] || "Parameter"}</h3><p>Sensitivity curve</p></div></div>
         <div class="card-bd" style="padding:14px">
           <div class="chart-area" id="chartArea"><svg id="chartSvg" style="width:100%;height:100%"></svg><div class="chart-tip" id="chartTip"></div></div>
-          <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">${result.chartXLabel || ''} → ${result.chartYLabel || ''}</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px">${result.chartXLabel || ""} → ${result.chartYLabel || ""}</div>
         </div>
       </div>
     </div>
 
     <!-- LOOKUP TABLE -->
-    ${fDef.lookup ? `
+    ${
+      fDef.lookup
+        ? `
     <div class="card anim-up">
       <div class="card-hd"><div class="ic-icon ic-blue" style="font-size:15px">⊞</div><div><h3>${fDef.lookup.title}</h3><p>${fDef.lookup.sub}</p></div></div>
       <div class="card-bd" id="lookupTableBody"></div>
-    </div>` : ''}
+    </div>`
+        : ""
+    }
 
     <!-- WATERWAY -->
     <div class="card anim-up">
       <div class="card-hd"><div class="ic-icon ic-teal" style="font-size:15px">〜</div><div><h3>Waterway Determination</h3><p>Article-8, IRC:SP:13-2004</p></div></div>
       <div class="card-bd">
         <div class="ww-row">
-          <div class="ww-c ${P_lacey === ww_min ? 'best' : ''}">
+          <div class="ww-c ${P_lacey === ww_min ? "best" : ""}">
             <div class="wc-lbl">Lacey's Regime Width</div>
             <span class="wc-val">${P_lacey.toFixed(2)}</span><span class="wc-unit">m</span>
             <div class="wc-sub">P = 4.8 × √Qd<br>Eq.7.1b, IRC:SP:13-2004</div>
           </div>
-          <div class="ww-c ${W_linear === ww_min ? 'best' : ''}">
+          <div class="ww-c ${W_linear === ww_min ? "best" : ""}">
             <div class="wc-lbl">Linear Waterway</div>
             <span class="wc-val">${W_linear.toFixed(2)}</span><span class="wc-unit">m</span>
             <div class="wc-sub">W = 4.5 × √Qd<br>Cl.106.5.1.2, IRC 5-2015</div>
@@ -1824,67 +2292,92 @@
       </div>
     </div>`;
 
-            // Render chart
-            renderChart(result, document.getElementById('chartArea'), document.getElementById('chartSvg'), document.getElementById('chartTip'));
+        // Render chart
+        renderChart(
+          result,
+          document.getElementById("chartArea"),
+          document.getElementById("chartSvg"),
+          document.getElementById("chartTip"),
+        );
 
-            // Render lookup
-            if (fDef.lookup) {
-                const selIdx = fDef.lookup.fn(vals);
-                document.getElementById('lookupTableBody').innerHTML = `
+        // Render lookup
+        if (fDef.lookup) {
+          const selIdx = fDef.lookup.fn(vals);
+          document.getElementById("lookupTableBody").innerHTML = `
       <table class="ltbl">
-        <thead><tr>${fDef.lookup.cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+        <thead><tr>${fDef.lookup.cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
         <tbody>
-          ${fDef.lookup.rows.map((r, i) => `
-            <tr class="${i === selIdx ? 'sel' : ''}">
-              ${r.map(cell => `<td>${cell}</td>`).join('')}
-            </tr>`).join('')}
+          ${fDef.lookup.rows
+            .map(
+              (r, i) => `
+            <tr class="${i === selIdx ? "sel" : ""}">
+              ${r.map((cell) => `<td>${cell}</td>`).join("")}
+            </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
-      <div class="note" style="margin-top:12px"><strong>Selected:</strong> ${fDef.lookup.rows[selIdx].join(' — ')}</div>`;
-            }
-
-            setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      <div class="note" style="margin-top:12px"><strong>Selected:</strong> ${fDef.lookup.rows[selIdx].join(" — ")}</div>`;
         }
 
-        // ═══ CHART ═══
-        function renderChart(result, wrap, svg, tip) {
-            const W = wrap.clientWidth || 400, H = 190;
-            const P = { t: 14, r: 18, b: 34, l: 48 };
-            const iW = W - P.l - P.r, iH = H - P.t - P.b;
+        setTimeout(
+          () => section.scrollIntoView({ behavior: "smooth", block: "start" }),
+          80,
+        );
+      }
 
-            let pts = result.chartPts;
-            if (!pts && result.chartFn) {
-                const maxX = Math.max(result.chartX * 2, 50);
-                pts = Array.from({ length: 40 }, (_, i) => { const x = maxX / 40 * (i + 1); return { x, y: result.chartFn(x) }; });
-            }
-            if (!pts) return;
+      // ═══ CHART ═══
+      function renderChart(result, wrap, svg, tip) {
+        const W = wrap.clientWidth || 400,
+          H = 190;
+        const P = { t: 14, r: 18, b: 34, l: 48 };
+        const iW = W - P.l - P.r,
+          iH = H - P.t - P.b;
 
-            const minX = Math.min(...pts.map(p => p.x));
-            const maxX = Math.max(...pts.map(p => p.x));
-            const maxY = Math.max(...pts.map(p => p.y)) * 1.12;
+        let pts = result.chartPts;
+        if (!pts && result.chartFn) {
+          const maxX = Math.max(result.chartX * 2, 50);
+          pts = Array.from({ length: 40 }, (_, i) => {
+            const x = (maxX / 40) * (i + 1);
+            return { x, y: result.chartFn(x) };
+          });
+        }
+        if (!pts) return;
 
-            const sx = x => P.l + ((x - minX) / (maxX - minX || 1)) * iW;
-            const sy = y => P.t + (1 - (y / (maxY || 1))) * iH;
+        const minX = Math.min(...pts.map((p) => p.x));
+        const maxX = Math.max(...pts.map((p) => p.x));
+        const maxY = Math.max(...pts.map((p) => p.y)) * 1.12;
 
-            const poly = pts.map(p => `${sx(p.x)},${sy(p.y)}`).join(' ');
-            const area = `M${sx(pts[0].x)} ${sy(0)} ` + pts.map(p => `L${sx(p.x)} ${sy(p.y)}`).join(' ') + ` L${sx(pts[pts.length - 1].x)} ${sy(0)}Z`;
+        const sx = (x) => P.l + ((x - minX) / (maxX - minX || 1)) * iW;
+        const sy = (y) => P.t + (1 - y / (maxY || 1)) * iH;
 
-            const yT = Array.from({ length: 5 }, (_, i) => {
-                const v = maxY * i / 4; const y = sy(v); return `
+        const poly = pts.map((p) => `${sx(p.x)},${sy(p.y)}`).join(" ");
+        const area =
+          `M${sx(pts[0].x)} ${sy(0)} ` +
+          pts.map((p) => `L${sx(p.x)} ${sy(p.y)}`).join(" ") +
+          ` L${sx(pts[pts.length - 1].x)} ${sy(0)}Z`;
+
+        const yT = Array.from({ length: 5 }, (_, i) => {
+          const v = (maxY * i) / 4;
+          const y = sy(v);
+          return `
     <line x1="${P.l}" y1="${y}" x2="${P.l + iW}" y2="${y}" stroke="#f3f4f6" stroke-width="1"/>
     <text x="${P.l - 5}" y="${y + 4}" text-anchor="end" font-size="9" fill="#9ca3af" font-family="JetBrains Mono,monospace">${v >= 1000 ? Math.round(v) : v.toFixed(v < 10 ? 2 : 1)}</text>`;
-            }).join('');
+        }).join("");
 
-            const xN = Math.min(5, pts.length - 1);
-            const xT = Array.from({ length: xN + 1 }, (_, i) => {
-                const idx = Math.round(i * (pts.length - 1) / xN); const p = pts[idx]; return `
+        const xN = Math.min(5, pts.length - 1);
+        const xT = Array.from({ length: xN + 1 }, (_, i) => {
+          const idx = Math.round((i * (pts.length - 1)) / xN);
+          const p = pts[idx];
+          return `
     <text x="${sx(p.x)}" y="${P.t + iH + 14}" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="JetBrains Mono,monospace">${p.x % 1 === 0 ? p.x : p.x.toFixed(1)}</text>`;
-            }).join('');
+        }).join("");
 
-            const cx = sx(result.chartX), cy = sy(result.Q);
+        const cx = sx(result.chartX),
+          cy = sy(result.Q);
 
-            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-            svg.innerHTML = `
+        svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+        svg.innerHTML = `
     <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#fb3640" stop-opacity=".18"/>
       <stop offset="100%" stop-color="#fb3640" stop-opacity="0"/>
@@ -1899,27 +2392,34 @@
     <line x1="${P.l}" y1="${P.t}" x2="${P.l}" y2="${P.t + iH}" stroke="#d1d5db" stroke-width="1.5"/>
     <line x1="${P.l}" y1="${P.t + iH}" x2="${P.l + iW}" y2="${P.t + iH}" stroke="#d1d5db" stroke-width="1.5"/>`;
 
-            svg.onmousemove = e => {
-                const r = svg.getBoundingClientRect();
-                const mx = e.clientX - r.left;
-                const rawX = minX + ((mx - P.l) / iW) * (maxX - minX);
-                if (rawX < minX || rawX > maxX) { tip.style.opacity = 0; return; }
-                const near = pts.reduce((a, b) => Math.abs(b.x - rawX) < Math.abs(a.x - rawX) ? b : a);
-                tip.style.opacity = 1;
-                tip.style.left = (sx(near.x) + 8) + 'px';
-                tip.style.top = (sy(near.y) - 34) + 'px';
-                tip.textContent = `X: ${near.x % 1 === 0 ? near.x : near.x.toFixed(2)}  →  Q: ${fmt(near.y)} Cumecs`;
-            };
-            svg.onmouseleave = () => { tip.style.opacity = 0; };
-        }
+        svg.onmousemove = (e) => {
+          const r = svg.getBoundingClientRect();
+          const mx = e.clientX - r.left;
+          const rawX = minX + ((mx - P.l) / iW) * (maxX - minX);
+          if (rawX < minX || rawX > maxX) {
+            tip.style.opacity = 0;
+            return;
+          }
+          const near = pts.reduce((a, b) =>
+            Math.abs(b.x - rawX) < Math.abs(a.x - rawX) ? b : a,
+          );
+          tip.style.opacity = 1;
+          tip.style.left = sx(near.x) + 8 + "px";
+          tip.style.top = sy(near.y) - 34 + "px";
+          tip.textContent = `X: ${near.x % 1 === 0 ? near.x : near.x.toFixed(2)}  →  Q: ${fmt(near.y)} Cumecs`;
+        };
+        svg.onmouseleave = () => {
+          tip.style.opacity = 0;
+        };
+      }
 
-        // ═══ BATCH / EXCEL PANEL ═══
-        function renderBatch(main) {
-            // Which formula is selected (default dicken)
-            const curFormula = state.batchFormula || 'dicken';
-            const fDef = FORMULAS[curFormula];
+      // ═══ BATCH / EXCEL PANEL ═══
+      function renderBatch(main) {
+        // Which formula is selected (default dicken)
+        const curFormula = state.batchFormula || "dicken";
+        const fDef = FORMULAS[curFormula];
 
-            main.innerHTML = `
+        main.innerHTML = `
     <div class="breadcrumb anim-in">
       <span class="bc-item" onclick="setMode('manual');render()">Home</span>
       <span class="bc-sep">›</span>
@@ -1934,13 +2434,18 @@
     <!-- Step 1: Pick formula -->
     <div class="sdiv">Step 1 — Select Formula</div>
     <div class="choice-grid anim-up" style="margin-bottom:20px">
-      ${Object.entries(FORMULAS).filter(([k, v]) => !v.stub && v.fields?.length).map(([k, v]) => `
-        <div class="choice-card ${k === curFormula ? 'selected' : ''}" onclick="selectBatchFormula('${k}')">
+      ${Object.entries(FORMULAS)
+        .filter(([k, v]) => !v.stub && v.fields?.length)
+        .map(
+          ([k, v]) => `
+        <div class="choice-card ${k === curFormula ? "selected" : ""}" onclick="selectBatchFormula('${k}')">
           <div class="cc-check">✓</div>
           <div class="cc-title">${v.name}</div>
           <div class="cc-desc" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">${v.expr}</div>
           <div class="cc-desc" style="margin-top:4px;font-size:10px">${v.region}</div>
-        </div>`).join('')}
+        </div>`,
+        )
+        .join("")}
     </div>
 
     <!-- Step 2: Template -->
@@ -1955,7 +2460,7 @@
         <div class="excel-template">
           <div class="et-title">Required Columns for ${fDef.name}</div>
           <div class="et-cols">
-            ${fDef.fields.map(f => `<span class="et-col">${f.key}</span>`).join('')}
+            ${fDef.fields.map((f) => `<span class="et-col">${f.key}</span>`).join("")}
             <span class="et-col" style="background:#dcfce7;border-color:#86efac;color:#166534">Q_result</span>
             <span class="et-col" style="background:#dcfce7;border-color:#86efac;color:#166534">P_lacey</span>
             <span class="et-col" style="background:#dcfce7;border-color:#86efac;color:#166534">W_linear</span>
@@ -2010,7 +2515,7 @@
           <thead>
             <tr style="background:#f9fafb;border-bottom:2px solid var(--border)">
               <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">#</th>
-              ${fDef.fields.map(f => `<th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">${f.label}<br><span style="color:#d1d5db;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:400">${f.unit}</span></th>`).join('')}
+              ${fDef.fields.map((f) => `<th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">${f.label}<br><span style="color:#d1d5db;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:400">${f.unit}</span></th>`).join("")}
               <th style="padding:8px 12px;text-align:left;font-size:10px;color:#059669;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Q (Cumecs)</th>
               <th style="padding:8px 12px;text-align:left;font-size:10px;color:#059669;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Waterway (m)</th>
               <th style="padding:8px 12px"></th>
@@ -2019,7 +2524,7 @@
           <tbody id="manualTbody">
             <tr id="mr_1">
               <td style="padding:8px 12px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px">1</td>
-              ${fDef.fields.map(f => `<td style="padding:4px 6px"><input type="number" step="any" value="${f.def || ''}" data-key="${f.key}" style="width:80px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;outline:none" onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='#d1d5db'"></td>`).join('')}
+              ${fDef.fields.map((f) => `<td style="padding:4px 6px"><input type="number" step="any" value="${f.def || ""}" data-key="${f.key}" style="width:80px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;outline:none" onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='#d1d5db'"></td>`).join("")}
               <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text)" id="mq_1">—</td>
               <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--teal)" id="mw_1">—</td>
               <td style="padding:4px 6px"><button onclick="calcManualRow(1)" style="background:var(--red);color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">Calc</button></td>
@@ -2033,161 +2538,196 @@
       </div>
     </div>`;
 
-            state._batchFormula = curFormula;
-            state._manualRows = state._manualRows || 1;
-        }
+        state._batchFormula = curFormula;
+        state._manualRows = state._manualRows || 1;
+      }
 
-        let _batchFile = null, _batchCsv = null;
-        let _manualRowCount = 1;
+      let _batchFile = null,
+        _batchCsv = null;
+      let _manualRowCount = 1;
 
-        function selectBatchFormula(f) {
-            state.batchFormula = f;
-            setMode('batch');
-        }
+      function selectBatchFormula(f) {
+        state.batchFormula = f;
+        setMode("batch");
+      }
 
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            _batchFile = file;
-            document.getElementById('excelStatus').classList.add('show');
-            document.getElementById('esFilename').textContent = file.name;
-            document.getElementById('esRows').textContent = 'Ready to process with ' + (FORMULAS[state.batchFormula || 'dicken']?.name || 'selected formula');
+      function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        _batchFile = file;
+        document.getElementById("excelStatus").classList.add("show");
+        document.getElementById("esFilename").textContent = file.name;
+        document.getElementById("esRows").textContent =
+          "Ready to process with " +
+          (FORMULAS[state.batchFormula || "dicken"]?.name ||
+            "selected formula");
+      }
+      function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById("dropZone").classList.remove("drag");
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          _batchFile = file;
+          document.getElementById("excelInput").files = e.dataTransfer.files;
+          handleFileSelect({ target: { files: [file] } });
         }
-        function handleDrop(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.remove('drag');
-            const file = e.dataTransfer.files[0];
-            if (file) { _batchFile = file; document.getElementById('excelInput').files = e.dataTransfer.files; handleFileSelect({ target: { files: [file] } }); }
-        }
+      }
 
-        function downloadTemplate(formula) {
-            const fDef = FORMULAS[formula];
-            const headers = [...fDef.fields.map(f => f.key), 'Q_result', 'P_lacey', 'W_linear'];
-            const example = [...fDef.fields.map(f => f.def || ''), '', '', ''];
-            const csv = [headers.join(','), example.join(',')].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `floodrix_template_${formula}.csv`;
-            a.click();
-        }
+      function downloadTemplate(formula) {
+        const fDef = FORMULAS[formula];
+        const headers = [
+          ...fDef.fields.map((f) => f.key),
+          "Q_result",
+          "P_lacey",
+          "W_linear",
+        ];
+        const example = [...fDef.fields.map((f) => f.def || ""), "", "", ""];
+        const csv = [headers.join(","), example.join(",")].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `floodrix_template_${formula}.csv`;
+        a.click();
+      }
 
-        function processExcel() {
-            if (!_batchFile) return;
-            const formula = state.batchFormula || 'dicken';
-            const fDef = FORMULAS[formula];
-            const reader = new FileReader();
-            reader.onload = e => {
-                const text = e.target.result;
-                const lines = text.trim().split('\n');
-                const headers = lines[0].split(',').map(h => h.trim());
-                const results = [];
-                let count = 0;
-                for (let i = 1; i < lines.length; i++) {
-                    const cols = lines[i].split(',');
-                    const row = {};
-                    headers.forEach((h, j) => row[h] = parseFloat(cols[j]) || 0);
-                    try {
-                        const r = fDef.calc(row);
-                        const P_l = 4.8 * Math.sqrt(r.Q), W_l = 4.5 * Math.sqrt(r.Q);
-                        row.Q_result = fmt(r.Q);
-                        row.P_lacey = P_l.toFixed(2);
-                        row.W_linear = W_l.toFixed(2);
-                        count++;
-                    } catch (e) { row.Q_result = 'ERR'; row.P_lacey = ''; row.W_linear = ''; }
-                    results.push(row);
-                }
-                const outHeaders = [...headers.filter(h => !['Q_result', 'P_lacey', 'W_linear'].includes(h)), 'Q_result', 'P_lacey', 'W_linear'];
-                const csvOut = [outHeaders.join(','), ...results.map(r => outHeaders.map(h => r[h] || '').join(','))].join('\n');
-                _batchCsv = csvOut;
-                document.getElementById('batchResult').style.display = 'block';
-                document.getElementById('batchMsg').textContent = `✓ Processed ${count} rows successfully`;
-                document.getElementById('batchSub').textContent = `Formula: ${fDef.name}  ·  ${count} site calculations completed`;
-            };
-            reader.readAsText(_batchFile);
-        }
+      function processExcel() {
+        if (!_batchFile) return;
+        const formula = state.batchFormula || "dicken";
+        const fDef = FORMULAS[formula];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          const lines = text.trim().split("\n");
+          const headers = lines[0].split(",").map((h) => h.trim());
+          const results = [];
+          let count = 0;
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(",");
+            const row = {};
+            headers.forEach((h, j) => (row[h] = parseFloat(cols[j]) || 0));
+            try {
+              const r = fDef.calc(row);
+              const P_l = 4.8 * Math.sqrt(r.Q),
+                W_l = 4.5 * Math.sqrt(r.Q);
+              row.Q_result = fmt(r.Q);
+              row.P_lacey = P_l.toFixed(2);
+              row.W_linear = W_l.toFixed(2);
+              count++;
+            } catch (e) {
+              row.Q_result = "ERR";
+              row.P_lacey = "";
+              row.W_linear = "";
+            }
+            results.push(row);
+          }
+          const outHeaders = [
+            ...headers.filter(
+              (h) => !["Q_result", "P_lacey", "W_linear"].includes(h),
+            ),
+            "Q_result",
+            "P_lacey",
+            "W_linear",
+          ];
+          const csvOut = [
+            outHeaders.join(","),
+            ...results.map((r) => outHeaders.map((h) => r[h] || "").join(",")),
+          ].join("\n");
+          _batchCsv = csvOut;
+          document.getElementById("batchResult").style.display = "block";
+          document.getElementById("batchMsg").textContent =
+            `✓ Processed ${count} rows successfully`;
+          document.getElementById("batchSub").textContent =
+            `Formula: ${fDef.name}  ·  ${count} site calculations completed`;
+        };
+        reader.readAsText(_batchFile);
+      }
 
-        function triggerDownload() {
-            if (!_batchCsv) return;
-            const blob = new Blob([_batchCsv], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `floodrix_results_${state.batchFormula || 'dicken'}.csv`;
-            a.click();
-        }
+      function triggerDownload() {
+        if (!_batchCsv) return;
+        const blob = new Blob([_batchCsv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `floodrix_results_${state.batchFormula || "dicken"}.csv`;
+        a.click();
+      }
 
-        // ═══ MANUAL TABLE ═══
-        function addManualRow() {
-            _manualRowCount++;
-            const n = _manualRowCount;
-            const formula = state.batchFormula || 'dicken';
-            const fDef = FORMULAS[formula];
-            const tr = document.createElement('tr');
-            tr.id = 'mr_' + n;
-            tr.innerHTML = `
+      // ═══ MANUAL TABLE ═══
+      function addManualRow() {
+        _manualRowCount++;
+        const n = _manualRowCount;
+        const formula = state.batchFormula || "dicken";
+        const fDef = FORMULAS[formula];
+        const tr = document.createElement("tr");
+        tr.id = "mr_" + n;
+        tr.innerHTML = `
     <td style="padding:8px 12px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px">${n}</td>
-    ${fDef.fields.map(f => `<td style="padding:4px 6px"><input type="number" step="any" value="${f.def || ''}" data-key="${f.key}" style="width:80px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;outline:none"></td>`).join('')}
+    ${fDef.fields.map((f) => `<td style="padding:4px 6px"><input type="number" step="any" value="${f.def || ""}" data-key="${f.key}" style="width:80px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;outline:none"></td>`).join("")}
     <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700" id="mq_${n}">—</td>
     <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--teal)" id="mw_${n}">—</td>
     <td style="padding:4px 6px"><button onclick="calcManualRow(${n})" style="background:var(--red);color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">Calc</button></td>`;
-            document.getElementById('manualTbody').appendChild(tr);
-        }
+        document.getElementById("manualTbody").appendChild(tr);
+      }
 
-        function calcManualRow(n) {
-            const formula = state.batchFormula || 'dicken';
-            const fDef = FORMULAS[formula];
-            const tr = document.getElementById('mr_' + n);
-            const vals = {};
-            tr.querySelectorAll('input').forEach(inp => { vals[inp.dataset.key] = parseFloat(inp.value) || 0; });
-            try {
-                const r = fDef.calc(vals);
-                const ww = Math.min(4.8 * Math.sqrt(r.Q), 4.5 * Math.sqrt(r.Q));
-                document.getElementById('mq_' + n).textContent = fmt(r.Q);
-                document.getElementById('mw_' + n).textContent = ww.toFixed(2);
-                document.getElementById('mq_' + n).style.color = 'var(--red)';
-            } catch (e) {
-                document.getElementById('mq_' + n).textContent = 'ERR';
-            }
+      function calcManualRow(n) {
+        const formula = state.batchFormula || "dicken";
+        const fDef = FORMULAS[formula];
+        const tr = document.getElementById("mr_" + n);
+        const vals = {};
+        tr.querySelectorAll("input").forEach((inp) => {
+          vals[inp.dataset.key] = parseFloat(inp.value) || 0;
+        });
+        try {
+          const r = fDef.calc(vals);
+          const ww = Math.min(4.8 * Math.sqrt(r.Q), 4.5 * Math.sqrt(r.Q));
+          document.getElementById("mq_" + n).textContent = fmt(r.Q);
+          document.getElementById("mw_" + n).textContent = ww.toFixed(2);
+          document.getElementById("mq_" + n).style.color = "var(--red)";
+        } catch (e) {
+          document.getElementById("mq_" + n).textContent = "ERR";
         }
+      }
 
-        function calcAllManual() {
-            for (let i = 1; i <= _manualRowCount; i++) calcManualRow(i);
+      function calcAllManual() {
+        for (let i = 1; i <= _manualRowCount; i++) calcManualRow(i);
+      }
+
+      function exportManual() {
+        const formula = state.batchFormula || "dicken";
+        const fDef = FORMULAS[formula];
+        const headers = [
+          ...fDef.fields.map((f) => f.key),
+          "Q_result",
+          "Waterway_m",
+        ];
+        const rows = [];
+        for (let i = 1; i <= _manualRowCount; i++) {
+          const tr = document.getElementById("mr_" + i);
+          if (!tr) continue;
+          const row = [];
+          tr.querySelectorAll("input").forEach((inp) => row.push(inp.value));
+          row.push(document.getElementById("mq_" + i)?.textContent || "");
+          row.push(document.getElementById("mw_" + i)?.textContent || "");
+          rows.push(row.join(","));
         }
+        const csv = [headers.join(","), ...rows].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `floodrix_manual_${formula}.csv`;
+        a.click();
+      }
 
-        function exportManual() {
-            const formula = state.batchFormula || 'dicken';
-            const fDef = FORMULAS[formula];
-            const headers = [...fDef.fields.map(f => f.key), 'Q_result', 'Waterway_m'];
-            const rows = [];
-            for (let i = 1; i <= _manualRowCount; i++) {
-                const tr = document.getElementById('mr_' + i);
-                if (!tr) continue;
-                const row = [];
-                tr.querySelectorAll('input').forEach(inp => row.push(inp.value));
-                row.push(document.getElementById('mq_' + i)?.textContent || '');
-                row.push(document.getElementById('mw_' + i)?.textContent || '');
-                rows.push(row.join(','));
-            }
-            const csv = [headers.join(','), ...rows].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `floodrix_manual_${formula}.csv`;
-            a.click();
-        }
+      function resetCalc() {
+        document.getElementById("resultSection").style.display = "none";
+      }
 
-        function resetCalc() {
-            document.getElementById('resultSection').style.display = 'none';
-        }
+      function fmt(v, dp = 3) {
+        if (typeof v !== "number") return v;
+        return parseFloat(v.toFixed(dp));
+      }
 
-        function fmt(v, dp = 3) {
-            if (typeof v !== 'number') return v;
-            return parseFloat(v.toFixed(dp));
-        }
-
-        // ═══ INIT ═══
-        render();
+      // ═══ INIT ═══
+      render();
     </script>
-</body>
-
+  </body>
 </html>

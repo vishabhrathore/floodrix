@@ -1,36 +1,41 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { motion, useScroll, useSpring } from 'motion/react';
-import { PROJECTS } from '../constants';
-import { ArrowLeft, Share2, FileText, ChevronRight } from 'lucide-react';
-import MarkdownContent from '../components/MarkdownContent';
+import React, { useEffect, useRef, useState } from "react";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
+import { ArrowLeft, ChevronRight, FileText, Share2 } from "lucide-react";
+import { motion, useScroll, useSpring } from "motion/react";
+
+import MarkdownContent from "../components/MarkdownContent";
+import { PROJECTS } from "../constants";
 
 /* ─────────────────────────────────────────────
    Tiny hook: track which heading is in-view
    for the sticky TOC
 ───────────────────────────────────────────── */
 function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0] ?? '');
+  const [active, setActive] = useState(ids[0] ?? "");
 
   useEffect(() => {
     if (!ids.length) return;
     const observers: IntersectionObserver[] = [];
 
-    ids.forEach(id => {
+    ids.forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
       const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActive(id); },
-        { rootMargin: '-20% 0px -70% 0px' }
+        ([entry]) => {
+          if (entry.isIntersecting) setActive(id);
+        },
+        { rootMargin: "-20% 0px -70% 0px" },
       );
       obs.observe(el);
       observers.push(obs);
     });
 
-    return () => observers.forEach(o => o.disconnect());
+    return () => observers.forEach((o) => o.disconnect());
   }, [ids]);
 
   return active;
@@ -40,14 +45,17 @@ function useActiveSection(ids: string[]) {
    Helper: extract headings from markdown
 ───────────────────────────────────────────── */
 function extractHeadings(md: string) {
-  const lines = md.split('\n');
+  const lines = md.split("\n");
   const headings: { id: string; label: string; level: number }[] = [];
 
-  lines.forEach(line => {
+  lines.forEach((line) => {
     const m = line.match(/^(#{1,3})\s+(.+)/);
     if (m) {
-      const label = m[2].replace(/\*\*/g, '').trim();
-      const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const label = m[2].replace(/\*\*/g, "").trim();
+      const id = label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
       headings.push({ id, label, level: m[1].length });
     }
   });
@@ -60,20 +68,33 @@ function extractHeadings(md: string) {
 ───────────────────────────────────────────── */
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const project = PROJECTS.find(p => p.id === id);
+  const project = PROJECTS.find((p) => p.id === id);
 
   const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
 
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (!project) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-4">404 — Not found</p>
-          <h1 className="text-3xl font-sans font-semibold text-brand-dark mb-6">Project not found</h1>
-          <Link href="/works" className="inline-flex items-center gap-2 text-sm text-brand-red hover:underline">
+          <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-4">
+            404 — Not found
+          </p>
+          <h1 className="text-3xl font-sans font-semibold text-brand-dark mb-6">
+            Project not found
+          </h1>
+          <Link
+            href="/works"
+            className="inline-flex items-center gap-2 text-sm text-brand-red hover:underline"
+          >
             <ArrowLeft className="w-4 h-4" /> Engineering Portfolio
           </Link>
         </div>
@@ -81,13 +102,14 @@ const ProjectDetail: React.FC = () => {
     );
   }
 
-  const headings = project.fullContent ? extractHeadings(project.fullContent) : [];
-  const tocIds = headings.map(h => h.id);
+  const headings = project.fullContent
+    ? extractHeadings(project.fullContent)
+    : [];
+  const tocIds = headings.map((h) => h.id);
   const activeSection = useActiveSection(tocIds);
 
   return (
     <div className="min-h-screen bg-[#fafafa] pb-32 selection:bg-brand-red/10 selection:text-brand-dark">
-
       {/* ── Reading Progress Bar ── */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-[2px] bg-brand-red origin-left z-[100]"
@@ -123,7 +145,7 @@ const ProjectDetail: React.FC = () => {
           {/* Title */}
           <h1
             className="font-sans font-bold text-brand-dark tracking-tight leading-[1.06] mb-7"
-            style={{ fontSize: 'clamp(2rem, 4.5vw, 3.5rem)' }}
+            style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
           >
             {project.title}
           </h1>
@@ -131,7 +153,7 @@ const ProjectDetail: React.FC = () => {
           {/* Description — serif italic */}
           <p
             className="font-serif italic text-gray-500 leading-[1.7] max-w-3xl"
-            style={{ fontSize: 'clamp(1rem, 1.4vw, 1.2rem)' }}
+            style={{ fontSize: "clamp(1rem, 1.4vw, 1.2rem)" }}
           >
             {project.description}
           </p>
@@ -159,10 +181,8 @@ const ProjectDetail: React.FC = () => {
       {/* ── Main Content Grid ── */}
       <section className="px-6 md:px-20 lg:px-32 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-
           {/* ── Left: Narrative ── */}
           <div className="lg:col-span-8 space-y-20">
-
             {/* Challenge & Solution — card treatment */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-gray-100 overflow-hidden bg-white shadow-sm">
               {/* Challenge */}
@@ -172,7 +192,7 @@ const ProjectDetail: React.FC = () => {
                 </p>
                 <p
                   className="font-serif text-brand-dark leading-snug"
-                  style={{ fontSize: 'clamp(1.1rem, 1.5vw, 1.35rem)' }}
+                  style={{ fontSize: "clamp(1.1rem, 1.5vw, 1.35rem)" }}
                 >
                   {project.challenge}
                 </p>
@@ -193,13 +213,19 @@ const ProjectDetail: React.FC = () => {
               {/* subtle red glow */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-brand-red/8 rounded-full blur-3xl -mr-40 -mt-40 pointer-events-none" />
 
-              <h3 className="font-serif italic mb-10" style={{ fontSize: 'clamp(1.35rem, 2vw, 1.75rem)' }}>
+              <h3
+                className="font-serif italic mb-10"
+                style={{ fontSize: "clamp(1.35rem, 2vw, 1.75rem)" }}
+              >
                 Engineered <span className="text-brand-red">Outcomes</span>
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
                 {project.impact?.map((item, idx) => (
-                  <div key={idx} className="py-6 md:py-0 md:px-8 first:pl-0 last:pr-0 space-y-3">
+                  <div
+                    key={idx}
+                    className="py-6 md:py-0 md:px-8 first:pl-0 last:pr-0 space-y-3"
+                  >
                     {/* No "Metric 0X" label — removed as per audit */}
                     <p className="text-sm font-medium text-white/85 leading-snug">
                       {item}
@@ -231,7 +257,7 @@ const ProjectDetail: React.FC = () => {
                   </div>
                   <h4
                     className="font-serif text-brand-dark leading-snug"
-                    style={{ fontSize: 'clamp(1rem, 1.4vw, 1.25rem)' }}
+                    style={{ fontSize: "clamp(1rem, 1.4vw, 1.25rem)" }}
                   >
                     Read the technical domain analysis for this project
                   </h4>
@@ -245,12 +271,10 @@ const ProjectDetail: React.FC = () => {
                 </Link>
               </div>
             )}
-
           </div>
 
           {/* ── Sidebar ── */}
           <aside className="lg:col-span-4 lg:sticky lg:top-[120px] space-y-8">
-
             {headings.length > 0 && (
               <div className="bg-white border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-7 py-5 border-b border-gray-100 bg-gray-50/60">
@@ -259,17 +283,19 @@ const ProjectDetail: React.FC = () => {
                   </h4>
                 </div>
                 <nav className="px-7 py-6 space-y-1">
-                  {headings.map(h => (
+                  {headings.map((h) => (
                     <a
                       key={h.id}
                       href={`#${h.id}`}
                       className={[
-                        'block py-2 text-[11px] font-mono transition-colors leading-snug',
-                        h.level === 2 ? 'font-bold' : 'pl-3 font-medium text-gray-400',
+                        "block py-2 text-[11px] font-mono transition-colors leading-snug",
+                        h.level === 2
+                          ? "font-bold"
+                          : "pl-3 font-medium text-gray-400",
                         activeSection === h.id
-                          ? 'text-brand-red'
-                          : 'text-gray-400 hover:text-brand-dark',
-                      ].join(' ')}
+                          ? "text-brand-red"
+                          : "text-gray-400 hover:text-brand-dark",
+                      ].join(" ")}
                     >
                       {/* Active indicator */}
                       {activeSection === h.id && (
@@ -294,13 +320,17 @@ const ProjectDetail: React.FC = () => {
                   <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest block font-bold mb-2">
                     Client
                   </span>
-                  <p className="text-sm font-bold text-brand-dark">{project.client}</p>
+                  <p className="text-sm font-bold text-brand-dark">
+                    {project.client}
+                  </p>
                 </div>
                 <div>
                   <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest block font-bold mb-2">
                     Year
                   </span>
-                  <p className="text-sm font-bold text-brand-dark">{project.year}</p>
+                  <p className="text-sm font-bold text-brand-dark">
+                    {project.year}
+                  </p>
                 </div>
 
                 {project.technicalData && project.technicalData.length > 0 && (
@@ -310,7 +340,9 @@ const ProjectDetail: React.FC = () => {
                         <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest block font-bold mb-2">
                           {data.label}
                         </span>
-                        <p className="text-sm font-medium text-gray-700 leading-snug">{data.value}</p>
+                        <p className="text-sm font-medium text-gray-700 leading-snug">
+                          {data.value}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -320,18 +352,20 @@ const ProjectDetail: React.FC = () => {
 
             {/* ── Table of Contents (only when there are headings) ── */}
 
-
             {/* ── Share ── */}
             <button
-              onClick={() => navigator.share?.({ title: project.title, url: window.location.href })}
+              onClick={() =>
+                navigator.share?.({
+                  title: project.title,
+                  url: window.location.href,
+                })
+              }
               className="flex items-center justify-center gap-3 w-full py-4 border border-gray-200 bg-white text-[10px] font-mono font-bold uppercase tracking-widest text-gray-500 hover:text-brand-dark hover:border-brand-dark transition-all group shadow-sm rounded-2xl"
             >
               <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
               Share Project
             </button>
-
           </aside>
-
         </div>
       </section>
     </div>

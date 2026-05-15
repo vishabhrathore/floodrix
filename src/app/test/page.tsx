@@ -1,5 +1,5 @@
-import LocalWorkspaceDryRunPage from "@/features/workspace-canvas/page";
+import { WorkspaceCanvasPage } from "@/features/workspace-canvas/page";
 
 export default function Page() {
-    return <LocalWorkspaceDryRunPage />;
+  return <WorkspaceCanvasPage workspaceId="test-workspace" />;
 }

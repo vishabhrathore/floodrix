@@ -12,11 +12,12 @@
 
                 ** Core user journey:**
                     1. Engineer builds a visual calculation workflow on a React Flow canvas(e.g., Dicken's flood discharge: INPUT → FORMULA `Q = C × M^(3/4)` → DISPLAY)
+
 2. Engineer or end - user runs the workflow via a runner panel
 3. Workflow pauses at INPUT nodes for user data, computes sync nodes, hands off to background for async(API calls, PDF generation)
 4. Results shown inline; audit log + session history retained
 
-    ** User location:** Dādri, Uttar Pradesh, India.Seed data reflects Indian civil engineering context(IRC: SP: 13, IRC: 78 standards).
+   ** User location:** Dādri, Uttar Pradesh, India.Seed data reflects Indian civil engineering context(IRC: SP: 13, IRC: 78 standards).
 
 ---
 
@@ -69,18 +70,19 @@ The user provided a "mental model" design doc describing the target architecture
        ┌──────────┴──────────┐
        │                     │
        ▼                     ▼
-  ┌──────────────┐     ┌──────────────────────────────┐
-  │ Registry     │     │  Event Listeners (priority)  │
-  │              │     │                              │
-  │ 10 sync      │     │  DatabaseListener (50)       │
-  │ handlers     │     │  AuditListener   (100)       │
-  │              │     │  MetricsListener (200)       │
-  └──────────────┘     └──────────────────────────────┘
-       │
-       ▼
-   ExecutionContext → ctx.db, ctx.registry, ctx.variables
 
-```
+┌──────────────┐ ┌──────────────────────────────┐
+│ Registry │ │ Event Listeners (priority) │
+│ │ │ │
+│ 10 sync │ │ DatabaseListener (50) │
+│ handlers │ │ AuditListener (100) │
+│ │ │ MetricsListener (200) │
+└──────────────┘ └──────────────────────────────┘
+│
+▼
+ExecutionContext → ctx.db, ctx.registry, ctx.variables
+
+````
 
 ### Key directory layout
 
@@ -140,7 +142,7 @@ src/features/workflow-canvas/
       ├── audit-service.ts            ← Untouched
       └── canvas-save.ts              ← Untouched
       └── workflow-executor.ts        ← DELETED in Chunk 2
-```
+````
 
 ---
 
@@ -237,11 +239,7 @@ src/features/workflow-canvas/
 
     ** Purpose:** Scaffolding.Nothing works yet — no executor, no handlers.But scaffolding compiles.
 
-**New files in `src/server/engine/`:**
-    - `types.ts`, `NodeHandler.ts`, `VariableStore.ts`, `ExecutionEventEmitter.ts`
-    - `SessionRepository.ts`, `NodeHandlerRegistry.ts`
-    - `bootstrap.ts`, `index.ts`
-    - `listeners/DatabaseListener.ts`, `listeners/AuditListener.ts`
+**New files in `src/server/engine/`:** - `types.ts`, `NodeHandler.ts`, `VariableStore.ts`, `ExecutionEventEmitter.ts` - `SessionRepository.ts`, `NodeHandlerRegistry.ts` - `bootstrap.ts`, `index.ts` - `listeners/DatabaseListener.ts`, `listeners/AuditListener.ts`
 
     ** Replaced:**
         - `features/workflow-canvas/engine/registry-resolver.ts`(removed singleton at bottom)
@@ -255,9 +253,7 @@ src/features/workflow-canvas/
 
     ** Purpose:** Every workflow runs identically to before, but through the new architecture.Old executor deleted.
 
-**New files:**
-    - `server/engine/WorkflowExecutor.ts` — the dispatch loop, ~330 lines(vs 700 legacy)
-        - All 10 sync handlers in `server/engine/handlers/`
+**New files:** - `server/engine/WorkflowExecutor.ts` — the dispatch loop, ~330 lines(vs 700 legacy) - All 10 sync handlers in `server/engine/handlers/`
 
             ** Replaced:**
                 - `server/engine/types.ts`(added`registry` to`ExecutionContext`)
@@ -282,7 +278,8 @@ src/features/workflow-canvas/
 
         ** Schema changes to `prisma/schema.prisma`:**
             1. `CalcSession` — added `idempotencyKey String?` column with `@@unique([calcWorkflowId, idempotencyKey])`
-2. `CalcNodeExecution` — added`@@unique([sessionId, calcNodeId])`
+
+2.  `CalcNodeExecution` — added`@@unique([sessionId, calcNodeId])`
 
     ** Migration name:** `add_session_idempotency_and_node_execution_unique`
 
@@ -300,11 +297,7 @@ src/features/workflow-canvas/
 
     ** Purpose:** n8n - style step - by - step execution — pause after each node, inspect outputs, click Next.
 
-**Backend changes:**
-    - `WorkflowExecutor.ts` — `step_complete` pause reason, `stepForward()`, `stepBack()` methods
-        - `IRREVERSIBLE_NODE_TYPES = {API_CALL, PDF_REPORT}` guards stepBack
-            - `execution-router.ts` — `stepForward` and `stepBack` mutations, session authorization with super- admin bypass
-                - `getSession` now returns `stepMode` flag + execution order for UI
+**Backend changes:** - `WorkflowExecutor.ts` — `step_complete` pause reason, `stepForward()`, `stepBack()` methods - `IRREVERSIBLE_NODE_TYPES = {API_CALL, PDF_REPORT}` guards stepBack - `execution-router.ts` — `stepForward` and `stepBack` mutations, session authorization with super- admin bypass - `getSession` now returns `stepMode` flag + execution order for UI
 
                     ** UI changes:**
                         - `use-execution.ts` — stepForward / stepBack methods, stepOutput in state, 3 pause flags(isStepPause / isInputPause / isValidationPause)
@@ -316,9 +309,10 @@ src/features/workflow-canvas/
 
                                                 ** Two bugs flagged that user needed to fix when applying:**
                                                     1. Render - time side - effect in `use-execution.ts`(wrap`ingest()` call in `useEffect`)
+
 2. Double polling(merge`useExecutionHighlightSync` into`use-execution`'s `ingest` callback)
 
-    ** Store name note:** Chunk 3 imports`useExecutionHighlightStore` — user needs to rename to their actual store hook name(probably`useWorkflowCanvasStore`) during merge.
+   ** Store name note:** Chunk 3 imports`useExecutionHighlightStore` — user needs to rename to their actual store hook name(probably`useWorkflowCanvasStore`) during merge.
 
 ---
 
@@ -334,10 +328,7 @@ src/features/workflow-canvas/
 - `inngest/functions/session-resume.ts` — Inngest function to resume paused sessions
 - `inngest/functions/session-start.ts` — Inngest function for BACKGROUND_BATCH start
 
-    **Replaced:**
-        - `server/engine/types.ts` — added `RunStrategy` enum, `PollResult`, `AsyncNodeTransition` types
-            - `server/engine/bootstrap.ts` — added `createRunOrchestrator()` and `createSessionPoller()` factories
-                - `features/workflow-canvas/server/execution-router.ts` — uses`RunOrchestrator`, adds`poll` query
+  **Replaced:** - `server/engine/types.ts` — added `RunStrategy` enum, `PollResult`, `AsyncNodeTransition` types - `server/engine/bootstrap.ts` — added `createRunOrchestrator()` and `createSessionPoller()` factories - `features/workflow-canvas/server/execution-router.ts` — uses`RunOrchestrator`, adds`poll` query
 
                     ** Merge(not replace):**
                         - `src/inngest/functions.ts` — add`calcSessionResume` + `calcSessionStart` to the functions array
@@ -357,16 +348,11 @@ src/features/workflow-canvas/
 
     ** Purpose:** Production safety.TTL cleanup, metrics, true handler timeouts, size enforcement.
 
-**New files:**
-    - `inngest/functions/session-ttl-sweeper.ts` — hourly cron, 30 days PAUSED / 6 hours PENDING
-        - `server/engine/listeners/MetricsListener.ts` — structured JSON logs
-            - `server/engine/WorkerPoolTimeout.ts` — worker_threads wrapper, 30s default
+**New files:** - `inngest/functions/session-ttl-sweeper.ts` — hourly cron, 30 days PAUSED / 6 hours PENDING - `server/engine/listeners/MetricsListener.ts` — structured JSON logs - `server/engine/WorkerPoolTimeout.ts` — worker_threads wrapper, 30s default
 
 - `server/engine/worker-mathjs-runner.js` — the worker script(plain.js, not.ts)
 
-    **Replaced:**
-        - `server/engine/VariableStore.ts` — enforces`MAX_VARIABLE_BYTES`(5MB) and`MAX_STORE_BYTES`(20MB)
-            - `server/engine/bootstrap.ts` — registers MetricsListener with priority 200
+  **Replaced:** - `server/engine/VariableStore.ts` — enforces`MAX_VARIABLE_BYTES`(5MB) and`MAX_STORE_BYTES`(20MB) - `server/engine/bootstrap.ts` — registers MetricsListener with priority 200
 
                 ** Merge(not replace):**
                     - `src/inngest/functions.ts` — add`calcSessionTtlSweeper`
@@ -440,59 +426,60 @@ src/features/workflow-canvas/engine/workflow-executor.ts   (the 700-line monolit
 ## 7. Schema(Key Models)
 
     ```prisma
+
 model CalcSession {
-  id             String   @id @default(cuid())
-  calcWorkflowId String
-  actorId        String
-  status         SessionStatus @default(PENDING)
-  variables      Json     @default("{}")
-  currentNodeId  String?
-  pauseReason    String?
-  executionOrder Json     @default("[]")
-  currentIndex   Int      @default(0)
-  inputSnapshot  Json?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  duration       Int?
-  error          Json?
-  runMode        RunMode  @default(SINGLE)
-  metadata       Json     @default("{}")       ← SessionMetadata shape
-  idempotencyKey String?                       ← CHUNK 2.5 ADDITION
-  // ...
-  @@unique([calcWorkflowId, idempotencyKey])   ← CHUNK 2.5 ADDITION
+id String @id @default(cuid())
+calcWorkflowId String
+actorId String
+status SessionStatus @default(PENDING)
+variables Json @default("{}")
+currentNodeId String?
+pauseReason String?
+executionOrder Json @default("[]")
+currentIndex Int @default(0)
+inputSnapshot Json?
+startedAt DateTime?
+completedAt DateTime?
+duration Int?
+error Json?
+runMode RunMode @default(SINGLE)
+metadata Json @default("{}") ← SessionMetadata shape
+idempotencyKey String? ← CHUNK 2.5 ADDITION
+// ...
+@@unique([calcWorkflowId, idempotencyKey]) ← CHUNK 2.5 ADDITION
 }
 
 model CalcNodeExecution {
-  id          String @id @default(cuid())
-  sessionId   String
-  calcNodeId  String?
-  status      NodeExecutionStatus @default(PENDING)
-  stepNumber  Int
-  // ... output/input/error fields
-  @@unique([sessionId, calcNodeId])            ← CHUNK 2.5 ADDITION
+id String @id @default(cuid())
+sessionId String
+calcNodeId String?
+status NodeExecutionStatus @default(PENDING)
+stepNumber Int
+// ... output/input/error fields
+@@unique([sessionId, calcNodeId]) ← CHUNK 2.5 ADDITION
 }
 
 enum SessionStatus {
-  PENDING RUNNING PAUSED COMPLETED ERRORED CANCELLED TIMED_OUT
+PENDING RUNNING PAUSED COMPLETED ERRORED CANCELLED TIMED_OUT
 }
 
 enum NodeExecutionStatus {
-  PENDING WAITING RUNNING COMPLETED SKIPPED ERRORED
+PENDING WAITING RUNNING COMPLETED SKIPPED ERRORED
 }
 
 enum CalcNodeType {
-  // Sync (10)
-  INPUT FORMULA LOOKUP_TABLE GRAPH_INTERPOLATION DECISION DISPLAY
-  MULTI_FORMULA UNIT_CONVERSION VALIDATION CUSTOM_CODE
-  // Async (5) — handlers NOT YET IMPLEMENTED
-  API_CALL PDF_REPORT SUBWORKFLOW LOOP PARALLEL
-  // Structural (no handlers, always skipped)
-  COMMENT GROUP REFERENCE_IMAGE
-  // Misc
-  CHART TABLE_BUILDER
+// Sync (10)
+INPUT FORMULA LOOKUP_TABLE GRAPH_INTERPOLATION DECISION DISPLAY
+MULTI_FORMULA UNIT_CONVERSION VALIDATION CUSTOM_CODE
+// Async (5) — handlers NOT YET IMPLEMENTED
+API_CALL PDF_REPORT SUBWORKFLOW LOOP PARALLEL
+// Structural (no handlers, always skipped)
+COMMENT GROUP REFERENCE_IMAGE
+// Misc
+CHART TABLE_BUILDER
 }
 
-```
+````
 
 ### SessionMetadata JSON shape(inside`metadata` column)
     ```ts
@@ -505,7 +492,7 @@ enum CalcNodeType {
   idempotencyKey?: string,          // Mirrored from column for convenience
   runStrategy?: RunStrategy,        // Chunk 4 addition
 }
-```
+````
 
 Forward - migration happens in `SessionRepository.hydrateMetadata()`.When bumping`METADATA_VERSION`, add a new branch there.
 
@@ -514,6 +501,7 @@ Forward - migration happens in `SessionRepository.hydrateMetadata()`.When bumpin
 ## 8. The 12 Bugs From Mental Model
 
     | # | Bug | Status |
+
 | ---| -----| --------|
 | 1 | `updateNodeCompleted` matched WAITING rows instead of only RUNNING | Fixed in Chunk 2(status guards in SessionRepository) |
 | 2 | Double flush on error path | Fixed — errorOut in Chunk 3 takes pre - loaded session |
@@ -562,16 +550,17 @@ Forward - migration happens in `SessionRepository.hydrateMetadata()`.When bumpin
 ## 10. Strategy Resolution(Current Policy)
 
     ```
+
 if forceStrategy:
-    use forceStrategy
+use forceStrategy
 
 elif any node type is async (API_CALL, PDF_REPORT, SUBWORKFLOW, LOOP, PARALLEL):
-    BACKGROUND_BATCH  → session created, Inngest event fired, client polls
+BACKGROUND_BATCH → session created, Inngest event fired, client polls
 
 else:
-    INLINE_SYNC       → executor runs in request, returns final result
+INLINE_SYNC → executor runs in request, returns final result
 
-```
+````
 
     ** stepMode override:** If`stepMode: true`, always forces INLINE_SYNC.Step - by - step debugging across async boundaries doesn't make sense.
 
@@ -761,15 +750,10 @@ Before making any changes:
 npx tsc --noEmit     # Zero errors expected
 npx prisma generate  # After schema changes
 npm run dev          # Inngest functions should appear in dashboard
-```
+````
 
 Smoke tests:
--[] Run `wf_dicken` with numeric input → completes with `Q_dicken` ≈ 152
-    - [] Run`wf_dicken` in step mode → 3 step pauses, each showing outputs
-        - [] Cancel a running session → transitions to CANCELLED cleanly
-            - [] Retry idempotency → same `idempotencyKey` returns existing session
-                - [] Metrics logs show `engine.session.started` and `engine.session.completed` JSON lines
-                    - [] TTL sweeper visible in Inngest dashboard with `0 * * * *` cron
+-[] Run `wf_dicken` with numeric input → completes with `Q_dicken` ≈ 152 - [] Run`wf_dicken` in step mode → 3 step pauses, each showing outputs - [] Cancel a running session → transitions to CANCELLED cleanly - [] Retry idempotency → same `idempotencyKey` returns existing session - [] Metrics logs show `engine.session.started` and `engine.session.completed` JSON lines - [] TTL sweeper visible in Inngest dashboard with `0 * * * *` cron
 
 ---
 

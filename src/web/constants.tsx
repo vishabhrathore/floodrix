@@ -1,40 +1,61 @@
-import React from 'react';
-import { Droplets, ShieldCheck, Waves, Leaf, Microscope, Map, Recycle, Sprout } from 'lucide-react';
-import { ServiceCardProps, Project, TeamMember, BlogPost, DomainSection } from './types';
+import React from "react";
+
+import {
+  Droplets,
+  Leaf,
+  Map,
+  Microscope,
+  Recycle,
+  ShieldCheck,
+  Sprout,
+  Waves,
+} from "lucide-react";
+
+import {
+  BlogPost,
+  DomainSection,
+  Project,
+  ServiceCardProps,
+  TeamMember,
+} from "./types";
 
 export const COLORS = {
-  red: '#fb3640',
-  blue: '#247ba0',
-  dark: '#191919',
-  teal: '#0d9488',
-  grey: '#6b7280'
+  red: "#fb3640",
+  blue: "#247ba0",
+  dark: "#191919",
+  teal: "#0d9488",
+  grey: "#6b7280",
 };
 
 export const SERVICES: ServiceCardProps[] = [
   {
     title: "Highway Drainage",
-    description: "Delivery of safe and efficient drainage solutions specifically tailored for transportation networks. Bridge hydrology, hydraulic analysis, and scour protection.",
+    description:
+      "Delivery of safe and efficient drainage solutions specifically tailored for transportation networks. Bridge hydrology, hydraulic analysis, and scour protection.",
     icon: <Droplets className="w-8 h-8" />,
-    category: "Highway Drainage"
+    category: "Highway Drainage",
   },
   {
     title: "Infrastructure & Flood Modelling",
-    description: "Urban resilience and integrated stormwater systems via advanced digital simulations (1D/2D Pluvial and Fluvial Modelling).",
+    description:
+      "Urban resilience and integrated stormwater systems via advanced digital simulations (1D/2D Pluvial and Fluvial Modelling).",
     icon: <Waves className="w-8 h-8" />,
-    category: "Infrastructure"
+    category: "Infrastructure",
   },
   {
     title: "Groundwater Services",
-    description: "Scientific assessments and sustainable management of subsurface water resources using numerical simulation of aquifer behavior.",
+    description:
+      "Scientific assessments and sustainable management of subsurface water resources using numerical simulation of aquifer behavior.",
     icon: <Map className="w-8 h-8" />,
-    category: "Groundwater"
+    category: "Groundwater",
   },
   {
     title: "Technical Advisory & Dispute Resolution",
-    description: "Expert witness services and technical audits for complex infrastructure litigation. We provide data-backed forensic engineering and independent peer reviews.",
+    description:
+      "Expert witness services and technical audits for complex infrastructure litigation. We provide data-backed forensic engineering and independent peer reviews.",
     icon: <ShieldCheck className="w-8 h-8" />,
-    category: "Advisory"
-  }
+    category: "Advisory",
+  },
 ];
 
 export const PROJECTS: Project[] = [
@@ -43,14 +64,18 @@ export const PROJECTS: Project[] = [
     title: "Kosasthalaiyar Basin Resilience",
     category: "Stormwater",
     location: "Chennai, Tamil Nadu",
-    image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512405/floodrix/images/projects/chennai_stormwater.jpg",
-    description: "Holistic basin-level flood mitigation replacing piecemeal repairs with integrated hydrodynamic modelling.",
-    challenge: "Managing extreme flood risks in a rapidly urbanizing coastal basin with complex overland flow paths.",
-    solution: "Implementation of SWMM-based hydraulic routing to size large-scale attenuation basins and transition to a controlled-release strategy.",
+    image:
+      "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512405/floodrix/images/projects/chennai_stormwater.jpg",
+    description:
+      "Holistic basin-level flood mitigation replacing piecemeal repairs with integrated hydrodynamic modelling.",
+    challenge:
+      "Managing extreme flood risks in a rapidly urbanizing coastal basin with complex overland flow paths.",
+    solution:
+      "Implementation of SWMM-based hydraulic routing to size large-scale attenuation basins and transition to a controlled-release strategy.",
     impact: [
       "Mitigated 100-year flood risk for urban wards",
       "Optimized attenuation basin volumes by 25%",
-      "Established climate-resilient design baselines"
+      "Established climate-resilient design baselines",
     ],
     year: "2024",
     client: "ADB / Govt. of Tamil Nadu",
@@ -82,25 +107,41 @@ To engineer drainage systems capable of surviving current realities, the industr
 | **Cross-Drainage Hydraulics** | Manning's equation for uniform flow | HEC-RAS 1D/2D unsteady flow & backwater modelling |
 | **Energy Dissipation** | Standard unreinforced concrete aprons | Scour depth assessment & engineered trajectory buckets |`,
     technicalData: [
-      { label: "Design Storm Estimation", value: "Dynamic, climate-adjusted IDF curves (IRC/IS)" },
-      { label: "Urban Network Sizing", value: "SWMM-based hydrodynamic routing & SuDS integration" },
-      { label: "Cross-Drainage Hydraulics", value: "HEC-RAS 1D/2D unsteady flow & backwater modelling" },
-      { label: "Energy Dissipation", value: "Scour depth assessment & engineered trajectory buckets" }
-    ]
+      {
+        label: "Design Storm Estimation",
+        value: "Dynamic, climate-adjusted IDF curves (IRC/IS)",
+      },
+      {
+        label: "Urban Network Sizing",
+        value: "SWMM-based hydrodynamic routing & SuDS integration",
+      },
+      {
+        label: "Cross-Drainage Hydraulics",
+        value: "HEC-RAS 1D/2D unsteady flow & backwater modelling",
+      },
+      {
+        label: "Energy Dissipation",
+        value: "Scour depth assessment & engineered trajectory buckets",
+      },
+    ],
   },
   {
     id: "mumbai-metro-groundwater",
     title: "Mumbai Metro Line 3 Hydro-Mitigation",
     category: "Groundwater",
     location: "Mumbai, Maharashtra",
-    image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512411/floodrix/images/projects/mumbai_metro.jpg",
-    description: "Comprehensive dewatering and geotechnical risk management for a 33.5km underground metro corridor.",
-    challenge: "Extreme water ingress risks in shallow aquifers (3.0m BGL) threatening structural integrity of heritage buildings.",
-    solution: "Advanced construction dewatering arrays utilizing deep wells and artificial recharge wells, validated via MODFLOW finite-difference modelling.",
+    image:
+      "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512411/floodrix/images/projects/mumbai_metro.jpg",
+    description:
+      "Comprehensive dewatering and geotechnical risk management for a 33.5km underground metro corridor.",
+    challenge:
+      "Extreme water ingress risks in shallow aquifers (3.0m BGL) threatening structural integrity of heritage buildings.",
+    solution:
+      "Advanced construction dewatering arrays utilizing deep wells and artificial recharge wells, validated via MODFLOW finite-difference modelling.",
     impact: [
       "Zero settlement recorded in heritage structures",
       "Maintained static water table via recharge wells",
-      "Quantified cone of depression with 98% accuracy"
+      "Quantified cone of depression with 98% accuracy",
     ],
     year: "2023",
     client: "MMRCL / JICA",
@@ -132,25 +173,38 @@ For instance, rigorous studies in Telangana utilizing direct roof-top rainwater 
 | **Dewatering Analysis** | Transient flow modelling (MODFLOW) | Theis & Cooper-Jacob pumping tests |
 | **Settlement Mitigation** | Artificial perimeter recharge wells | Secant pile walls, extensive pre-grouting |`,
     technicalData: [
-      { label: "Static Water Table", value: "Highly shallow, approx. 3.0 m BGL" },
+      {
+        label: "Static Water Table",
+        value: "Highly shallow, approx. 3.0 m BGL",
+      },
       { label: "Geological Profile", value: "Mixed-face: Tuff, soil, basalt" },
-      { label: "Dewatering Analysis", value: "Transient flow modelling (MODFLOW)" },
-      { label: "Settlement Mitigation", value: "Artificial perimeter recharge wells" }
-    ]
+      {
+        label: "Dewatering Analysis",
+        value: "Transient flow modelling (MODFLOW)",
+      },
+      {
+        label: "Settlement Mitigation",
+        value: "Artificial perimeter recharge wells",
+      },
+    ],
   },
   {
     id: "nlbc-canal-automation",
     title: "NLBC Canal Modernization",
     category: "Irrigation",
     location: "Karnataka, India",
-    image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512415/floodrix/images/projects/nlbc_automation.jpg",
-    description: "Modernization of a 400,000-hectare command area through autonomous, cyber-physical control systems.",
-    challenge: "Decades of inequitable water distribution and massive conveyance losses reaching 45% in tail-end reaches.",
-    solution: "Deployment of 4,200 solar-powered automated gates (TCC™) and SCADA integration for demand-based rotational scheduling.",
+    image:
+      "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512415/floodrix/images/projects/nlbc_automation.jpg",
+    description:
+      "Modernization of a 400,000-hectare command area through autonomous, cyber-physical control systems.",
+    challenge:
+      "Decades of inequitable water distribution and massive conveyance losses reaching 45% in tail-end reaches.",
+    solution:
+      "Deployment of 4,200 solar-powered automated gates (TCC™) and SCADA integration for demand-based rotational scheduling.",
     impact: [
       "Minimum 20% immediate efficiency gain",
       "Reported 50% increase in crop yields",
-      "Served 400,000 hectares command area"
+      "Served 400,000 hectares command area",
     ],
     year: "2023",
     client: "Karnataka Water Resources Dept.",
@@ -184,27 +238,46 @@ The NeuroFlo software executes a complex hydraulic process termed "demand shapin
 | **Hydraulic Efficiency Gain** | Minimum 20% immediate increase in conveyance efficiency |
 | **Agricultural Productivity** | Reported increases in crop yields by up to 50% |`,
     technicalData: [
-      { label: "Total Command Area Served", value: "400,000 Hectares (4,000 sq. km)" },
+      {
+        label: "Total Command Area Served",
+        value: "400,000 Hectares (4,000 sq. km)",
+      },
       { label: "Irrigation Network Length", value: "3,000 Kilometres" },
-      { label: "Cyber-Physical Hardware", value: ">4,200 Solar-powered automated gates" },
-      { label: "Control Software Architecture", value: "NeuroFlo (Automated scheduling & Demand shaping)" },
-      { label: "Hydraulic Efficiency Gain", value: "Minimum 20% immediate increase" },
-      { label: "Agricultural Productivity", value: "Reported increases up to 50%" }
-    ]
+      {
+        label: "Cyber-Physical Hardware",
+        value: ">4,200 Solar-powered automated gates",
+      },
+      {
+        label: "Control Software Architecture",
+        value: "NeuroFlo (Automated scheduling & Demand shaping)",
+      },
+      {
+        label: "Hydraulic Efficiency Gain",
+        value: "Minimum 20% immediate increase",
+      },
+      {
+        label: "Agricultural Productivity",
+        value: "Reported increases up to 50%",
+      },
+    ],
   },
   {
     id: "hirakud-dam-spillway",
     title: "Hirakud Dam Additional Spillway",
     category: "Structures",
     location: "Odisha, India",
-    image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512407/floodrix/images/projects/hirakud_dam.jpg",
-    description: "Hydrological reassessment and engineering of supplementary discharge infrastructure for India's longest dam.",
-    challenge: "Revised PMF revealed a 60% increase in flood discharge, creating a critical deficit of 27,182 m³/s.",
-    solution: "Design of a new 91m spillway with high-energy USBR Type II dissipators, validated through 3D physical and numerical modelling.",
+    image:
+      "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512407/floodrix/images/projects/hirakud_dam.jpg",
+    description:
+      "Hydrological reassessment and engineering of supplementary discharge infrastructure for India's longest dam.",
+    challenge:
+      "Revised PMF revealed a 60% increase in flood discharge, creating a critical deficit of 27,182 m³/s.",
+    solution:
+      "Design of a new 91m spillway with high-energy USBR Type II dissipators, validated through 3D physical and numerical modelling.",
     impact: [
       "Resolved 27,182 m³/s discharge deficit",
       "Mitigated overtopping of 25.8km dam",
-      "Expanded total capacity to ~18 lakh cusecs"
+      "Expanded total capacity to ~18 lakh cusecs",
     ],
     year: "2024",
     client: "CWC / Govt. of Odisha",
@@ -250,23 +323,36 @@ The future of Indian hydraulic infrastructure is inherently deterministic, proba
     technicalData: [
       { label: "Original PMF", value: "42,450 m³/s (15.00 lakh cusecs)" },
       { label: "Revised PMF", value: "69,632 m³/s (24.60 lakh cusecs)" },
-      { label: "Critical Discharge Deficit", value: "27,182 m³/s (9.60 lakh cusecs)" },
-      { label: "Additional Spillway Location", value: "Left dyke saddle (Phase 1)" },
-      { label: "New Infrastructure Capacity", value: "5 sluice gates handling ~9,122 m³/s" },
-      { label: "Target Total Outflow Capacity", value: "Expansion to ~18 lakh cusecs overall" }
-    ]
-  }
+      {
+        label: "Critical Discharge Deficit",
+        value: "27,182 m³/s (9.60 lakh cusecs)",
+      },
+      {
+        label: "Additional Spillway Location",
+        value: "Left dyke saddle (Phase 1)",
+      },
+      {
+        label: "New Infrastructure Capacity",
+        value: "5 sluice gates handling ~9,122 m³/s",
+      },
+      {
+        label: "Target Total Outflow Capacity",
+        value: "Expansion to ~18 lakh cusecs overall",
+      },
+    ],
+  },
 ];
-
 
 export const BLOGS: BlogPost[] = [
   {
     id: "storm-drainage-and-flood-management",
     title: "Storm Drainage & Flood Management",
-    excerpt: "Every monsoon season exposes an uncompromising truth: the vast majority of Indian highway networks and urban drainage systems were not designed to accommodate the rainfall intensities they are now receiving.",
+    excerpt:
+      "Every monsoon season exposes an uncompromising truth: the vast majority of Indian highway networks and urban drainage systems were not designed to accommodate the rainfall intensities they are now receiving.",
     author: "Dr. Sarah Mitchell",
     date: "May 11, 2024",
-    image: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?q=80&w=1200&auto=format&fit=crop",
     category: "Stormwater",
     readTime: "12 min read",
     regulatoryScope: "IRC:SP:42-2014 / MoRTH",
@@ -278,13 +364,47 @@ export const BLOGS: BlogPost[] = [
       { title: "Hydraulic Modeling" },
     ],
     references: [
-      { label: "Investigating Premature Pavement Failure Due to Moisture — Final Report", url: "https://rosap.ntl.bts.gov/view/dot/22882/dot_22882_DS1.pdf", source: "ROSA P / BTS" },
-      { label: "Examine the Underlying Causes of Flexible Pavement Deteriorations", url: "https://www.ijeat.org/wp-content/uploads/papers/v10i4/D25180410421.pdf", source: "IJEAT" },
-      { label: "Subgrade Strength Recovery of Fine-Grained-Soil-Containing Roads", url: "https://www.mdpi.com/1999-4907/15/4/671", source: "MDPI" },
-      { label: "Moisture Variation in Highway Subgrades and the Associated Change in Surface Deflections", url: "https://onlinepubs.trb.org/Onlinepubs/trr/1974/497/497-004.pdf", source: "TRB" },
-      { label: "Potential Impact of Climate Change on Rainfall Intensity-Duration-Frequency Curves in Roorkee, India", url: "https://ideas.repec.org/a/spr/waterr/v30y2016i13d10.1007_s11269-016-1441-4.html", source: "IDEAS/RePEc" },
-      { label: "IRC SP 42-2014 Guidelines On Road Drainage", url: "https://archive.org/details/govlawircy2014sp42", source: "IRC / Internet Archive" },
-      { label: "Application of SWMM for Urban Storm Water Management: A Case Study of Hyderabad City", url: "https://www.researchgate.net/publication/389704755_Application_of_SWMM_for_Urban_Storm_Water_Management_A_Case_Study_of_Hyderabad_City", source: "ResearchGate" },
+      {
+        label:
+          "Investigating Premature Pavement Failure Due to Moisture — Final Report",
+        url: "https://rosap.ntl.bts.gov/view/dot/22882/dot_22882_DS1.pdf",
+        source: "ROSA P / BTS",
+      },
+      {
+        label:
+          "Examine the Underlying Causes of Flexible Pavement Deteriorations",
+        url: "https://www.ijeat.org/wp-content/uploads/papers/v10i4/D25180410421.pdf",
+        source: "IJEAT",
+      },
+      {
+        label:
+          "Subgrade Strength Recovery of Fine-Grained-Soil-Containing Roads",
+        url: "https://www.mdpi.com/1999-4907/15/4/671",
+        source: "MDPI",
+      },
+      {
+        label:
+          "Moisture Variation in Highway Subgrades and the Associated Change in Surface Deflections",
+        url: "https://onlinepubs.trb.org/Onlinepubs/trr/1974/497/497-004.pdf",
+        source: "TRB",
+      },
+      {
+        label:
+          "Potential Impact of Climate Change on Rainfall Intensity-Duration-Frequency Curves in Roorkee, India",
+        url: "https://ideas.repec.org/a/spr/waterr/v30y2016i13d10.1007_s11269-016-1441-4.html",
+        source: "IDEAS/RePEc",
+      },
+      {
+        label: "IRC SP 42-2014 Guidelines On Road Drainage",
+        url: "https://archive.org/details/govlawircy2014sp42",
+        source: "IRC / Internet Archive",
+      },
+      {
+        label:
+          "Application of SWMM for Urban Storm Water Management: A Case Study of Hyderabad City",
+        url: "https://www.researchgate.net/publication/389704755_Application_of_SWMM_for_Urban_Storm_Water_Management_A_Case_Study_of_Hyderabad_City",
+        source: "ResearchGate",
+      },
     ],
     content: `## Domain 01 of 04: Storm Drainage & Flood Management
 
@@ -332,29 +452,74 @@ The integration of SWMM hydrology with HEC-RAS flood inundation mapping provides
   {
     id: "groundwater-and-hydrogeology-risk",
     title: "Groundwater & Hydrogeology",
-    excerpt: "India functions as the world's largest consumer of groundwater, yet its resource management strategies remain profoundly inefficient. India's aquifers are being spent drastically faster than monsoons can replenish them.",
+    excerpt:
+      "India functions as the world's largest consumer of groundwater, yet its resource management strategies remain profoundly inefficient. India's aquifers are being spent drastically faster than monsoons can replenish them.",
     author: "Elena Rodriguez",
     date: "May 08, 2024",
-    image: "https://images.unsplash.com/photo-1510411273665-3665245f44b3?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1510411273665-3665245f44b3?q=80&w=1200&auto=format&fit=crop",
     category: "Groundwater",
     readTime: "15 min read",
     regulatoryScope: "CGWB / CGWA / IS Codes",
     geographicScope: "India — National & Regional",
-    methodologies: ["MODFLOW", "FEFLOW", "Theis Method", "Cooper-Jacob", "DRASTIC"],
+    methodologies: [
+      "MODFLOW",
+      "FEFLOW",
+      "Theis Method",
+      "Cooper-Jacob",
+      "DRASTIC",
+    ],
     domains: [
       { title: "Aquifer depletion" },
       { title: "Construction dewatering" },
       { title: "Liability & regulation" },
     ],
     references: [
-      { label: "Dynamic Groundwater resources of India | Vikaspedia", url: "https://energy.vikaspedia.in", source: "Vikaspedia" },
-      { label: "National Compilation on Dynamic Ground Water Resources of India, 2024", url: "https://www.jalshakti-dowr.gov.in", source: "CGWB / MoJR, 2024" },
-      { label: "Union Minister of Jal Shakti Releases Dynamic Ground Water Resources Assessment Report", url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2089039", source: "PIB" },
-      { label: "Groundwater depletion in India: influence of seasonal precipitation and land use", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12804263/", source: "PMC" },
-      { label: "GRACE Sees Groundwater Losses Around the World", url: "https://grace.jpl.nasa.gov/resources/9/grace-sees-groundwater-losses-around-the-world/", source: "NASA" },
-      { label: "Construction Dewatering for Underground Station in Urban Environment", url: "https://www.researchgate.net/publication/344303842_Construction_Dewatering_for_Underground_Station_in_Urban_Environment", source: "ResearchGate" },
-      { label: "Borewell drilling damages Mumbai Metro 3 tunnel near CSMT", url: "https://timesofindia.indiatimes.com/city/mumbai/borewell-drilling-damages-mumbai-metro-3-tunnel-near-csmt/articleshow/129660210.cms", source: "Times of India" },
-      { label: "Construction & Engineering Laws and Regulations Report 2025-2026 India", url: "https://iclg.com/practice-areas/construction-and-engineering-law-laws-and-regulations/india", source: "ICLG" },
+      {
+        label: "Dynamic Groundwater resources of India | Vikaspedia",
+        url: "https://energy.vikaspedia.in",
+        source: "Vikaspedia",
+      },
+      {
+        label:
+          "National Compilation on Dynamic Ground Water Resources of India, 2024",
+        url: "https://www.jalshakti-dowr.gov.in",
+        source: "CGWB / MoJR, 2024",
+      },
+      {
+        label:
+          "Union Minister of Jal Shakti Releases Dynamic Ground Water Resources Assessment Report",
+        url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2089039",
+        source: "PIB",
+      },
+      {
+        label:
+          "Groundwater depletion in India: influence of seasonal precipitation and land use",
+        url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12804263/",
+        source: "PMC",
+      },
+      {
+        label: "GRACE Sees Groundwater Losses Around the World",
+        url: "https://grace.jpl.nasa.gov/resources/9/grace-sees-groundwater-losses-around-the-world/",
+        source: "NASA",
+      },
+      {
+        label:
+          "Construction Dewatering for Underground Station in Urban Environment",
+        url: "https://www.researchgate.net/publication/344303842_Construction_Dewatering_for_Underground_Station_in_Urban_Environment",
+        source: "ResearchGate",
+      },
+      {
+        label: "Borewell drilling damages Mumbai Metro 3 tunnel near CSMT",
+        url: "https://timesofindia.indiatimes.com/city/mumbai/borewell-drilling-damages-mumbai-metro-3-tunnel-near-csmt/articleshow/129660210.cms",
+        source: "Times of India",
+      },
+      {
+        label:
+          "Construction & Engineering Laws and Regulations Report 2025-2026 India",
+        url: "https://iclg.com/practice-areas/construction-and-engineering-law-laws-and-regulations/india",
+        source: "ICLG",
+      },
     ],
     content: `## Domain 02 of 04: Groundwater & Hydrogeology
 
@@ -392,10 +557,12 @@ To neutralize this liability, aquifer behavior must be characterized with analyt
   {
     id: "irrigation-water-management-efficiency",
     title: "Irrigation Water Management",
-    excerpt: "India possesses the largest irrigated agricultural footprint globally, yet it operates with staggering systemic inefficiency. Nearly half of every liter diverted for irrigation in India is lost before it ever reaches the field.",
+    excerpt:
+      "India possesses the largest irrigated agricultural footprint globally, yet it operates with staggering systemic inefficiency. Nearly half of every liter diverted for irrigation in India is lost before it ever reaches the field.",
     author: "Marcus Thorne",
     date: "May 05, 2024",
-    image: "https://images.unsplash.com/photo-1414609145920-53406201e745?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1414609145920-53406201e745?q=80&w=1200&auto=format&fit=crop",
     category: "Irrigation",
     readTime: "10 min read",
     regulatoryScope: "PMKSY-AIBP / FAO Standards",
@@ -407,11 +574,34 @@ To neutralize this liability, aquifer behavior must be characterized with analyt
       { title: "SCADA automation" },
     ],
     references: [
-      { label: "Hydrospatial Modelling and Simulations for Assessing the Irrigation Canal Conveyance Losses", url: "https://www.researchgate.net/publication/332117702_Hydrospatial_Modelling_and_Simulations_for_Assessing_the_Irrigation_Canal_Conveyance_Losses", source: "ResearchGate" },
-      { label: "Canal Automation for Smart Digital Irrigation Management — NLBC Karnataka", url: "https://www.researchgate.net/publication/336148668_Canal_Automation_for_Smart_Digital_Irrigation_Management_A_Case_Study_on_Narayanpur_Left_Bank_Canal_Karnataka_State_India", source: "ResearchGate" },
-      { label: "Emerging Issues and Problems of Soil Salinity and Water Logging: A Case Study of Indira Gandhi Canal", url: "https://www.researchgate.net/publication/369959145_Emerging_Issues_and_Problems_of_Soil_Salinity_and_Water_Logging_A_Case_Study_of_Indira_Gandhi_Canal_Rajasthan", source: "ResearchGate" },
-      { label: "SCADA-IoT based irrigation modernisation under PMKSY", url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2238841", source: "PIB" },
-      { label: "Designing Systems for Water Security — Tata Trusts", url: "https://www.tatatrusts.org/Upload/Content_Files/case-study-nava-raipur-SCADA.pdf", source: "Tata Trusts" },
+      {
+        label:
+          "Hydrospatial Modelling and Simulations for Assessing the Irrigation Canal Conveyance Losses",
+        url: "https://www.researchgate.net/publication/332117702_Hydrospatial_Modelling_and_Simulations_for_Assessing_the_Irrigation_Canal_Conveyance_Losses",
+        source: "ResearchGate",
+      },
+      {
+        label:
+          "Canal Automation for Smart Digital Irrigation Management — NLBC Karnataka",
+        url: "https://www.researchgate.net/publication/336148668_Canal_Automation_for_Smart_Digital_Irrigation_Management_A_Case_Study_on_Narayanpur_Left_Bank_Canal_Karnataka_State_India",
+        source: "ResearchGate",
+      },
+      {
+        label:
+          "Emerging Issues and Problems of Soil Salinity and Water Logging: A Case Study of Indira Gandhi Canal",
+        url: "https://www.researchgate.net/publication/369959145_Emerging_Issues_and_Problems_of_Soil_Salinity_and_Water_Logging_A_Case_Study_of_Indira_Gandhi_Canal_Rajasthan",
+        source: "ResearchGate",
+      },
+      {
+        label: "SCADA-IoT based irrigation modernisation under PMKSY",
+        url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2238841",
+        source: "PIB",
+      },
+      {
+        label: "Designing Systems for Water Security — Tata Trusts",
+        url: "https://www.tatatrusts.org/Upload/Content_Files/case-study-nava-raipur-SCADA.pdf",
+        source: "Tata Trusts",
+      },
     ],
     content: `## Domain 03 of 04: Irrigation Water Management
 
@@ -454,15 +644,22 @@ Coupled with an Irrigation Network Management Information System (INMIS), this S
   {
     id: "hydraulic-structures-engineering-resilience",
     title: "Hydraulic Structures Engineering",
-    excerpt: "Hydraulic structures—dams, barrages, spillways, canal falls, and aqueducts—represent the apex where civil engineering meets profound physical consequence. 23% of structural collapses are directly attributed to inadequate spillway capacity.",
+    excerpt:
+      "Hydraulic structures—dams, barrages, spillways, canal falls, and aqueducts—represent the apex where civil engineering meets profound physical consequence. 23% of structural collapses are directly attributed to inadequate spillway capacity.",
     author: "Prof. Kenneth Wu",
     date: "May 01, 2024",
-    image: "https://images.unsplash.com/photo-1516937941344-00b4e0337589?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1516937941344-00b4e0337589?q=80&w=1200&auto=format&fit=crop",
     category: "Structures",
     readTime: "14 min read",
     regulatoryScope: "CWC / BIS / IRC:89-2019",
     geographicScope: "India — Gujarat, Madhya Pradesh, Andhra Pradesh",
-    methodologies: ["HEC-RAS", "PMF Calculation", "RIDM", "1D/2D Hydraulic Modelling"],
+    methodologies: [
+      "HEC-RAS",
+      "PMF Calculation",
+      "RIDM",
+      "1D/2D Hydraulic Modelling",
+    ],
     domains: [
       { title: "Machchhu Dam 1979" },
       { title: "Karam & Pulichintala" },
@@ -470,7 +667,8 @@ Coupled with an Irrigation Network Management Information System (INMIS), this S
     ],
     references: [
       {
-        label: "Machhu Dam II (Gujarat, India, 1979) — ASDSO Dam Failures Case Study",
+        label:
+          "Machhu Dam II (Gujarat, India, 1979) — ASDSO Dam Failures Case Study",
         url: "https://damfailures.org",
         source: "ASDSO",
       },
@@ -495,12 +693,14 @@ Coupled with an Irrigation Network Management Information System (INMIS), this S
         source: "The Mooknayak",
       },
       {
-        label: "Pulichintala Project Hydraulic Gate Washes Away Due to Heavy Discharge",
+        label:
+          "Pulichintala Project Hydraulic Gate Washes Away Due to Heavy Discharge",
         url: "https://thehindu.com",
         source: "The Hindu",
       },
       {
-        label: "Pulichintala Dam Gate Disaster — Improper Maintenance and Operation",
+        label:
+          "Pulichintala Dam Gate Disaster — Improper Maintenance and Operation",
         url: "https://sandrp.in",
         source: "SANDRP",
       },
@@ -510,17 +710,20 @@ Coupled with an Irrigation Network Management Information System (INMIS), this S
         source: "CWPRS / GoI",
       },
       {
-        label: "Technical Memorandum on Guidelines for Hydraulic Design of Orifice Spillway",
+        label:
+          "Technical Memorandum on Guidelines for Hydraulic Design of Orifice Spillway",
         url: "https://cwprs.gov.in",
         source: "CWPRS",
       },
       {
-        label: "Understanding IRC Code 89: Guidelines for River Training and Control Works",
+        label:
+          "Understanding IRC Code 89: Guidelines for River Training and Control Works",
         url: "https://roadvision.ai",
         source: "IRC:89-2019",
       },
       {
-        label: "Dam Break Analysis using HEC-RAS — Pulichintala Dam, Andhra Pradesh",
+        label:
+          "Dam Break Analysis using HEC-RAS — Pulichintala Dam, Andhra Pradesh",
         url: "https://researchgate.net",
         source: "ResearchGate",
       },
@@ -566,59 +769,62 @@ export const TEAM: TeamMember[] = [
     name: "Jaidev Singh Rathore",
     role: "Senior Water Resources Engineer",
     bio: "GMICE certified specialist with extensive experience in pluvial and fluvial flood modeling. Expert in delivering resilient urban drainage planning and climate-adaptive water infrastructure across the Middle East and UK regions.",
-    image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512420/floodrix/jaidev-fs8.png", // Placeholder until a real image is provided or generated
+    image:
+      "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512420/floodrix/jaidev-fs8.png", // Placeholder until a real image is provided or generated
     edu: "M.Tech, Water Resources - IIT Roorkee",
     expertise: ["InfoWorks ICM", "Hydraulic Modeling", "Scour Assessment"],
     yearsOfExp: "9+ yrs",
     notableProject: "EA Framework: Weirs & Locks Refurbishment",
     publications: 0,
     availability: "Available",
-    region: "Middle East / UK / India"
+    region: "Middle East / UK / India",
   },
   {
     id: 2,
     name: "Marcus Thorne",
     role: "Principal Structural Engineer",
     bio: "Lead engineer for trans-continental irrigation networks. Specialist in rapid-discharge infrastructure and high-head spillway design for major dams.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800&auto=format&fit=crop",
     edu: "MSc, Hydraulic Structures - ETH Zurich",
     expertise: ["Kinetic Dissipation", "Concrete Analytics"],
     yearsOfExp: "19 yrs",
     notableProject: "Hirakud Additional Spillway (CWC)",
     publications: 0,
     availability: "On Project",
-    region: "Global Operations"
+    region: "Global Operations",
   },
   {
     id: 3,
     name: "Elena Rodriguez",
     role: "Director of Satellite Analytics",
     bio: "Expert in using synthetic-aperture radar for real-time groundwater monitoring and seepage detection. Pioneer in satellite-derived hydro-geotechnical risk mapping.",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800&auto=format&fit=crop",
     edu: "MSc, Remote Sensing - MIT",
     expertise: ["GIS Systems", "Radar Hydrology"],
     yearsOfExp: "15 yrs",
     notableProject: "Mumbai Metro Aquifer Mapping",
     publications: 0,
     availability: "Available",
-    region: "EMEA / India"
+    region: "EMEA / India",
   },
   {
     id: 4,
     name: "Prof. Kenneth Wu",
     role: "Senior Scientific Advisor",
     bio: "Author of 'The Future of Liquid Infrastructure'. Emeritus professor specializing in predictive hydro-informatics and national-level water policy frameworks.",
-    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop",
     edu: "PhD, Hydrology - Oxford",
     expertise: ["Predictive Informatics", "Policy"],
     yearsOfExp: "35 yrs",
     notableProject: "National Water Policy Framework",
     publications: 0,
     availability: "Consulting Only",
-    region: "International"
-  }
+    region: "International",
+  },
 ];
-
 
 export const domains: DomainSection[] = [
   {
@@ -629,33 +835,61 @@ export const domains: DomainSection[] = [
     intro:
       "Every monsoon season exposes the same truth: most Indian highway and urban drainage networks were not designed for the rainfall intensities they are now receiving. What was once a 50-year storm now arrives every few years — and the infrastructure sized to the old assumptions fails visibly and expensively.",
     problem: {
-      title: "Drainage is routinely postponed until it becomes the most expensive line item on the project.",
-      vulnerabilityHeading: "When drainage fails, the pavement above it is already lost — the damage just hasn't surfaced yet.",
+      title:
+        "Drainage is routinely postponed until it becomes the most expensive line item on the project.",
+      vulnerabilityHeading:
+        "When drainage fails, the pavement above it is already lost — the damage just hasn't surfaced yet.",
       description:
         "MoRTH audits have identified inadequate drainage as a primary cause of premature pavement failure on national highway corridors. Research confirms that once surface water infiltrates sub-base layers, subgrade shear strength can drop by over 50% as moisture content approaches saturation — at which point no amount of surface repair prevents structural collapse from below.",
       points: [
         "Culverts sized on outdated IDF data consistently fail during peak monsoon discharge, washing out road embankments and triggering network closures that cost multiples of what proper hydraulic design would have required",
-        "Highway pavement deterioration accelerates sharply once surface water reaches sub-base layers; rutting begins in heavily loaded lanes, channels water into the failure zones, and deepens the collapse — exactly the cycle CRRI documents in premature NH failures"
+        "Highway pavement deterioration accelerates sharply once surface water reaches sub-base layers; rutting begins in heavily loaded lanes, channels water into the failure zones, and deepens the collapse — exactly the cycle CRRI documents in premature NH failures",
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512361/floodrix/b_highway.jpg",
-      tags: ["National Highways", "Expressway Corridors", "Urban Townships", "Industrial Parks", "Bridge Crossings", "SEZ Developments"]
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512361/floodrix/b_highway.jpg",
+      tags: [
+        "National Highways",
+        "Expressway Corridors",
+        "Urban Townships",
+        "Industrial Parks",
+        "Bridge Crossings",
+        "SEZ Developments",
+      ],
     },
     solution: {
-      title: "Drainage sized for the storms that will actually occur — not the ones that used to.",
+      title:
+        "Drainage sized for the storms that will actually occur — not the ones that used to.",
       description:
         "We design integrated stormwater systems from first principles — combining site-specific hydrological analysis, HEC-RAS hydraulic modelling, and IRC/IS-compliant structural design. Every system is analytically validated before drawings are issued for construction.",
       services: [
-        { title: "Hydrological Analysis & Design Flood Estimation", desc: "Catchment delineation, rational method and unit hydrograph analysis, design storm estimation at 10, 25, 50, and 100-year return periods per IRC:SP:42 and IS:5542." },
-        { title: "Highway Drainage Network Design", desc: "Roadside ditches, median drains, subsurface pipe networks, kerb and gutter systems, inlet spacing design, and outfall structures for NH, SH, and expressway classifications." },
-        { title: "Culvert & Cross-Drainage Hydraulics", desc: "Box, pipe, and arch culvert sizing using HEC-RAS and HY-8; backwater and afflux analysis; scour depth estimation per IRC:89; riprap and gabion protection design at all outfalls." },
-        { title: "Urban Stormwater Master Planning", desc: "SWMM-based network modelling for new townships and industrial parks; attenuation pond and detention basin sizing; sustainable drainage (SuDS) integration for planning compliance." },
-        { title: "Scour Assessment & Energy Dissipation", desc: "Bridge pier and abutment scour vulnerability assessment; stilling basin, riprap apron, and trajectory bucket energy dissipator design at outfall and drop structures." }
+        {
+          title: "Hydrological Analysis & Design Flood Estimation",
+          desc: "Catchment delineation, rational method and unit hydrograph analysis, design storm estimation at 10, 25, 50, and 100-year return periods per IRC:SP:42 and IS:5542.",
+        },
+        {
+          title: "Highway Drainage Network Design",
+          desc: "Roadside ditches, median drains, subsurface pipe networks, kerb and gutter systems, inlet spacing design, and outfall structures for NH, SH, and expressway classifications.",
+        },
+        {
+          title: "Culvert & Cross-Drainage Hydraulics",
+          desc: "Box, pipe, and arch culvert sizing using HEC-RAS and HY-8; backwater and afflux analysis; scour depth estimation per IRC:89; riprap and gabion protection design at all outfalls.",
+        },
+        {
+          title: "Urban Stormwater Master Planning",
+          desc: "SWMM-based network modelling for new townships and industrial parks; attenuation pond and detention basin sizing; sustainable drainage (SuDS) integration for planning compliance.",
+        },
+        {
+          title: "Scour Assessment & Energy Dissipation",
+          desc: "Bridge pier and abutment scour vulnerability assessment; stilling basin, riprap apron, and trajectory bucket energy dissipator design at outfall and drop structures.",
+        },
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512384/floodrix/g_highway.jpg",
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512384/floodrix/g_highway.jpg",
       outcomeLabel: "Design Standard",
       outcomeValue: "IRC / IS",
-      outcomeDesc: "All highway drainage deliverables conform to MoRTH, IRC, and IS specifications"
-    }
+      outcomeDesc:
+        "All highway drainage deliverables conform to MoRTH, IRC, and IS specifications",
+    },
   },
 
   {
@@ -666,35 +900,63 @@ export const domains: DomainSection[] = [
     intro:
       "India is the world's largest user of groundwater — and one of its least efficient managers. The Central Ground Water Board reports 17% of assessment blocks are already over-exploited. In Punjab alone, 78% of wells are classified over-exploited, and the water table in affected north-western districts is projected to drop below 300 metres by 2039. For developers, industrialists, and planners, the question is no longer whether groundwater risk exists — it is whether it has been quantified.",
     problem: {
-      title: "A generation ago borewells were 100 feet deep. Today they go 800 feet and still fail.",
-      vulnerabilityHeading: "India's aquifers are being spent faster than monsoons can replenish them — and most projects never measure the deficit they create.",
+      title:
+        "A generation ago borewells were 100 feet deep. Today they go 800 feet and still fail.",
+      vulnerabilityHeading:
+        "India's aquifers are being spent faster than monsoons can replenish them — and most projects never measure the deficit they create.",
       description:
         "Groundwater problems accumulate in silence. Construction dewatering proceeds without aquifer impact assessment. Industrial operations discharge without contamination monitoring. Agricultural schemes extract beyond sustainable yield with no recharge accounting. By the time consequences appear — failed borewells, settlement in adjacent structures, contaminated supply zones — remediation costs are an order of magnitude higher than prevention.",
       points: [
         "Construction dewatering for deep foundations, metro corridors, and tunnel drives regularly proceeds without hydrogeological assessment, creating unquantified drawdown in adjacent aquifers and triggering differential settlement in nearby structures — liability that falls on the project developer",
         "CGWB data shows 839 of 5,723 assessment blocks are over-exploited nationally; GRACE satellite gravimetry identifies the Gangetic Basin as exhibiting some of the highest aquifer depletion rates recorded globally, with marked seasonal fluctuations worsening each decade",
         "Industrial and mining contamination plumes migrate through permeable geology for years before surfacing at public supply borewells; at that point the remediation liability and regulatory consequence are both severe and expensive to dispute",
-        "Rapid urbanisation in Delhi, Mumbai, and second-tier cities has converted natural recharge zones to impermeable surfaces, disrupting the monsoon recharge mechanisms that replenish aquifer storage — a compounding deficit no additional extraction infrastructure can overcome"
+        "Rapid urbanisation in Delhi, Mumbai, and second-tier cities has converted natural recharge zones to impermeable surfaces, disrupting the monsoon recharge mechanisms that replenish aquifer storage — a compounding deficit no additional extraction infrastructure can overcome",
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512357/floodrix/b_groundwater.jpg",
-      tags: ["Large Construction", "Mining Operations", "Agricultural Planning", "Industrial Facilities", "Water Authorities", "EIA Submissions"]
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512357/floodrix/b_groundwater.jpg",
+      tags: [
+        "Large Construction",
+        "Mining Operations",
+        "Agricultural Planning",
+        "Industrial Facilities",
+        "Water Authorities",
+        "EIA Submissions",
+      ],
     },
     solution: {
-      title: "Aquifer behaviour characterised with precision — not approximated with assumptions.",
+      title:
+        "Aquifer behaviour characterised with precision — not approximated with assumptions.",
       description:
         "We integrate field hydrogeological investigation with numerical groundwater modelling to give clients a defensible, quantitative understanding of subsurface conditions. Our work supports engineering decisions, regulatory submissions, and long-term resource management equally.",
       services: [
-        { title: "Hydrogeological Site Investigation", desc: "Borehole siting, lithological and geophysical logging, aquifer test design — slug tests, step-drawdown, and long-duration pumping tests interpreted using Theis, Cooper-Jacob, and Neuman methods." },
-        { title: "Numerical Groundwater Modelling", desc: "Steady-state and transient flow modelling using MODFLOW and FEFLOW; predictive simulations for dewatering drawdown, aquifer recovery, and long-term water table response across extraction and recharge scenarios." },
-        { title: "Aquifer Mapping & Vulnerability Assessment", desc: "Hydrogeological mapping, recharge zone delineation, aquifer boundary characterisation, and DRASTIC vulnerability indexing for planning submissions, EIA chapters, and CGWB licensing applications." },
-        { title: "Construction Dewatering Design", desc: "Dewatering system design for deep excavations, mine pits, and tunnel drives; quantified drawdown impact on adjacent structures and public supply sources; compliance monitoring programme design." },
-        { title: "Water Balance & Availability Studies", desc: "Basin-scale water balance modelling, sustainable yield estimation, and groundwater availability reports for irrigation licensing, urban supply master planning, and CGWB regulatory submissions." }
+        {
+          title: "Hydrogeological Site Investigation",
+          desc: "Borehole siting, lithological and geophysical logging, aquifer test design — slug tests, step-drawdown, and long-duration pumping tests interpreted using Theis, Cooper-Jacob, and Neuman methods.",
+        },
+        {
+          title: "Numerical Groundwater Modelling",
+          desc: "Steady-state and transient flow modelling using MODFLOW and FEFLOW; predictive simulations for dewatering drawdown, aquifer recovery, and long-term water table response across extraction and recharge scenarios.",
+        },
+        {
+          title: "Aquifer Mapping & Vulnerability Assessment",
+          desc: "Hydrogeological mapping, recharge zone delineation, aquifer boundary characterisation, and DRASTIC vulnerability indexing for planning submissions, EIA chapters, and CGWB licensing applications.",
+        },
+        {
+          title: "Construction Dewatering Design",
+          desc: "Dewatering system design for deep excavations, mine pits, and tunnel drives; quantified drawdown impact on adjacent structures and public supply sources; compliance monitoring programme design.",
+        },
+        {
+          title: "Water Balance & Availability Studies",
+          desc: "Basin-scale water balance modelling, sustainable yield estimation, and groundwater availability reports for irrigation licensing, urban supply master planning, and CGWB regulatory submissions.",
+        },
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512380/floodrix/g_groundwater.jpg",
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512380/floodrix/g_groundwater.jpg",
       outcomeLabel: "Regulatory Record",
       outcomeValue: "100%",
-      outcomeDesc: "Every groundwater regulatory submission approved on first review"
-    }
+      outcomeDesc:
+        "Every groundwater regulatory submission approved on first review",
+    },
   },
 
   {
@@ -705,35 +967,62 @@ export const domains: DomainSection[] = [
     intro:
       "India irrigates more land than any country on earth — yet FAO data shows 45% of water diverted from headworks to farms is lost before it reaches a crop. In an era of depleting aquifers, erratic monsoons, and rising energy costs for pumping, irrigation inefficiency is no longer an engineering footnote. It is a food security and financial risk.",
     problem: {
-      title: "Nearly half of every litre diverted for irrigation in India is lost before it reaches the field.",
-      vulnerabilityHeading: "The farmer at the tail end of the canal is not a victim of drought — he is a victim of engineering that was never done properly.",
+      title:
+        "Nearly half of every litre diverted for irrigation in India is lost before it reaches the field.",
+      vulnerabilityHeading:
+        "The farmer at the tail end of the canal is not a victim of drought — he is a victim of engineering that was never done properly.",
       description:
         "The dominant cause of irrigation water loss is not drought or rainfall failure — it is engineering. FAO Aquastat records show 45% of water in India's agricultural conveyance systems is consumed by seepage and evaporation losses between headworks and farm. Studies on earthen canals in Gujarat and Maharashtra have measured seepage rates of up to 45% of channel flow. The farmers paying the price are those at the tail end of distribution systems.",
       points: [
         "FAO Aquastat data for India records 45% of water diverted for agriculture is lost to conveyance losses — meaning irrigation schemes must be built at roughly double the capacity that a well-designed system would require to deliver the same agricultural output",
         "Unlined earthen field channels lose 35–45% of their flow to seepage; where waterlogging combines with poor drainage, the Indira Gandhi Canal command in Rajasthan documents the result — progressive soil salinity rendering formerly productive land uncultivable",
         "Pressurised irrigation systems installed without hydraulic design routinely operate outside manufacturer pressure tolerances, producing uneven application uniformity, premature emitter failure, and yield variability that farmers misattribute to seed or soil",
-        "Calendar-based irrigation scheduling applies water to administrative convenience rather than crop demand, simultaneously over-irrigating in cool months and withholding supply during critical peak evapo-transpiration periods"
+        "Calendar-based irrigation scheduling applies water to administrative convenience rather than crop demand, simultaneously over-irrigating in cool months and withholding supply during critical peak evapo-transpiration periods",
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512369/floodrix/b_irrigation.jpg",
-      tags: ["Command Area Development", "State Irrigation Depts", "Micro-Irrigation Schemes", "Agri-Infrastructure", "Rural Development Projects"]
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512369/floodrix/b_irrigation.jpg",
+      tags: [
+        "Command Area Development",
+        "State Irrigation Depts",
+        "Micro-Irrigation Schemes",
+        "Agri-Infrastructure",
+        "Rural Development Projects",
+      ],
     },
     solution: {
-      title: "Irrigation infrastructure engineered to deliver every litre to where the crop needs it.",
+      title:
+        "Irrigation infrastructure engineered to deliver every litre to where the crop needs it.",
       description:
         "We design irrigation systems from command area planning through to pressurised network hydraulics — ensuring equitable distribution across the full command, correct operating pressures at every emission point, and water application schedules calibrated to actual crop demand rather than administrative routine.",
       services: [
-        { title: "Command Area Planning & Water Allocation", desc: "Gross and net command area delineation, crop water demand estimation using FAO Penman-Monteith, seasonal water balance analysis, and rotational supply scheduling for equitable distribution." },
-        { title: "Pressurised Irrigation Network Design", desc: "Full hydraulic design of drip and sprinkler distribution networks — pipe sizing, pressure zone management, booster station specification, manifold layout, and emission uniformity verification per BIS standards." },
-        { title: "Canal & Field Channel Design", desc: "Lined and unlined canal design, canal falls and cross-regulators, field channel layout and lining, on-farm water management structures — conforming to CWC and state irrigation department requirements." },
-        { title: "Demand-Based Irrigation Scheduling", desc: "Scheduling models integrating evapo-transpiration data, soil moisture, and crop growth stage — eliminating both over-application and deficit stress while reducing total applied water volume." },
-        { title: "Micro-Irrigation Audits & Rehabilitation", desc: "Field performance evaluation of existing drip and sprinkler installations — emission uniformity testing, pressure mapping, emitter clogging assessment, and costed rehabilitation reporting." }
+        {
+          title: "Command Area Planning & Water Allocation",
+          desc: "Gross and net command area delineation, crop water demand estimation using FAO Penman-Monteith, seasonal water balance analysis, and rotational supply scheduling for equitable distribution.",
+        },
+        {
+          title: "Pressurised Irrigation Network Design",
+          desc: "Full hydraulic design of drip and sprinkler distribution networks — pipe sizing, pressure zone management, booster station specification, manifold layout, and emission uniformity verification per BIS standards.",
+        },
+        {
+          title: "Canal & Field Channel Design",
+          desc: "Lined and unlined canal design, canal falls and cross-regulators, field channel layout and lining, on-farm water management structures — conforming to CWC and state irrigation department requirements.",
+        },
+        {
+          title: "Demand-Based Irrigation Scheduling",
+          desc: "Scheduling models integrating evapo-transpiration data, soil moisture, and crop growth stage — eliminating both over-application and deficit stress while reducing total applied water volume.",
+        },
+        {
+          title: "Micro-Irrigation Audits & Rehabilitation",
+          desc: "Field performance evaluation of existing drip and sprinkler installations — emission uniformity testing, pressure mapping, emitter clogging assessment, and costed rehabilitation reporting.",
+        },
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512391/floodrix/g_irrigation.jpg",
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512391/floodrix/g_irrigation.jpg",
       outcomeLabel: "Potential Water Saving",
       outcomeValue: "Up to 45%",
-      outcomeDesc: "Reduction in applied irrigation water through demand-based network design"
-    }
+      outcomeDesc:
+        "Reduction in applied irrigation water through demand-based network design",
+    },
   },
 
   {
@@ -744,34 +1033,61 @@ export const domains: DomainSection[] = [
     intro:
       "Hydraulic structures are the points where engineering meets consequence. Research on Indian dam failures attributes 23% of structural failures directly to inadequate spillway capacity. Scour beneath weirs and barrage floors remains the leading mechanism of foundation failure in water infrastructure. The Machchhu dam collapse in 1979 — where actual peak inflow reached three times the spillway design capacity — is not an isolated historical event. It is the reference case for what happens when hydraulic design is based on underestimated hydrological inputs.",
     problem: {
-      title: "Most hydraulic structure failures are not acts of nature — they are design events the structure was never equipped to survive.",
-      vulnerabilityHeading: "A structure that performs within its design envelope offers no safety margin for the flood that exceeds it — and in India, that flood will come.",
+      title:
+        "Most hydraulic structure failures are not acts of nature — they are design events the structure was never equipped to survive.",
+      vulnerabilityHeading:
+        "A structure that performs within its design envelope offers no safety margin for the flood that exceeds it — and in India, that flood will come.",
       description:
         "Recent failures at Karam dam in Madhya Pradesh (2022) and the Pulichintala Irrigation Project on the Krishna River in Andhra Pradesh (2021) follow a consistent pattern: ageing structures operating beyond their original design envelope, without hydraulic revalidation against current hydrological conditions or climate-adjusted design floods.",
       points: [
         "Research on Indian dam failures identifies inadequate spillway capacity as responsible for 23% of structural failures — exceeded only by foundation deficiency, which is itself often initiated by uncontrolled seepage uplift beneath weir and barrage floors under high-head conditions",
         "Check dams and weirs constructed without scour analysis are progressively undermined at their foundations during high-velocity monsoon flows; repeated emergency repair on the same structures is the direct consequence of absent scour protection in the original design",
         "Canal falls and drop structures without properly proportioned energy dissipators generate high-velocity tailwater that erodes downstream channel beds and embankments, causing secondary failures across the distribution network more expensive to repair than the primary structure",
-        "River training works placed without 1D/2D hydraulic modelling constrict natural flow sections, raise upstream flood levels on agricultural and residential land, and accelerate bank erosion at adjacent reaches — generating liability for the implementing authority"
+        "River training works placed without 1D/2D hydraulic modelling constrict natural flow sections, raise upstream flood levels on agricultural and residential land, and accelerate bank erosion at adjacent reaches — generating liability for the implementing authority",
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512364/floodrix/b_hydraulic.jpg",
-      tags: ["Irrigation Authorities", "State Water Boards", "River Basin Organisations", "Highway Infrastructure", "Industrial Water Supply"]
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512364/floodrix/b_hydraulic.jpg",
+      tags: [
+        "Irrigation Authorities",
+        "State Water Boards",
+        "River Basin Organisations",
+        "Highway Infrastructure",
+        "Industrial Water Supply",
+      ],
     },
     solution: {
-      title: "Every structure validated through the full range of flows — from routine operations to design flood.",
+      title:
+        "Every structure validated through the full range of flows — from routine operations to design flood.",
       description:
         "We apply rigorous hydraulic analysis at every stage of structural design. PMF estimation, scour depth calculation, energy dissipator proportioning, and HEC-RAS model validation are standard deliverables — not optional additions. No structure leaves our office without a demonstrated hydraulic performance envelope.",
       services: [
-        { title: "Spillway & Weir Hydraulic Design", desc: "Ogee, broad-crested, and sharp-crested weir design; gated and ungated spillway hydraulics; PMF estimation per CWC guidelines; afflux and backwater analysis; cavitation risk assessment for high-head structures." },
-        { title: "Canal Falls & Drop Structure Design", desc: "Sarda fall, glacis fall, and straight glacis design; USBR Type I–IV stilling basin selection and proportioning; trajectory and roller bucket energy dissipators; cistern and cutoff wall design for all head conditions." },
-        { title: "Check Dams & River Training Works", desc: "Gabion, masonry, and RCC check dam hydraulic design; scour depth analysis and upstream/downstream protection; guide bund, spur, and revetment design per IS:10751 for channel stabilisation and flood control." },
-        { title: "Cross-Drainage & Aqueduct Structures", desc: "Hydraulic and structural design of aqueducts, super-passages, level crossings, and siphons at canal–drain and canal–river intersections; head loss estimation and afflux analysis for all crossing configurations." },
-        { title: "HEC-RAS Modelling & Design Validation", desc: "1D steady and unsteady flow modelling for design validation and regulatory submission; backwater curve analysis; bridge and barrage afflux studies; flood inundation mapping in support of detailed design." }
+        {
+          title: "Spillway & Weir Hydraulic Design",
+          desc: "Ogee, broad-crested, and sharp-crested weir design; gated and ungated spillway hydraulics; PMF estimation per CWC guidelines; afflux and backwater analysis; cavitation risk assessment for high-head structures.",
+        },
+        {
+          title: "Canal Falls & Drop Structure Design",
+          desc: "Sarda fall, glacis fall, and straight glacis design; USBR Type I–IV stilling basin selection and proportioning; trajectory and roller bucket energy dissipators; cistern and cutoff wall design for all head conditions.",
+        },
+        {
+          title: "Check Dams & River Training Works",
+          desc: "Gabion, masonry, and RCC check dam hydraulic design; scour depth analysis and upstream/downstream protection; guide bund, spur, and revetment design per IS:10751 for channel stabilisation and flood control.",
+        },
+        {
+          title: "Cross-Drainage & Aqueduct Structures",
+          desc: "Hydraulic and structural design of aqueducts, super-passages, level crossings, and siphons at canal–drain and canal–river intersections; head loss estimation and afflux analysis for all crossing configurations.",
+        },
+        {
+          title: "HEC-RAS Modelling & Design Validation",
+          desc: "1D steady and unsteady flow modelling for design validation and regulatory submission; backwater curve analysis; bridge and barrage afflux studies; flood inundation mapping in support of detailed design.",
+        },
       ],
-      image: "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512387/floodrix/g_hydraulic.jpg",
+      image:
+        "https://res.cloudinary.com/dpdkzg4ld/image/upload/v1778512387/floodrix/g_hydraulic.jpg",
       outcomeLabel: "Design Assurance",
       outcomeValue: "CWC / BIS",
-      outcomeDesc: "All hydraulic structures independently reviewed against CWC manuals and BIS codes before issue"
-    }
-  }
+      outcomeDesc:
+        "All hydraulic structures independently reviewed against CWC manuals and BIS codes before issue",
+    },
+  },
 ];

@@ -1,46 +1,48 @@
 import { Suspense } from "react";
+
 import { ErrorBoundary } from "react-error-boundary";
-import { HydrateClient } from "@/trpc/server";
-import { requireAuth } from "@/lib/auth-utils";
+
 import {
-    TableRegistryContainer,
-    TableRegistryList,
-    TableRegistryLoading,
-    TableRegistryError
+  TableRegistryContainer,
+  TableRegistryError,
+  TableRegistryList,
+  TableRegistryLoading,
 } from "@/features/registery/table/components";
-import { prefetchTables } from "@/features/registery/table/server/prefetch";
 import { tableParamsLoader } from "@/features/registery/table/server/params-loader";
+import { prefetchTables } from "@/features/registery/table/server/prefetch";
+import { requireAuth } from "@/lib/auth-utils";
+import { HydrateClient } from "@/trpc/server";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-    searchParams: Promise<any>;
+  searchParams: Promise<any>;
 }
 
 const Page = async ({ searchParams }: PageProps) => {
-    await requireAuth();
+  await requireAuth();
 
-    const params = await tableParamsLoader(searchParams);
+  const params = await tableParamsLoader(searchParams);
 
-    // Prefetch data for the table listing
-    await prefetchTables({
-        page: params.page,
-        pageSize: params.pageSize,
-        search: params.search,
-        category: params.category || undefined,
-    });
+  // Prefetch data for the table listing
+  await prefetchTables({
+    page: params.page,
+    pageSize: params.pageSize,
+    search: params.search,
+    category: params.category || undefined,
+  });
 
-    return (
-        <TableRegistryContainer>
-            <HydrateClient>
-                <ErrorBoundary fallback={<TableRegistryError />}>
-                    <Suspense fallback={<TableRegistryLoading />}>
-                        <TableRegistryList />
-                    </Suspense>
-                </ErrorBoundary>
-            </HydrateClient>
-        </TableRegistryContainer>
-    );
+  return (
+    <TableRegistryContainer>
+      <HydrateClient>
+        <ErrorBoundary fallback={<TableRegistryError />}>
+          <Suspense fallback={<TableRegistryLoading />}>
+            <TableRegistryList />
+          </Suspense>
+        </ErrorBoundary>
+      </HydrateClient>
+    </TableRegistryContainer>
+  );
 };
 
 export default Page;

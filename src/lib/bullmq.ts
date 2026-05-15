@@ -1,4 +1,4 @@
-import { Queue, Worker, type Job, type ConnectionOptions } from "bullmq";
+import { type ConnectionOptions, type Job, Queue, Worker } from "bullmq";
 import Redis from "ioredis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
@@ -15,18 +15,23 @@ if (!BYPASS_REDIS) {
 export const redisConnection = connection;
 
 // Define Queues
-export const workflowQueue = connection 
-  ? new Queue("workflow-execution", { connection }) 
+export const workflowQueue = connection
+  ? new Queue("workflow-execution", { connection })
   : null;
 
-export const calcQueue = connection 
-  ? new Queue("calc-execution", { connection }) 
+export const calcQueue = connection
+  ? new Queue("calc-execution", { connection })
   : null;
 
 /**
  * Helper to add jobs to queue with bypass check
  */
-export async function addJob(queue: Queue | null, name: string, data: any, opts?: any) {
+export async function addJob(
+  queue: Queue | null,
+  name: string,
+  data: any,
+  opts?: any,
+) {
   if (BYPASS_REDIS || !queue) {
     console.warn(`Bypassing background job: ${name}`);
     return null;

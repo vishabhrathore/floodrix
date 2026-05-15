@@ -2,4 +2,4 @@
 
 export async function fetchGeminiRealtimeToken(): Promise<any> {
   return null;
-};
+}

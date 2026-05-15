@@ -1,5 +1,6 @@
 import Handlebars from "handlebars";
 import ky, { type Options as KyOptions } from "ky";
+
 import type { NodeExecutor } from "@/features/executions/types";
 
 Handlebars.registerHelper("json", (context) => {
@@ -68,7 +69,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       return {
         ...context,
         [data.variableName]: responsePayload,
-      }
+      };
     });
 
     return result;

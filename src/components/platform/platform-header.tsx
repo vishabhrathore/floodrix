@@ -1,55 +1,66 @@
 "use client";
 
-import React, { useState } from 'react';
-import {
-  Search,
-  ChevronRight,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
-import { PLATFORM_DATA, getAllCalculators } from '@/lib/platform-data';
-import Link from 'next/link';
+import React, { useState } from "react";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { ChevronRight, Search } from "lucide-react";
+
+import { PLATFORM_DATA, getAllCalculators } from "@/lib/platform-data";
+import { cn } from "@/lib/utils";
 
 export function PlatformHeader() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const pathname = usePathname();
 
   // Generate dynamic breadcrumbs
   const getBreadcrumbs = () => {
-    const parts = pathname.split('/').filter(Boolean); // ['platform', 'calculator', 'id'] or ['platform', 'workspaceId']
-    const crumbs = [{ label: 'Workspaces', href: '/platform' }];
+    const parts = pathname.split("/").filter(Boolean); // ['platform', 'calculator', 'id'] or ['platform', 'workspaceId']
+    const crumbs = [{ label: "Workspaces", href: "/platform" }];
 
     if (parts.length >= 2) {
-      if (parts[1] === 'calculator' && parts[2]) {
+      if (parts[1] === "calculator" && parts[2]) {
         // We are on a calculator page: /platform/calculator/[id]
         const calcId = parts[2];
-        const allCalculators = getAllCalculators(PLATFORM_DATA.flatMap(ws => ws.children));
-        const calculator = allCalculators.find(c => c.id === calcId);
-        
+        const allCalculators = getAllCalculators(
+          PLATFORM_DATA.flatMap((ws) => ws.children),
+        );
+        const calculator = allCalculators.find((c) => c.id === calcId);
+
         if (calculator) {
           // Find parent workspace for this calculator
-          const workspace = PLATFORM_DATA.find(ws => 
-            getAllCalculators(ws.children).some(c => c.id === calcId)
+          const workspace = PLATFORM_DATA.find((ws) =>
+            getAllCalculators(ws.children).some((c) => c.id === calcId),
           );
-          
+
           if (workspace) {
-            crumbs.push({ label: workspace.name, href: `/platform/${workspace.id}` });
+            crumbs.push({
+              label: workspace.name,
+              href: `/platform/${workspace.id}`,
+            });
           }
           crumbs.push({ label: calculator.name, href: pathname });
         }
       } else {
         // We are likely on a workspace page: /platform/[workspaceId]
         const workspaceId = parts[1];
-        const workspace = PLATFORM_DATA.find(w => w.id === workspaceId);
-        
+        const workspace = PLATFORM_DATA.find((w) => w.id === workspaceId);
+
         if (workspace) {
-          crumbs.push({ label: workspace.name, href: `/platform/${workspaceId}` });
-        } else if (parts.length === 1 || (parts.length === 2 && parts[1] === 'platform')) {
-          crumbs.push({ label: 'Overview', href: '/platform' });
+          crumbs.push({
+            label: workspace.name,
+            href: `/platform/${workspaceId}`,
+          });
+        } else if (
+          parts.length === 1 ||
+          (parts.length === 2 && parts[1] === "platform")
+        ) {
+          crumbs.push({ label: "Overview", href: "/platform" });
         }
       }
     } else {
-      crumbs.push({ label: 'Overview', href: '/platform' });
+      crumbs.push({ label: "Overview", href: "/platform" });
     }
 
     return crumbs;
@@ -69,8 +80,8 @@ export function PlatformHeader() {
                   {crumb.label}
                 </span>
               ) : (
-                <Link 
-                  href={crumb.href} 
+                <Link
+                  href={crumb.href}
                   className="text-[#a1a1a1] hover:text-[#0a0a0a] transition-colors"
                 >
                   {crumb.label}
@@ -85,8 +96,8 @@ export function PlatformHeader() {
         <div className="relative group">
           <div className="flex h-8 w-[240px] items-center gap-2 rounded-lg border border-[#e8e8e8] bg-[#fafafa] px-3 transition-all hover:border-[#d4d4d4]">
             <Search size={13} className="text-[#a1a1a1]" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search methods..."
               className="flex-1 bg-transparent text-[12px] text-[#0a0a0a] outline-none placeholder:text-[#a1a1a1]"
               value={searchQuery}
@@ -107,7 +118,7 @@ export function PlatformHeader() {
             </div>
             <span className="text-[12px] text-[#525252]">Engine active</span>
           </div>
-          
+
           <button className="ml-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#0a0a0a] text-[10px] font-semibold text-white">
             AK
           </button>
@@ -116,4 +127,3 @@ export function PlatformHeader() {
     </header>
   );
 }
-

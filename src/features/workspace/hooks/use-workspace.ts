@@ -1,6 +1,12 @@
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { useTRPC } from "@/trpc/client";
+
 import { useWorkspacesParams } from "./use-workspace-params";
 
 /**
@@ -24,9 +30,7 @@ export const useCreateWorkspace = () => {
     trpc.workspaces.create.mutationOptions({
       onSuccess: (data) => {
         toast.success(`Workspace "${data.name}" created successfully`);
-        queryClient.invalidateQueries(
-          trpc.workspaces.getMany.queryOptions({}),
-        );
+        queryClient.invalidateQueries(trpc.workspaces.getMany.queryOptions({}));
       },
       onError: (error) => {
         toast.error(`Failed to create workspace: ${error.message}`);

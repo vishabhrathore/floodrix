@@ -91,35 +91,35 @@ Inngest side (for async / background):
 
 ### `src/server/engine/` (new)
 
-| File | Owns | Changed in chunks |
-|------|------|-------------------|
-| `types.ts` | All shared types, enums, constants | 1, 2, 4 |
-| `NodeHandler.ts` | Handler interface, `toErroredOutcome`, `classifyError` | 1 |
-| `NodeHandlerRegistry.ts` | Handler lookup + validation | 1 |
-| `VariableStore.ts` | Store impl, deep-clone snapshot, size limits | 1, 5 |
-| `ExecutionEventEmitter.ts` | Typed event bus with priority + error isolation | 1 |
-| `SessionRepository.ts` | All Prisma session/node-execution calls | 1, 2.5 |
-| `WorkflowExecutor.ts` | Dispatch loop, stepForward, stepBack, errorOut | 2, 3 |
-| `RunStrategyResolver.ts` | Picks INLINE_SYNC / BACKGROUND_BATCH | 4 (patched) |
-| `RunOrchestrator.ts` | API entry point, idempotency, Inngest handoff | 4 |
-| `SessionPoller.ts` | Returns `PollResult` for poll endpoint | 4 (patched) |
-| `WorkerPoolTimeout.ts` | `worker_threads` wrapper for true cancellation | 5 |
-| `worker-mathjs-runner.js` | Worker script (plain .js, not .ts) | 5 |
-| `bootstrap.ts` | Three factories: executor, orchestrator, poller | 1, 2, 4, 5 |
-| `index.ts` | Public barrel | 1, 2 |
-| `handlers/InputHandler.ts` | INPUT nodes — collects user values, pauses if missing | 2 |
-| `handlers/FormulaHandler.ts` | FORMULA — registry-sourced or inline mathjs | 2 |
-| `handlers/MultiFormulaHandler.ts` | MULTI_FORMULA — sequential formulas sharing scope | 2 |
-| `handlers/LookupTableHandler.ts` | LOOKUP_TABLE — range/exact/multi-key + fallback modes | 2 |
-| `handlers/InterpolationHandler.ts` | GRAPH_INTERPOLATION — delegates to `interpolate()` | 2 |
-| `handlers/DecisionHandler.ts` | DECISION — conservative skip-set BFS | 2 |
-| `handlers/DisplayHandler.ts` | DISPLAY — max/min/average/custom with IRC Article-6 rule | 2 |
-| `handlers/ValidationHandler.ts` | VALIDATION — pause/error/warn modes | 2 |
-| `handlers/UnitConversionHandler.ts` | UNIT_CONVERSION — registry-based or custom expression | 2 |
-| `handlers/CustomCodeHandler.ts` | CUSTOM_CODE — mathjs multi-line; SYNC despite name | 2 |
-| `listeners/DatabaseListener.ts` | Writes node execution rows (batch vs liveUpdates branches) | 1 |
-| `listeners/AuditListener.ts` | Writes audit log entries (session lifecycle only) | 1 |
-| `listeners/MetricsListener.ts` | Structured JSON console logs for observability | 5 |
+| File                                | Owns                                                       | Changed in chunks |
+| ----------------------------------- | ---------------------------------------------------------- | ----------------- |
+| `types.ts`                          | All shared types, enums, constants                         | 1, 2, 4           |
+| `NodeHandler.ts`                    | Handler interface, `toErroredOutcome`, `classifyError`     | 1                 |
+| `NodeHandlerRegistry.ts`            | Handler lookup + validation                                | 1                 |
+| `VariableStore.ts`                  | Store impl, deep-clone snapshot, size limits               | 1, 5              |
+| `ExecutionEventEmitter.ts`          | Typed event bus with priority + error isolation            | 1                 |
+| `SessionRepository.ts`              | All Prisma session/node-execution calls                    | 1, 2.5            |
+| `WorkflowExecutor.ts`               | Dispatch loop, stepForward, stepBack, errorOut             | 2, 3              |
+| `RunStrategyResolver.ts`            | Picks INLINE_SYNC / BACKGROUND_BATCH                       | 4 (patched)       |
+| `RunOrchestrator.ts`                | API entry point, idempotency, Inngest handoff              | 4                 |
+| `SessionPoller.ts`                  | Returns `PollResult` for poll endpoint                     | 4 (patched)       |
+| `WorkerPoolTimeout.ts`              | `worker_threads` wrapper for true cancellation             | 5                 |
+| `worker-mathjs-runner.js`           | Worker script (plain .js, not .ts)                         | 5                 |
+| `bootstrap.ts`                      | Three factories: executor, orchestrator, poller            | 1, 2, 4, 5        |
+| `index.ts`                          | Public barrel                                              | 1, 2              |
+| `handlers/InputHandler.ts`          | INPUT nodes — collects user values, pauses if missing      | 2                 |
+| `handlers/FormulaHandler.ts`        | FORMULA — registry-sourced or inline mathjs                | 2                 |
+| `handlers/MultiFormulaHandler.ts`   | MULTI_FORMULA — sequential formulas sharing scope          | 2                 |
+| `handlers/LookupTableHandler.ts`    | LOOKUP_TABLE — range/exact/multi-key + fallback modes      | 2                 |
+| `handlers/InterpolationHandler.ts`  | GRAPH_INTERPOLATION — delegates to `interpolate()`         | 2                 |
+| `handlers/DecisionHandler.ts`       | DECISION — conservative skip-set BFS                       | 2                 |
+| `handlers/DisplayHandler.ts`        | DISPLAY — max/min/average/custom with IRC Article-6 rule   | 2                 |
+| `handlers/ValidationHandler.ts`     | VALIDATION — pause/error/warn modes                        | 2                 |
+| `handlers/UnitConversionHandler.ts` | UNIT_CONVERSION — registry-based or custom expression      | 2                 |
+| `handlers/CustomCodeHandler.ts`     | CUSTOM_CODE — mathjs multi-line; SYNC despite name         | 2                 |
+| `listeners/DatabaseListener.ts`     | Writes node execution rows (batch vs liveUpdates branches) | 1                 |
+| `listeners/AuditListener.ts`        | Writes audit log entries (session lifecycle only)          | 1                 |
+| `listeners/MetricsListener.ts`      | Structured JSON console logs for observability             | 5                 |
 
 ### `src/features/workflow-canvas/engine/` (existing, lightly touched)
 
@@ -168,7 +168,7 @@ Inngest side (for async / background):
 - `schema.prisma` — **SCHEMA CHANGES from Chunk 2.5** must be present:
   1. `CalcNodeExecution` has `@@unique([sessionId, calcNodeId])`
   2. `CalcSession` has `idempotencyKey String?` column plus `@@unique([calcWorkflowId, idempotencyKey])`
-  Migration name: `add_session_idempotency_and_node_execution_unique`.
+     Migration name: `add_session_idempotency_and_node_execution_unique`.
 - `seed/seed.ts` — Updated in Chunk 2.5 to write `idempotencyKey` on sess_1 and sess_2, and switched `CalcNodeExecution.upsert` calls to use `sessionId_calcNodeId` compound key. Seed is idempotent — safe to re-run.
 
 ---
@@ -217,31 +217,31 @@ model CalcNodeExecution {
 
 `PauseReason` union (`types.ts`):
 
-| Value | Trigger | Resume via |
-|-------|---------|------------|
-| `awaiting_user_input` | INPUT node needs values | `resumeWithInput(sessionId, nodeId, values)` → `submitInput` mutation |
-| `validation_error` | VALIDATION handler's `on_error: "pause"` with failures | `resumeWithInput` with corrected upstream values |
-| `step_complete` | stepMode ON, node just completed | `stepForward(sessionId)` → `stepForward` mutation |
-| `background_transition` | Hit an async node in INLINE_ASYNC / BACKGROUND_BATCH | Inngest emits `calc/session.resume`, handled by `session-resume.ts` |
+| Value                   | Trigger                                                | Resume via                                                            |
+| ----------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `awaiting_user_input`   | INPUT node needs values                                | `resumeWithInput(sessionId, nodeId, values)` → `submitInput` mutation |
+| `validation_error`      | VALIDATION handler's `on_error: "pause"` with failures | `resumeWithInput` with corrected upstream values                      |
+| `step_complete`         | stepMode ON, node just completed                       | `stepForward(sessionId)` → `stepForward` mutation                     |
+| `background_transition` | Hit an async node in INLINE_ASYNC / BACKGROUND_BATCH   | Inngest emits `calc/session.resume`, handled by `session-resume.ts`   |
 
 ---
 
 ## 7. 12 bugs from the mental model — status
 
-| # | Bug | Status | Fix location |
-|---|-----|--------|--------------|
-| 1 | `updateNodeCompleted` also matched WAITING rows | FIXED | `SessionRepository.updateNodeCompleted` — `where: { status: "RUNNING" }` |
-| 2 | Double-flush on session error | FIXED | DatabaseListener is sole flush path; executor never flushes |
-| 3 | `updateNodeSkipped` set misleading `startedAt` | FIXED | `updateNodeSkipped` omits `startedAt` |
-| 4 | `createMany skipDuplicates` dropped entries after resume | FIXED | `DatabaseListener` tracks `flushedNodeIds` Set |
-| 5 | `createNodeWaiting` crashed on unique constraint | FIXED | `upsertNodeWaiting` uses upsert with `sessionId_calcNodeId` key |
-| 6 | `ctx.emit` promise dropped | FIXED | Emitter returns Promise, awaited by executor |
-| 7 | Shallow snapshot shared `$nodes` refs | FIXED | `DefaultVariableStore.snapshot()` uses `structuredClone` |
-| 8 | `indexOf(-1)` silently restarted from 0 | FIXED | `resumeWithInput` throws descriptive error on -1 |
-| 9 | `Math.max/min` on empty array returned ±Infinity | FIXED | `DisplayHandler` checks `positiveValues.length` before reducing |
-| 10 | `updateNodeErrored` lacked status guard | FIXED | `where: { status: "RUNNING" }` |
-| 11 | `skipSet` lost after pause/resume | FIXED | `metadata.skippedNodes` persisted and restored in `continueExecution` |
-| 12 | One listener throwing stopped others | FIXED | `ExecutionEventEmitter` isolates per-listener errors |
+| #   | Bug                                                      | Status | Fix location                                                             |
+| --- | -------------------------------------------------------- | ------ | ------------------------------------------------------------------------ |
+| 1   | `updateNodeCompleted` also matched WAITING rows          | FIXED  | `SessionRepository.updateNodeCompleted` — `where: { status: "RUNNING" }` |
+| 2   | Double-flush on session error                            | FIXED  | DatabaseListener is sole flush path; executor never flushes              |
+| 3   | `updateNodeSkipped` set misleading `startedAt`           | FIXED  | `updateNodeSkipped` omits `startedAt`                                    |
+| 4   | `createMany skipDuplicates` dropped entries after resume | FIXED  | `DatabaseListener` tracks `flushedNodeIds` Set                           |
+| 5   | `createNodeWaiting` crashed on unique constraint         | FIXED  | `upsertNodeWaiting` uses upsert with `sessionId_calcNodeId` key          |
+| 6   | `ctx.emit` promise dropped                               | FIXED  | Emitter returns Promise, awaited by executor                             |
+| 7   | Shallow snapshot shared `$nodes` refs                    | FIXED  | `DefaultVariableStore.snapshot()` uses `structuredClone`                 |
+| 8   | `indexOf(-1)` silently restarted from 0                  | FIXED  | `resumeWithInput` throws descriptive error on -1                         |
+| 9   | `Math.max/min` on empty array returned ±Infinity         | FIXED  | `DisplayHandler` checks `positiveValues.length` before reducing          |
+| 10  | `updateNodeErrored` lacked status guard                  | FIXED  | `where: { status: "RUNNING" }`                                           |
+| 11  | `skipSet` lost after pause/resume                        | FIXED  | `metadata.skippedNodes` persisted and restored in `continueExecution`    |
+| 12  | One listener throwing stopped others                     | FIXED  | `ExecutionEventEmitter` isolates per-listener errors                     |
 
 ---
 
@@ -459,4 +459,4 @@ Don't start fresh architectural rewrites. The engine is solid. Build on top of i
 
 ---
 
-*End of handoff memory.*
+_End of handoff memory._

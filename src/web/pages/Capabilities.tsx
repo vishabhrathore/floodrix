@@ -1,12 +1,15 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'motion/react';
-import { ArrowRight } from 'lucide-react';
-import Link from 'next/link';
-import { domains } from '../constants';
-import DomainSectionItem from '../components/DomainSectionItem';
-import CapabilitiesHero from '../components/CapabilitiesHero';
+import React from "react";
+
+import Link from "next/link";
+
+import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+
+import CapabilitiesHero from "../components/CapabilitiesHero";
+import DomainSectionItem from "../components/DomainSectionItem";
+import { domains } from "../constants";
 
 const Capabilities: React.FC = () => {
   return (
@@ -56,7 +59,11 @@ const Capabilities: React.FC = () => {
         </motion.div>
       </section> */}
 
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }` }} />
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`,
+        }}
+      />
     </div>
   );
 };

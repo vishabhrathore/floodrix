@@ -1,12 +1,13 @@
-import { Worker, type Job } from "bullmq";
+import { type Job, Worker } from "bullmq";
+
+import { getExecutor } from "@/features/executions/lib/executor-registry";
+import { ExecutionStatus, NodeType } from "@/generated/prisma";
 import { redisConnection } from "@/lib/bullmq";
 import prisma from "@/lib/db";
 import { topologicalSort } from "@/lib/workflow-utils";
-import { ExecutionStatus, NodeType } from "@/generated/prisma";
-import { getExecutor } from "@/features/executions/lib/executor-registry";
 
 // Re-using the logic from Inngest functions
-// Note: Inngest "steps" are handled differently in BullMQ. 
+// Note: Inngest "steps" are handled differently in BullMQ.
 // For a direct migration, we can just run them sequentially.
 
 if (redisConnection) {
@@ -38,7 +39,10 @@ if (redisConnection) {
           },
         });
 
-        const sortedNodes = topologicalSort(workflow.nodes, workflow.connections);
+        const sortedNodes = topologicalSort(
+          workflow.nodes,
+          workflow.connections,
+        );
         const userId = workflow.userId;
 
         // 3. Execute
@@ -54,7 +58,7 @@ if (redisConnection) {
             userId,
             context,
             step: {
-                run: async <T>(id: string, fn: () => Promise<T>) => await fn(),
+              run: async <T>(id: string, fn: () => Promise<T>) => await fn(),
             } as any,
             publish: async () => {}, // Mock publish for now
           });
@@ -84,8 +88,8 @@ if (redisConnection) {
         throw error;
       }
     },
-    { connection: redisConnection }
+    { connection: redisConnection },
   );
-  
+
   console.log("🚀 Workflow Worker started");
 }

@@ -1,6 +1,7 @@
-import Handlebars from "handlebars";
-import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { generateText } from "ai";
+import Handlebars from "handlebars";
+
 import type { NodeExecutor } from "@/features/executions/types";
 import prisma from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
@@ -27,7 +28,6 @@ export const geminiExecutor: NodeExecutor<GeminiData> = async ({
   step,
   publish,
 }) => {
-
   if (!data.variableName) {
     throw new Error("Gemini node: Variable name is missing");
   }
@@ -64,9 +64,9 @@ export const geminiExecutor: NodeExecutor<GeminiData> = async ({
 
   try {
     const { text } = await generateText({
-        model: google("gemini-2.0-flash"),
-        system: systemPrompt,
-        prompt: userPrompt,
+      model: google("gemini-2.0-flash"),
+      system: systemPrompt,
+      prompt: userPrompt,
     });
 
     return {
@@ -74,8 +74,8 @@ export const geminiExecutor: NodeExecutor<GeminiData> = async ({
       [data.variableName]: {
         text,
       },
-    }
+    };
   } catch (error) {
-     throw error;
+    throw error;
   }
 };

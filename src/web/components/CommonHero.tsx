@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { motion } from 'motion/react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useSectionTheme } from '../hooks/useSectionTheme';
+import React, { useEffect } from "react";
+
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { motion } from "motion/react";
+
+import { useSectionTheme } from "../hooks/useSectionTheme";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -29,16 +31,17 @@ const CommonHero: React.FC<CommonHeroProps> = ({
   headline,
   description,
   backgroundText,
-  stats
+  stats,
 }) => {
-  const sectionRef = useSectionTheme(id, 'dark');
+  const sectionRef = useSectionTheme(id, "dark");
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Entrance Animation
-      gsap.fromTo(".hero-bg-wrapper",
+      gsap.fromTo(
+        ".hero-bg-wrapper",
         { y: 100, opacity: 0 },
-        { y: 0, opacity: 0.03, duration: 2.5, ease: "power4.out" }
+        { y: 0, opacity: 0.03, duration: 2.5, ease: "power4.out" },
       );
 
       // Scroll Animation
@@ -48,8 +51,8 @@ const CommonHero: React.FC<CommonHeroProps> = ({
           trigger: `#${id}`,
           start: "top top",
           end: "bottom top",
-          scrub: 1
-        }
+          scrub: 1,
+        },
       });
     });
     return () => ctx.revert();
@@ -59,18 +62,25 @@ const CommonHero: React.FC<CommonHeroProps> = ({
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.3 }
-    }
+      transition: { staggerChildren: 0.1, delayChildren: 0.3 },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 1, ease: [0.16, 1, 0.3, 1] } }
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 1, ease: [0.16, 1, 0.3, 1] },
+    },
   };
 
   return (
-    <section ref={sectionRef} id={id} className="hero-section relative min-h-[90vh] bg-brand-dark flex flex-col justify-end px-6 md:px-20 lg:px-32 pb-24 overflow-hidden pt-32">
-
+    <section
+      ref={sectionRef}
+      id={id}
+      className="hero-section relative min-h-[90vh] bg-brand-dark flex flex-col justify-end px-6 md:px-20 lg:px-32 pb-24 overflow-hidden pt-32"
+    >
       {/* Background Typography */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
         <div className="hero-bg-wrapper opacity-0">
@@ -89,8 +99,15 @@ const CommonHero: React.FC<CommonHeroProps> = ({
 
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-24 items-end max-w-[1440px] mx-auto w-full">
         {/* Left — Headline */}
-        <motion.div variants={containerVariants} initial="hidden" animate="show">
-          <motion.div variants={itemVariants} className="flex items-center gap-4 mb-10">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center gap-4 mb-10"
+          >
             <div className="w-12 h-[1px] bg-brand-red shadow-[0_0_10px_rgba(251,54,64,0.5)]" />
             <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-brand-red uppercase">
               {category}
@@ -131,7 +148,9 @@ const CommonHero: React.FC<CommonHeroProps> = ({
               >
                 <div className="flex items-center gap-2.5 mb-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-brand-red" />
-                  <div className="text-3xl font-serif text-brand-dark tracking-tight">{s.value}</div>
+                  <div className="text-3xl font-serif text-brand-dark tracking-tight">
+                    {s.value}
+                  </div>
                 </div>
                 <div className="text-[10px] font-mono text-brand-red font-bold uppercase tracking-widest mb-1.5 leading-tight">
                   {s.label}
@@ -155,9 +174,11 @@ const CommonHero: React.FC<CommonHeroProps> = ({
         </span>
       </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`
-      }} />
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`,
+        }}
+      />
     </section>
   );
 };

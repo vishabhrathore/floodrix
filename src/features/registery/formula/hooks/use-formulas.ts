@@ -1,7 +1,14 @@
 // hooks.ts
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { useTRPC } from "@/trpc/client";
+
 import { useFormulasParams } from "./use-formulas-params";
 
 export const useSuspenseFormulas = () => {
@@ -18,10 +25,7 @@ export const useFormulas = (params: any = {}) => {
 export const useFormula = (id?: string) => {
   const trpc = useTRPC();
   return useQuery(
-    trpc.formulas.getOne.queryOptions(
-      { id: id! },
-      { enabled: !!id }
-    )
+    trpc.formulas.getOne.queryOptions({ id: id! }, { enabled: !!id }),
   );
 };
 
@@ -51,7 +55,9 @@ export const useUpdateFormula = () => {
       onSuccess: (data) => {
         toast.success(`Formula "${data.name}" updated`);
         queryClient.invalidateQueries(trpc.formulas.getMany.queryOptions({}));
-        queryClient.invalidateQueries(trpc.formulas.getOne.queryOptions({ id: data.id }));
+        queryClient.invalidateQueries(
+          trpc.formulas.getOne.queryOptions({ id: data.id }),
+        );
       },
       onError: (error: any) => {
         toast.error(`Failed to update formula: ${error.message}`);

@@ -1,25 +1,27 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { Slot } from "@radix-ui/react-slot";
+import { type VariantProps, cva } from "class-variance-authority";
+
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-black/5 active:scale-[0.98]",
   {
     variants: {
       variant: {
-        default: "bg-[#0a0a0a] text-white hover:bg-[#1a1a1a] shadow-lg shadow-black/10",
+        default:
+          "bg-[#0a0a0a] text-white hover:bg-[#1a1a1a] shadow-lg shadow-black/10",
         destructive:
           "bg-[#e11d48] text-white hover:bg-[#be123c] shadow-lg shadow-red-500/10",
         outline:
           "border border-[#e8e8e8] bg-white text-[#525252] hover:bg-[#fafafa] hover:border-[#d4d4d4] hover:text-[#0a0a0a] shadow-sm",
         secondary:
           "bg-[#f5f5f5] text-[#525252] hover:bg-[#e8e8e8] hover:text-[#0a0a0a]",
-        ghost:
-          "text-[#a1a1a1] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]",
+        ghost: "text-[#a1a1a1] hover:bg-[#f5f5f5] hover:text-[#0a0a0a]",
         link: "text-[#0a0a0a] underline-offset-4 hover:underline",
-        premium: "bg-white border border-[#e8e8e8] text-[#0a0a0a] shadow-sm hover:border-[#d4d4d4] hover:bg-[#fafafa]"
+        premium:
+          "bg-white border border-[#e8e8e8] text-[#0a0a0a] shadow-sm hover:border-[#d4d4d4] hover:bg-[#fafafa]",
       },
       size: {
         default: "h-11 px-6 py-2",
@@ -34,8 +36,8 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 function Button({
   className,
@@ -45,9 +47,9 @@ function Button({
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
+    asChild?: boolean;
   }) {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? Slot : "button";
 
   return (
     <Comp
@@ -55,7 +57,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

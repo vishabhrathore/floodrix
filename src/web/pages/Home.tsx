@@ -1,31 +1,33 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import Hero from '../components/Hero';
-import RunoffCalculator from '../components/RunoffCalculator';
-import WorkStorytelling from '../components/WorkStorytelling';
-import TechnicalAssurance from '../components/TechnicalAssurance';
-import Services from '../components/Services';
-import ImpactMetrics from '../components/ImpactMetrics';
-import WorksGist from '../components/WorksGist';
-import TeamGist from '../components/TeamGist';
-import Contact from '../components/Contact';
-import SmoothReveal from '../components/SmoothReveal';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useSectionTheme } from '../hooks/useSectionTheme';
+import React, { useEffect, useRef } from "react";
+
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+import Contact from "../components/Contact";
+import Hero from "../components/Hero";
+import ImpactMetrics from "../components/ImpactMetrics";
+import RunoffCalculator from "../components/RunoffCalculator";
+import Services from "../components/Services";
+import SmoothReveal from "../components/SmoothReveal";
+import TeamGist from "../components/TeamGist";
+import TechnicalAssurance from "../components/TechnicalAssurance";
+import WorkStorytelling from "../components/WorkStorytelling";
+import WorksGist from "../components/WorksGist";
+import { useSectionTheme } from "../hooks/useSectionTheme";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const Home: React.FC = () => {
-  const aboutRef = useSectionTheme('home-about', 'light');
+  const aboutRef = useSectionTheme("home-about", "light");
   const cursorRef = useRef<HTMLDivElement>(null);
   const cursorFollowerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // 1. Curtain Reveal Effect: Pin the Hero and let next sections slide over
-    const heroSection = document.querySelector('#hero-section');
-    const heroContent = document.querySelector('#hero-content');
+    const heroSection = document.querySelector("#hero-section");
+    const heroContent = document.querySelector("#hero-content");
 
     if (heroSection && heroContent) {
       ScrollTrigger.create({
@@ -33,7 +35,7 @@ const Home: React.FC = () => {
         start: "top top",
         end: "bottom top",
         pin: true,
-        pinSpacing: false
+        pinSpacing: false,
       });
 
       gsap.to(heroContent, {
@@ -45,7 +47,7 @@ const Home: React.FC = () => {
         },
         scale: 0.85,
         opacity: 0,
-        ease: "none"
+        ease: "none",
       });
     }
 
@@ -54,25 +56,39 @@ const Home: React.FC = () => {
     // 3. Custom Cursor Logic
     const onMouseMove = (e: MouseEvent) => {
       gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0 });
-      gsap.to(cursorFollowerRef.current, { x: e.clientX, y: e.clientY, duration: 0.15 });
+      gsap.to(cursorFollowerRef.current, {
+        x: e.clientX,
+        y: e.clientY,
+        duration: 0.15,
+      });
     };
 
-    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener("mousemove", onMouseMove);
 
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener("mousemove", onMouseMove);
     };
   }, []);
 
   return (
     <div className="relative min-h-screen bg-[#fcfcfc] cursor-none selection:bg-brand-red selection:text-white">
       {/* Cinematic Grain Overlay */}
-      <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] bg-repeat"
-        style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
+      <div
+        className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] bg-repeat"
+        style={{
+          backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')`,
+        }}
+      />
 
       {/* Futuristic Cursor System */}
-      <div ref={cursorRef} className="fixed w-2 h-2 bg-brand-red rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 mix-blend-difference hidden md:block" />
-      <div ref={cursorFollowerRef} className="fixed w-10 h-10 border border-brand-teal/50 rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hidden md:block scale-animation" />
+      <div
+        ref={cursorRef}
+        className="fixed w-2 h-2 bg-brand-red rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 mix-blend-difference hidden md:block"
+      />
+      <div
+        ref={cursorFollowerRef}
+        className="fixed w-10 h-10 border border-brand-teal/50 rounded-full pointer-events-none z-[10000] -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hidden md:block scale-animation"
+      />
 
       <main className="relative">
         <Hero />
@@ -82,10 +98,13 @@ const Home: React.FC = () => {
             <RunoffCalculator />
           </SmoothReveal>
 
-          <section id="about" ref={aboutRef} className="py-32 lg:py-48 w-full px-6 md:px-12 lg:px-24 bg-white">
+          <section
+            id="about"
+            ref={aboutRef}
+            className="py-32 lg:py-48 w-full px-6 md:px-12 lg:px-24 bg-white"
+          >
             <SmoothReveal direction="up" distance={40}>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
-
                 {/* Left Column: Narrative & Media */}
                 <div className="lg:col-span-7 space-y-12">
                   <div className="relative group">
@@ -102,7 +121,10 @@ const Home: React.FC = () => {
                           if (el) el.playbackRate = 0.6;
                         }}
                       >
-                        <source src="https://res.cloudinary.com/dpdkzg4ld/video/upload/f_auto,q_auto/v1778512343/floodrix/about_video.mp4" type="video/mp4" />
+                        <source
+                          src="https://res.cloudinary.com/dpdkzg4ld/video/upload/f_auto,q_auto/v1778512343/floodrix/about_video.mp4"
+                          type="video/mp4"
+                        />
                         Your browser does not support the video tag.
                       </video>
                       <div className="absolute inset-0 border border-black/5 rounded-3xl md:rounded-[2.5rem] pointer-events-none" />
@@ -111,21 +133,32 @@ const Home: React.FC = () => {
                     <div className="absolute bottom-[-40] right-[-40] bg-brand-dark/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.4)] hidden md:block border border-white/10 max-w-[320px] z-30">
                       <div className="flex items-center gap-4 mb-5">
                         <div className="w-1.5 h-4 bg-brand-red" />
-                        <span className="text-[11px] font-bold text-white/50 uppercase tracking-[0.25em]">Project Footprint</span>
+                        <span className="text-[11px] font-bold text-white/50 uppercase tracking-[0.25em]">
+                          Project Footprint
+                        </span>
                       </div>
                       <p className="text-white/80 text-md font-light leading-relaxed">
-                        Pan-India delivery of hydraulic design, flood modelling, and drainage engineering for highways and urban corridors.
+                        Pan-India delivery of hydraulic design, flood modelling,
+                        and drainage engineering for highways and urban
+                        corridors.
                       </p>
                     </div>
                   </div>
 
                   <div className="max-w-2xl pt-8">
                     <h3 className="text-h1 text-brand-dark font-serif leading-tight tracking-tight mb-8">
-                      Building climate <span className="italic text-brand-red font-serif text-[1em]">resilience</span> <br className="hidden md:block" /> into critical infrastructure.
+                      Building climate{" "}
+                      <span className="italic text-brand-red font-serif text-[1em]">
+                        resilience
+                      </span>{" "}
+                      <br className="hidden md:block" /> into critical
+                      infrastructure.
                     </h3>
                     <div className="space-y-6 text-brand-dark/70 font-light leading-relaxed text-body-large">
                       <p>
-                        FloodRix is a specialized engineering consultancy operating across three core water domains: Highway Drainage, Urban Stormwater Management, and Geohydrology.
+                        FloodRix is a specialized engineering consultancy
+                        operating across three core water domains: Highway
+                        Drainage, Urban Stormwater Management, and Geohydrology.
                       </p>
                     </div>
                   </div>
@@ -146,7 +179,10 @@ const Home: React.FC = () => {
 
                     <div className="space-y-10 text-brand-dark/70 font-light leading-relaxed text-body pt-10 border-t border-gray-100 max-w-[60ch]">
                       <p>
-                        Our multidisciplinary team of hydrologists, hydraulic engineers, and GIS specialists operates at the intersection of environmental science and civil engineering.
+                        Our multidisciplinary team of hydrologists, hydraulic
+                        engineers, and GIS specialists operates at the
+                        intersection of environmental science and civil
+                        engineering.
                       </p>
 
                       <div className="flex items-center gap-4 py-2">
@@ -155,19 +191,26 @@ const Home: React.FC = () => {
                       </div>
 
                       <p>
-                        From initial catchment analysis to construction-ready documentation, we deliver robust, data-driven solutions designed to withstand intense regulatory scrutiny and extreme climate events.
+                        From initial catchment analysis to construction-ready
+                        documentation, we deliver robust, data-driven solutions
+                        designed to withstand intense regulatory scrutiny and
+                        extreme climate events.
                       </p>
 
                       <div className="pt-8 border-t border-gray-50">
-                        <a href="#contact" className="group inline-flex items-center gap-3 text-brand-red text-xs font-bold uppercase tracking-widest">
+                        <a
+                          href="#contact"
+                          className="group inline-flex items-center gap-3 text-brand-red text-xs font-bold uppercase tracking-widest"
+                        >
                           Request Capability Statement
-                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                          <span className="group-hover:translate-x-1 transition-transform">
+                            →
+                          </span>
                         </a>
                       </div>
                     </div>
                   </div>
                 </div>
-
               </div>
             </SmoothReveal>
           </section>
@@ -225,9 +268,15 @@ const Home: React.FC = () => {
           border-width: 2px;
         }
         @keyframes scale-animation {
-          0% { transform: translate(-50%, -50%) scale(1); }
-          50% { transform: translate(-50%, -50%) scale(1.1); }
-          100% { transform: translate(-50%, -50%) scale(1); }
+          0% {
+            transform: translate(-50%, -50%) scale(1);
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.1);
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1);
+          }
         }
         .scale-animation {
           animation: scale-animation 2s infinite ease-in-out;

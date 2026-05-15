@@ -1,34 +1,40 @@
 "use client";
 
+import React, { useState } from "react";
 
-import React, { useState } from 'react';
-import { PROJECTS } from '../constants';
-import { MapPin, ArrowRight } from 'lucide-react';
+import { ArrowRight, MapPin } from "lucide-react";
+
+import { PROJECTS } from "../constants";
 
 const Projects: React.FC = () => {
-  const [activeFilter, setActiveFilter] = useState('All');
-  const filters = ['All', 'Highway Drainage', 'Infrastructure', 'Groundwater'];
+  const [activeFilter, setActiveFilter] = useState("All");
+  const filters = ["All", "Highway Drainage", "Infrastructure", "Groundwater"];
 
-  const filteredProjects = activeFilter === 'All' 
-    ? PROJECTS 
-    : PROJECTS.filter(p => p.category === activeFilter);
+  const filteredProjects =
+    activeFilter === "All"
+      ? PROJECTS
+      : PROJECTS.filter((p) => p.category === activeFilter);
 
   return (
     <section id="projects" className="py-[8rem] bg-[#fafafa]">
       <div className="w-full px-6 md:px-20 lg:px-32">
         <div className="text-center w-full mx-auto mb-[5rem]">
-          <h2 className="text-gray-400 text-label-caps mb-[1.5rem] tracking-[0.2em] text-[10px]">OUR PORTFOLIO</h2>
-          <h3 className="text-section-title text-brand-dark mb-[3rem]">Engineering Excellence</h3>
-          
+          <h2 className="text-gray-400 text-label-caps mb-[1.5rem] tracking-[0.2em] text-[10px]">
+            OUR PORTFOLIO
+          </h2>
+          <h3 className="text-section-title text-brand-dark mb-[3rem]">
+            Engineering Excellence
+          </h3>
+
           <div className="flex flex-wrap justify-center gap-[1rem]">
-            {filters.map(f => (
-              <button 
+            {filters.map((f) => (
+              <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
                 className={`px-[2rem] py-[0.75rem] rounded-xl font-bold transition-all text-[0.7rem] tracking-[0.2em] uppercase border ${
-                  activeFilter === f 
-                  ? 'bg-brand-red text-white border-brand-red shadow-xl -translate-y-[2px]' 
-                  : 'bg-white text-gray-500 border-gray-100 hover:text-brand-red hover:border-brand-red/30 shadow-sm'
+                  activeFilter === f
+                    ? "bg-brand-red text-white border-brand-red shadow-xl -translate-y-[2px]"
+                    : "bg-white text-gray-500 border-gray-100 hover:text-brand-red hover:border-brand-red/30 shadow-sm"
                 }`}
               >
                 {f}
@@ -39,11 +45,14 @@ const Projects: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[2.5rem]">
           {filteredProjects.map((project) => (
-            <div key={project.id} className="group bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col h-full border-t-2 border-transparent hover:border-brand-red">
+            <div
+              key={project.id}
+              className="group bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col h-full border-t-2 border-transparent hover:border-brand-red"
+            >
               <div className="relative h-[20rem] overflow-hidden">
-                <img 
-                  src={project.image} 
-                  alt={project.title} 
+                <img
+                  src={project.image}
+                  alt={project.title}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]"
                 />
@@ -54,7 +63,7 @@ const Projects: React.FC = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="p-[2.5rem] flex flex-col flex-1">
                 <div className="flex items-center text-gray-400 text-[0.8rem] mb-[1rem] gap-[0.5rem] font-medium tracking-wide font-mono">
                   <MapPin className="w-[1rem] h-[1rem] text-brand-teal" />
@@ -67,11 +76,16 @@ const Projects: React.FC = () => {
                   {project.description}
                 </p>
                 <div className="mt-auto pt-[2rem] border-t border-gray-50 flex justify-between items-center">
-                  <a href="#" className="bg-gray-50 hover:bg-brand-red text-brand-dark hover:text-white px-6 py-3 rounded-xl font-bold text-[0.7rem] tracking-[0.2em] transition-all uppercase flex items-center gap-3">
+                  <a
+                    href="#"
+                    className="bg-gray-50 hover:bg-brand-red text-brand-dark hover:text-white px-6 py-3 rounded-xl font-bold text-[0.7rem] tracking-[0.2em] transition-all uppercase flex items-center gap-3"
+                  >
                     Case Study <ArrowRight className="w-4 h-4" />
                   </a>
                   <div className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:border-brand-teal group-hover:text-brand-teal transition-all">
-                    <span className="text-[10px] font-mono">ID_{project.id}</span>
+                    <span className="text-[10px] font-mono">
+                      ID_{project.id}
+                    </span>
                   </div>
                 </div>
               </div>

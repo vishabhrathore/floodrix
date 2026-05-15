@@ -1,6 +1,8 @@
-import { Connection, Node } from "@/generated/prisma";
 import toposort from "toposort";
-import { workflowQueue, addJob } from "./bullmq";
+
+import { Connection, Node } from "@/generated/prisma";
+
+import { addJob, workflowQueue } from "./bullmq";
 
 export const topologicalSort = (
   nodes: Node[],

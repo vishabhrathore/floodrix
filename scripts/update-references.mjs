@@ -1,21 +1,25 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
-const ASSET_MAP_FILE = path.join(process.cwd(), 'cloudinary-assets.json');
-const SRC_DIR = path.join(process.cwd(), 'src');
+const ASSET_MAP_FILE = path.join(process.cwd(), "cloudinary-assets.json");
+const SRC_DIR = path.join(process.cwd(), "src");
 
 if (!fs.existsSync(ASSET_MAP_FILE)) {
-  console.error('❌ Error: cloudinary-assets.json not found. Run the upload script first.');
+  console.error(
+    "❌ Error: cloudinary-assets.json not found. Run the upload script first.",
+  );
   process.exit(1);
 }
 
-const assetMap = JSON.parse(fs.readFileSync(ASSET_MAP_FILE, 'utf8'));
+const assetMap = JSON.parse(fs.readFileSync(ASSET_MAP_FILE, "utf8"));
 
 // Prepare replacements: sort by length descending to avoid partial matches
-const replacements = Object.entries(assetMap).sort((a, b) => b[0].length - a[0].length);
+const replacements = Object.entries(assetMap).sort(
+  (a, b) => b[0].length - a[0].length,
+);
 
 function updateFile(filePath) {
-  let content = fs.readFileSync(filePath, 'utf8');
+  let content = fs.readFileSync(filePath, "utf8");
   let changed = false;
 
   for (const [localPath, remoteUrl] of replacements) {
@@ -42,21 +46,27 @@ function walkDir(dir) {
     const fullPath = path.join(dir, file.name);
 
     if (file.isDirectory()) {
-      if (file.name !== 'node_modules' && file.name !== '.next' && file.name !== '.git') {
+      if (
+        file.name !== "node_modules" &&
+        file.name !== ".next" &&
+        file.name !== ".git"
+      ) {
         walkDir(fullPath);
       }
     } else {
       const ext = path.extname(file.name).toLowerCase();
-      if (['.tsx', '.ts', '.js', '.jsx', '.css', '.scss', '.html'].includes(ext)) {
+      if (
+        [".tsx", ".ts", ".js", ".jsx", ".css", ".scss", ".html"].includes(ext)
+      ) {
         updateFile(fullPath);
       }
     }
   }
 }
 
-console.log('🔄 Updating asset references in code...');
+console.log("🔄 Updating asset references in code...");
 walkDir(SRC_DIR);
 // Also check the root directory for things like calculator.html
-walkDir(process.cwd()); 
+walkDir(process.cwd());
 
-console.log('✨ All references updated!');
+console.log("✨ All references updated!");

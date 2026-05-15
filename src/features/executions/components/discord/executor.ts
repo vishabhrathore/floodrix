@@ -1,7 +1,8 @@
 import Handlebars from "handlebars";
 import { decode } from "html-entities";
-import type { NodeExecutor } from "@/features/executions/types";
 import ky from "ky";
+
+import type { NodeExecutor } from "@/features/executions/types";
 
 Handlebars.registerHelper("json", (context) => {
   const jsonString = JSON.stringify(context, null, 2);
@@ -24,7 +25,6 @@ export const discordExecutor: NodeExecutor<DiscordData> = async ({
   step,
   publish,
 }) => {
-
   if (!data.content) {
     throw new Error("Discord node: Message content is required");
   }
@@ -59,9 +59,9 @@ export const discordExecutor: NodeExecutor<DiscordData> = async ({
         },
       };
     });
-    
+
     return result;
   } catch (error) {
-     throw error;
+    throw error;
   }
 };

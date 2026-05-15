@@ -55,11 +55,11 @@ We do not collect:
 
 ## 3. Legal basis for processing
 
-| Data type | Legal basis |
-| :--- | :--- |
-| Analytics (GA4) | Your consent (Consent Mode v2) |
-| Contact enquiries | Legitimate interest / contractual necessity |
-| Cookie preference storage | Legitimate interest (functional necessity) |
+| Data type                 | Legal basis                                 |
+| :------------------------ | :------------------------------------------ |
+| Analytics (GA4)           | Your consent (Consent Mode v2)              |
+| Contact enquiries         | Legitimate interest / contractual necessity |
+| Cookie preference storage | Legitimate interest (functional necessity)  |
 
 Under India's Digital Personal Data Protection Act 2023 (DPDP Act), we process personal data only for the purposes stated above and do not repurpose it without notifying you.
 
@@ -79,11 +79,11 @@ We have enabled **IP anonymisation** in our GA4 configuration. We do not enable 
 
 ## 5. Data retention
 
-| Data type | Retention period |
-| :--- | :--- |
-| GA4 analytics data | 14 months (GA4 default; configurable in property settings) |
-| Contact enquiry emails | 3 years from last correspondence |
-| Cookie preference (local storage) | Until you clear your browser storage |
+| Data type                         | Retention period                                           |
+| :-------------------------------- | :--------------------------------------------------------- |
+| GA4 analytics data                | 14 months (GA4 default; configurable in property settings) |
+| Contact enquiry emails            | 3 years from last correspondence                           |
+| Cookie preference (local storage) | Until you clear your browser storage                       |
 
 ---
 

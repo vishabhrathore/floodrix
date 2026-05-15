@@ -2,8 +2,10 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, BookOpen, Search, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+import { BookOpen, Check, ChevronsUpDown, Loader2, Search } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -18,8 +20,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
 import { useFormulas } from "../hooks/use-formulas";
-import { Badge } from "@/components/ui/badge";
 
 interface FormulaSelectorProps {
   value?: string;
@@ -27,7 +30,11 @@ interface FormulaSelectorProps {
   className?: string;
 }
 
-export function FormulaSelector({ value, onSelect, className }: FormulaSelectorProps) {
+export function FormulaSelector({
+  value,
+  onSelect,
+  className,
+}: FormulaSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -36,9 +43,9 @@ export function FormulaSelector({ value, onSelect, className }: FormulaSelectorP
     pageSize: 20,
   });
 
-  const selectedFormula = React.useMemo(() => 
-    data?.items.find((item) => item.id === value),
-    [data, value]
+  const selectedFormula = React.useMemo(
+    () => data?.items.find((item) => item.id === value),
+    [data, value],
   );
 
   return (
@@ -48,14 +55,19 @@ export function FormulaSelector({ value, onSelect, className }: FormulaSelectorP
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-9 text-xs font-normal", className)}
+          className={cn(
+            "w-full justify-between h-9 text-xs font-normal",
+            className,
+          )}
         >
           <div className="flex items-center gap-2 truncate">
             <BookOpen className="h-3.5 w-3.5 text-slate-400" />
             {selectedFormula ? (
               <span className="truncate">{selectedFormula.name}</span>
             ) : (
-              <span className="text-slate-400">Select formula from registry...</span>
+              <span className="text-slate-400">
+                Select formula from registry...
+              </span>
             )}
           </div>
           <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
@@ -101,7 +113,10 @@ export function FormulaSelector({ value, onSelect, className }: FormulaSelectorP
                         <span className="text-[10px] font-mono text-slate-400">
                           {formula.slug}
                         </span>
-                        <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                        <Badge
+                          variant="outline"
+                          className="h-4 px-1 text-[9px]"
+                        >
                           {formula.category}
                         </Badge>
                       </div>

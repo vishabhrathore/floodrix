@@ -1,9 +1,10 @@
-import { Worker, type Job, Queue } from "bullmq";
+import { type Job, Queue, Worker } from "bullmq";
+
 import { redisConnection } from "@/lib/bullmq";
 import prisma from "@/lib/db";
 
 const PAUSED_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const PENDING_TTL_MS = 6 * 60 * 60 * 1000;       // 6 hours
+const PENDING_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const BATCH_LIMIT = 500;
 
 if (redisConnection) {
@@ -62,18 +63,28 @@ if (redisConnection) {
         });
       }
 
-      console.log(`TTL sweep done: ${stalePaused.length} paused + ${stalePending.length} pending timed out`);
+      console.log(
+        `TTL sweep done: ${stalePaused.length} paused + ${stalePending.length} pending timed out`,
+      );
     },
-    { connection: redisConnection }
+    { connection: redisConnection },
   );
 
   // Initialize the repeatable job
-  const sweeperQueue = new Queue("sweeper-queue", { connection: redisConnection });
-  sweeperQueue.add("hourly-sweep", {}, {
-    repeat: {
-      pattern: "0 * * * *",
-    },
-  }).catch(err => console.error("Failed to add repeatable sweeper job", err));
+  const sweeperQueue = new Queue("sweeper-queue", {
+    connection: redisConnection,
+  });
+  sweeperQueue
+    .add(
+      "hourly-sweep",
+      {},
+      {
+        repeat: {
+          pattern: "0 * * * *",
+        },
+      },
+    )
+    .catch((err) => console.error("Failed to add repeatable sweeper job", err));
 
   console.log("🚀 Sweeper Worker started");
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import type { NodeStatus } from "@/components/react-flow/node-status-indicator";
 
 interface UseNodeStatusOptions {
@@ -6,7 +7,7 @@ interface UseNodeStatusOptions {
   channel: string;
   topic: string;
   refreshToken: () => Promise<any>;
-};
+}
 
 export function useNodeStatus({
   nodeId,
@@ -20,4 +21,4 @@ export function useNodeStatus({
   // TODO: Implement polling or other realtime mechanism if needed.
 
   return status;
-};
+}

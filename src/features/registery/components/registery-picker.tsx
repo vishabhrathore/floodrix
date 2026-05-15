@@ -1,37 +1,39 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
 // import { useTRPC } from "@/lib/trpc-client";
 import { useQuery } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
+import {
+  AlertCircle,
+  BookOpen,
+  Check,
+  ChevronDown,
+  FunctionSquare,
+  Globe,
+  Loader2,
+  Lock,
+  Search,
+  Star,
+  Table2,
+  X,
+} from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Search,
-  Check,
-  FunctionSquare,
-  Table2,
-  Star,
-  ChevronDown,
-  X,
-  Globe,
-  Lock,
-  BookOpen,
-  AlertCircle,
-  Loader2,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 
@@ -87,13 +89,16 @@ function ItemPreview({
         <div>
           <p className="text-xs font-semibold">{item.name}</p>
           {item.sourceStandard && (
-            <p className="text-[10px] text-muted-foreground">{item.sourceStandard}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {item.sourceStandard}
+            </p>
           )}
         </div>
         <div className="flex shrink-0 gap-1">
           {item.isSystem && (
             <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-              <Star className="mr-0.5 h-2 w-2" />IRC
+              <Star className="mr-0.5 h-2 w-2" />
+              IRC
             </Badge>
           )}
           {item.visibility === "PUBLIC" ? (
@@ -106,35 +111,41 @@ function ItemPreview({
 
       {type === "formula" && item.displayExpression && (
         <div className="rounded border border-emerald-200/60 bg-emerald-50/50 px-2 py-1.5">
-          <code className="font-mono text-xs text-emerald-800">{item.displayExpression}</code>
+          <code className="font-mono text-xs text-emerald-800">
+            {item.displayExpression}
+          </code>
         </div>
       )}
 
-      {type === "formula" && item.inputVariables && item.inputVariables.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {item.inputVariables.map((v) => (
-            <span
-              key={v.notation}
-              className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
-            >
-              {v.notation}
-            </span>
-          ))}
-          {item.outputVariable && (
-            <>
-              <span className="text-[10px] text-muted-foreground">→</span>
-              <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-primary">
-                {item.outputVariable.notation}
+      {type === "formula" &&
+        item.inputVariables &&
+        item.inputVariables.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {item.inputVariables.map((v) => (
+              <span
+                key={v.notation}
+                className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+              >
+                {v.notation}
               </span>
-            </>
-          )}
-        </div>
-      )}
+            ))}
+            {item.outputVariable && (
+              <>
+                <span className="text-[10px] text-muted-foreground">→</span>
+                <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-primary">
+                  {item.outputVariable.notation}
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
       {type === "table" && item.tableType && (
         <Badge variant="outline" className="h-4 px-1.5 text-[10px]">
           {item.tableType.replace(/_/g, " ")}
-          {item.data && Array.isArray(item.data) && ` · ${item.data.length} rows`}
+          {item.data &&
+            Array.isArray(item.data) &&
+            ` · ${item.data.length} rows`}
         </Badge>
       )}
 
@@ -166,15 +177,15 @@ function ListItem({
       onClick={onSelect}
       className={cn(
         "flex w-full items-start gap-3 rounded-md p-2.5 text-left transition-colors",
-        selected
-          ? "bg-primary/10 text-primary"
-          : "hover:bg-muted/60"
+        selected ? "bg-primary/10 text-primary" : "hover:bg-muted/60",
       )}
     >
       <div
         className={cn(
           "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded",
-          type === "formula" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+          type === "formula"
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-blue-100 text-blue-700",
         )}
       >
         {type === "formula" ? (
@@ -185,14 +196,22 @@ function ListItem({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className={cn("truncate text-xs font-medium", selected && "text-primary")}>
+          <p
+            className={cn(
+              "truncate text-xs font-medium",
+              selected && "text-primary",
+            )}
+          >
             {item.name}
           </p>
           {item.isSystem && (
             <Star className="h-2.5 w-2.5 shrink-0 text-amber-500" />
           )}
           {!item.isPublished && (
-            <Badge variant="outline" className="h-3.5 px-1 text-[9px] border-amber-300 text-amber-600">
+            <Badge
+              variant="outline"
+              className="h-3.5 px-1 text-[9px] border-amber-300 text-amber-600"
+            >
               Draft
             </Badge>
           )}
@@ -203,7 +222,9 @@ function ListItem({
             : item.category}
         </p>
       </div>
-      {selected && <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />}
+      {selected && (
+        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+      )}
     </button>
   );
 }
@@ -231,13 +252,22 @@ export default function RegistryPicker({
       : (trpc.tables.getMany as any).queryOptions;
 
   const { data, isLoading } = useQuery(
-    (queryFn as any)({ search: search || undefined, limit: 30 }, { enabled: open })
+    (queryFn as any)(
+      { search: search || undefined, limit: 30 },
+      { enabled: open },
+    ),
   );
 
   const { data: selectedData } = useQuery(
     type === "formula"
-      ? (trpc.formulas.getOne as any).queryOptions({ id: value! }, { enabled: !!value })
-      : (trpc.tables.getOne as any).queryOptions({ id: value! }, { enabled: !!value })
+      ? (trpc.formulas.getOne as any).queryOptions(
+          { id: value! },
+          { enabled: !!value },
+        )
+      : (trpc.tables.getOne as any).queryOptions(
+          { id: value! },
+          { enabled: !!value },
+        ),
   );
 
   const items: RegistryItem[] = data?.items ?? [];
@@ -284,12 +314,14 @@ export default function RegistryPicker({
               "flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm",
               "transition-colors hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
-              open && "ring-2 ring-ring ring-offset-2"
+              open && "ring-2 ring-ring ring-offset-2",
             )}
           >
             <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
             {selectedItem ? (
-              <span className="flex-1 truncate font-medium">{selectedItem.name}</span>
+              <span className="flex-1 truncate font-medium">
+                {selectedItem.name}
+              </span>
             ) : (
               <span className="flex-1 text-muted-foreground">
                 {placeholder ?? `Select a ${type}…`}
@@ -422,14 +454,22 @@ export default function RegistryPicker({
                   className="h-7 text-xs"
                   onClick={() =>
                     onPinnedVersionChange(
-                      pinnedVersion != null ? null : selectedItem.currentVersion
+                      pinnedVersion != null
+                        ? null
+                        : selectedItem.currentVersion,
                     )
                   }
                 >
                   {pinnedVersion != null ? (
-                    <><Globe className="mr-1 h-3.5 w-3.5" />Float</>
+                    <>
+                      <Globe className="mr-1 h-3.5 w-3.5" />
+                      Float
+                    </>
                   ) : (
-                    <><Lock className="mr-1 h-3.5 w-3.5" />Pin</>
+                    <>
+                      <Lock className="mr-1 h-3.5 w-3.5" />
+                      Pin
+                    </>
                   )}
                 </Button>
               </TooltipTrigger>
@@ -454,7 +494,9 @@ export default function RegistryPicker({
           {type === "table" && (
             <p className="text-xs text-muted-foreground">
               {selectedItem.tableType?.replace(/_/g, " ")} ·{" "}
-              {Array.isArray(selectedItem.data) ? `${(selectedItem.data as unknown[]).length} rows` : ""}
+              {Array.isArray(selectedItem.data)
+                ? `${(selectedItem.data as unknown[]).length} rows`
+                : ""}
             </p>
           )}
         </div>

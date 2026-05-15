@@ -1,15 +1,18 @@
 "use client";
 
-import React from 'react';
-import CommonHero from './CommonHero';
+import React from "react";
+
+import CommonHero from "./CommonHero";
 
 const WorksHero: React.FC = () => {
   const heroData = {
     category: "Project Portfolio",
     headline: (
       <>
-        Engineering that<br />
-        stands up when<br />
+        Engineering that
+        <br />
+        stands up when
+        <br />
         <span className="italic text-brand-red">water pushes back.</span>
       </>
     ),
@@ -18,10 +21,18 @@ const WorksHero: React.FC = () => {
     backgroundText: "PROJECTS",
     stats: [
       { value: "60+", label: "Projects", detail: "Delivered across India" },
-      { value: "04", label: "Domains", detail: "Drainage · Groundwater · Irrigation · Structures" },
+      {
+        value: "04",
+        label: "Domains",
+        detail: "Drainage · Groundwater · Irrigation · Structures",
+      },
       { value: "08", label: "States", detail: "Active project coverage" },
-      { value: "100%", label: "Compliant", detail: "IRC, IS, CWC & BIS standards" },
-    ]
+      {
+        value: "100%",
+        label: "Compliant",
+        detail: "IRC, IS, CWC & BIS standards",
+      },
+    ],
   };
 
   return <CommonHero {...heroData} />;

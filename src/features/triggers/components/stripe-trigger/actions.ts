@@ -2,4 +2,4 @@
 
 export async function fetchStripeTriggerRealtimeToken(): Promise<any> {
   return null;
-};
+}

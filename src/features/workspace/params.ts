@@ -1,4 +1,5 @@
-import { parseAsInteger, parseAsString, createLoader } from "nuqs/server";
+import { createLoader, parseAsInteger, parseAsString } from "nuqs/server";
+
 import { PAGINATION } from "@/config/constants";
 
 export const workspaceParams = {
@@ -8,9 +9,7 @@ export const workspaceParams = {
   pageSize: parseAsInteger
     .withDefault(PAGINATION.DEFAULT_PAGE_SIZE)
     .withOptions({ clearOnDefault: true }),
-  search: parseAsString
-    .withDefault("")
-    .withOptions({ clearOnDefault: true }),
+  search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
   organizationId: parseAsString
     .withDefault("")
     .withOptions({ clearOnDefault: true }),

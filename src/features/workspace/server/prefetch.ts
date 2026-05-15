@@ -1,4 +1,5 @@
 import type { inferInput } from "@trpc/tanstack-react-query";
+
 import { prefetch, trpc } from "@/trpc/server";
 
 type Input = inferInput<typeof trpc.workspaces.getMany>;

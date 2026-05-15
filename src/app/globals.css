@@ -177,7 +177,7 @@
   --fs-body-large: clamp(1.0625rem, 0.28vw + 1rem, 1.25rem);
   /* Added: Scales from 17px to 20px */
   --fs-body: clamp(1rem, 0.19vw + 0.96rem, 1.125rem);
-  --fs-caption: clamp(0.875rem, 0.0vw + 0.88rem, 0.875rem);
+  --fs-caption: clamp(0.875rem, 0vw + 0.88rem, 0.875rem);
 }
 
 /* ================= DARK ================= */
@@ -292,7 +292,6 @@
 }
 
 @layer base {
-
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;

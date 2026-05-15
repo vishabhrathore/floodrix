@@ -1,6 +1,12 @@
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { useTRPC } from "@/trpc/client";
+
 import { useLibraryParams } from "./use-library-params";
 
 /**
@@ -25,9 +31,13 @@ export const useApproveSubmission = () => {
       onSuccess: () => {
         toast.success(`Submission approved and published to the library`);
         // Refresh the queue
-        queryClient.invalidateQueries(trpc.librarySubmissions.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.librarySubmissions.getMany.queryOptions({}),
+        );
         // Refresh dashboard stats (pending count)
-        queryClient.invalidateQueries(trpc.dashboard.getSuperAdminStats.queryOptions());
+        queryClient.invalidateQueries(
+          trpc.dashboard.getSuperAdminStats.queryOptions(),
+        );
       },
       onError: (error) => {
         toast.error(`Failed to approve submission: ${error.message}`);
@@ -48,9 +58,13 @@ export const useRejectSubmission = () => {
       onSuccess: () => {
         toast.success(`Submission rejected with feedback`);
         // Refresh the queue
-        queryClient.invalidateQueries(trpc.librarySubmissions.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.librarySubmissions.getMany.queryOptions({}),
+        );
         // Refresh dashboard stats (pending count)
-        queryClient.invalidateQueries(trpc.dashboard.getSuperAdminStats.queryOptions());
+        queryClient.invalidateQueries(
+          trpc.dashboard.getSuperAdminStats.queryOptions(),
+        );
       },
       onError: (error) => {
         toast.error(`Failed to reject submission: ${error.message}`);

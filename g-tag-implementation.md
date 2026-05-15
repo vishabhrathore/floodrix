@@ -57,7 +57,7 @@ export default function ConsentDefaults() {
 **`components/GTMScript.tsx`**
 
 ```tsx
-import Script from 'next/script';
+import Script from "next/script";
 
 export default function GTMScript() {
   const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -78,7 +78,7 @@ export default function GTMScript() {
           src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
           height="0"
           width="0"
-          style={{ display: 'none', visibility: 'hidden' }}
+          style={{ display: "none", visibility: "hidden" }}
         />
       </noscript>
     </>
@@ -93,51 +93,65 @@ export default function GTMScript() {
 **`components/CookieBanner.tsx`**
 
 ```tsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const choice = localStorage.getItem('cookie_consent');
+    const choice = localStorage.getItem("cookie_consent");
     if (!choice) setVisible(true);
   }, []);
 
   const updateConsent = (granted: boolean) => {
-    const value = granted ? 'granted' : 'denied';
+    const value = granted ? "granted" : "denied";
 
-    window.gtag?.('consent', 'update', {
+    window.gtag?.("consent", "update", {
       analytics_storage: value,
-      ad_storage:        'denied', // keep ads denied — you don't run ads
+      ad_storage: "denied", // keep ads denied — you don't run ads
     });
 
-    localStorage.setItem('cookie_consent', granted ? 'accepted' : 'rejected');
+    localStorage.setItem("cookie_consent", granted ? "accepted" : "rejected");
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      background: '#1a1a1a', color: '#fff',
-      padding: '16px 24px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: '16px', zIndex: 9999, flexWrap: 'wrap',
-    }}>
-      <p style={{ margin: 0, fontSize: '14px', maxWidth: '700px' }}>
-        We use analytics cookies to understand how visitors find and use our site.
-        No personal data is sold or shared with advertisers.
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: "#1a1a1a",
+        color: "#fff",
+        padding: "16px 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "16px",
+        zIndex: 9999,
+        flexWrap: "wrap",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: "14px", maxWidth: "700px" }}>
+        We use analytics cookies to understand how visitors find and use our
+        site. No personal data is sold or shared with advertisers.
       </p>
-      <div style={{ display: 'flex', gap: '12px' }}>
+      <div style={{ display: "flex", gap: "12px" }}>
         <button
           onClick={() => updateConsent(false)}
           style={{
-            padding: '8px 20px', background: 'transparent',
-            border: '1px solid #666', color: '#ccc',
-            borderRadius: '4px', cursor: 'pointer', fontSize: '14px',
+            padding: "8px 20px",
+            background: "transparent",
+            border: "1px solid #666",
+            color: "#ccc",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
           }}
         >
           Reject
@@ -145,9 +159,13 @@ export default function CookieBanner() {
         <button
           onClick={() => updateConsent(true)}
           style={{
-            padding: '8px 20px', background: '#2563eb',
-            border: 'none', color: '#fff',
-            borderRadius: '4px', cursor: 'pointer', fontSize: '14px',
+            padding: "8px 20px",
+            background: "#2563eb",
+            border: "none",
+            color: "#fff",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
           }}
         >
           Accept
@@ -167,17 +185,17 @@ Users who already made a choice shouldn't see the banner again, but consent must
 **`components/ConsentRestore.tsx`**
 
 ```tsx
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export default function ConsentRestore() {
   useEffect(() => {
-    const choice = localStorage.getItem('cookie_consent');
-    if (choice === 'accepted') {
-      window.gtag?.('consent', 'update', {
-        analytics_storage: 'granted',
-        ad_storage:        'denied',
+    const choice = localStorage.getItem("cookie_consent");
+    if (choice === "accepted") {
+      window.gtag?.("consent", "update", {
+        analytics_storage: "granted",
+        ad_storage: "denied",
       });
     }
   }, []);
@@ -193,12 +211,16 @@ export default function ConsentRestore() {
 ### App Router — `app/layout.tsx`
 
 ```tsx
-import ConsentDefaults from '@/components/ConsentDefaults';
-import GTMScript from '@/components/GTMScript';
-import CookieBanner from '@/components/CookieBanner';
-import ConsentRestore from '@/components/ConsentRestore';
+import ConsentDefaults from "@/components/ConsentDefaults";
+import ConsentRestore from "@/components/ConsentRestore";
+import CookieBanner from "@/components/CookieBanner";
+import GTMScript from "@/components/GTMScript";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <head>
@@ -219,12 +241,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 ### Pages Router — `pages/_app.tsx`
 
 ```tsx
-import type { AppProps } from 'next/app';
-import Head from 'next/head';
-import ConsentDefaults from '@/components/ConsentDefaults';
-import GTMScript from '@/components/GTMScript';
-import CookieBanner from '@/components/CookieBanner';
-import ConsentRestore from '@/components/ConsentRestore';
+import type { AppProps } from "next/app";
+import Head from "next/head";
+
+import ConsentDefaults from "@/components/ConsentDefaults";
+import ConsentRestore from "@/components/ConsentRestore";
+import CookieBanner from "@/components/CookieBanner";
+import GTMScript from "@/components/GTMScript";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -299,14 +322,15 @@ export default function CookiePolicy() {
 
       <h2>What cookies we use</h2>
       <p>
-        We use Google Analytics (via Google Tag Manager) to understand how visitors
-        find and use our website. This is only activated if you accept analytics cookies.
+        We use Google Analytics (via Google Tag Manager) to understand how
+        visitors find and use our website. This is only activated if you accept
+        analytics cookies.
       </p>
 
       <h2>Essential cookies</h2>
       <p>
-        We store your cookie preference (accepted/rejected) in your browser's local
-        storage. This is necessary to remember your choice.
+        We store your cookie preference (accepted/rejected) in your browser's
+        local storage. This is necessary to remember your choice.
       </p>
 
       <h2>How to withdraw consent</h2>

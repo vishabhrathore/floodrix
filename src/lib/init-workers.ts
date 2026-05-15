@@ -7,7 +7,9 @@ export function initWorkers() {
   }
 
   if (process.env.NODE_ENV === "production" && !process.env.START_WORKERS) {
-    console.log("⏭️ Skipping workers in production (set START_WORKERS=true to enable)");
+    console.log(
+      "⏭️ Skipping workers in production (set START_WORKERS=true to enable)",
+    );
     return;
   }
 

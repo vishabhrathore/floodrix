@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
-import { ArrowRight } from 'lucide-react';
-import { DomainSection } from '../types';
+import React from "react";
+
+import { ArrowRight } from "lucide-react";
+import { motion, useScroll, useTransform } from "motion/react";
+
+import { DomainSection } from "../types";
 
 interface DomainSectionItemProps {
   domain: DomainSection;
@@ -13,14 +15,17 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
   const containerRef = React.useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "end start"],
   });
 
   const y1 = useTransform(scrollYProgress, [0, 1], [150, -150]);
   const y2 = useTransform(scrollYProgress, [0, 1], [-200, 200]);
 
   return (
-    <section ref={containerRef} className="py-20 lg:py-32 first:pt-32 overflow-hidden">
+    <section
+      ref={containerRef}
+      className="py-20 lg:py-32 first:pt-32 overflow-hidden"
+    >
       <div className="px-6 md:px-20 lg:px-32 mb-8 lg:mb-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -36,7 +41,9 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
               <div className="w-16 h-[1px] bg-brand-red" />
             </div>
             <h2 className="text-h1 font-serif text-brand-dark tracking-tighter leading-[1.1]">
-              <span className="italic text-brand-red block mb-1">{domain.titleEmphasis}</span>
+              <span className="italic text-brand-red block mb-1">
+                {domain.titleEmphasis}
+              </span>
               {domain.title}
             </h2>
           </div>
@@ -55,7 +62,10 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
           viewport={{ once: true }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center"
         >
-          <motion.div style={{ y: y1 }} className="relative group overflow-hidden bg-brand-dark rounded-[2.5rem] shadow-2xl aspect-square">
+          <motion.div
+            style={{ y: y1 }}
+            className="relative group overflow-hidden bg-brand-dark rounded-[2.5rem] shadow-2xl aspect-square"
+          >
             <motion.img
               whileInView={{ scale: [1, 1.4] }}
               transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
@@ -66,15 +76,21 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
             />
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-brand-dark/90 via-brand-dark/20 to-transparent" />
             <div className="absolute bottom-10 left-10 right-10">
-              <div className="text-[10px] font-mono text-white/40 uppercase tracking-[0.4em] mb-4">Field Reality</div>
-              <p className="text-white text-h3 font-serif italic leading-snug">"{domain.problem.title}"</p>
+              <div className="text-[10px] font-mono text-white/40 uppercase tracking-[0.4em] mb-4">
+                Field Reality
+              </div>
+              <p className="text-white text-h3 font-serif italic leading-snug">
+                "{domain.problem.title}"
+              </p>
             </div>
           </motion.div>
 
           <div className="py-8 flex flex-col justify-center">
             <div className="flex items-center gap-4 mb-10">
               <div className="w-3 h-3 rounded-full bg-brand-red" />
-              <span className="text-[11px] font-mono font-bold tracking-[0.4em] text-brand-red uppercase">The Vulnerability</span>
+              <span className="text-[11px] font-mono font-bold tracking-[0.4em] text-brand-red uppercase">
+                The Vulnerability
+              </span>
             </div>
 
             <h3 className="text-h2 font-serif text-brand-dark mb-6 leading-tight">
@@ -87,8 +103,12 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7">
               {domain.problem.points.map((point, pIdx) => (
                 <div key={pIdx} className="space-y-2">
-                  <span className="text-brand-red font-mono text-[10px] font-bold uppercase tracking-widest">Risk 0{pIdx + 1}</span>
-                  <p className="text-base text-gray-600 leading-relaxed">{point}</p>
+                  <span className="text-brand-red font-mono text-[10px] font-bold uppercase tracking-widest">
+                    Risk 0{pIdx + 1}
+                  </span>
+                  <p className="text-base text-gray-600 leading-relaxed">
+                    {point}
+                  </p>
                 </div>
               ))}
             </div>
@@ -108,10 +128,19 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
 
         <div className="py-24 lg:py-40 flex flex-col items-center justify-center relative overflow-hidden">
           <motion.div
-            style={{ y: useTransform(scrollYProgress, [0, 1], [-150, 150]), opacity: 0.03 }}
+            style={{
+              y: useTransform(scrollYProgress, [0, 1], [-150, 150]),
+              opacity: 0.03,
+            }}
             className="absolute inset-0 pointer-events-none"
           >
-            <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
+                backgroundSize: "40px 40px",
+              }}
+            />
           </motion.div>
           <div className="absolute top-0 bottom-0 w-px bg-brand-red/10" />
           {/* Technical Vertical Connector - Dotted with Signal Pulse */}
@@ -121,7 +150,7 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
               className="absolute inset-0 opacity-20"
               style={{
                 backgroundImage: `linear-gradient(to bottom, var(--brand-red) 50%, transparent 50%)`,
-                backgroundSize: '1px 8px'
+                backgroundSize: "1px 8px",
               }}
             />
 
@@ -129,12 +158,12 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
             <motion.div
               animate={{
                 y: ["-10%", "110%"],
-                opacity: [0, 1, 1, 0]
+                opacity: [0, 1, 1, 0],
               }}
               transition={{
                 duration: 4,
                 repeat: Infinity,
-                ease: "linear"
+                ease: "linear",
               }}
               className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-transparent via-brand-red to-transparent z-10"
             />
@@ -188,18 +217,33 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
           <div className="py-8 flex flex-col justify-center order-2 lg:order-1">
             <div className="flex items-center gap-4 mb-10">
               <div className="w-3 h-3 rounded-full bg-brand-teal" />
-              <span className="text-[11px] font-mono font-bold tracking-[0.4em] text-brand-teal uppercase">The Engineered Result</span>
+              <span className="text-[11px] font-mono font-bold tracking-[0.4em] text-brand-teal uppercase">
+                The Engineered Result
+              </span>
             </div>
-            <h3 className="text-h2 font-serif text-brand-dark mb-6 leading-tight">{domain.solution.title}</h3>
-            <p className="text-gray-500 text-lg leading-relaxed mb-12 font-sans">{domain.solution.description}</p>
+            <h3 className="text-h2 font-serif text-brand-dark mb-6 leading-tight">
+              {domain.solution.title}
+            </h3>
+            <p className="text-gray-500 text-lg leading-relaxed mb-12 font-sans">
+              {domain.solution.description}
+            </p>
             <div className="space-y-0">
               {domain.solution.services.map((service, sIdx) => (
-                <div key={sIdx} className="group py-7 border-t border-gray-100 last:border-b hover:bg-gray-50/50 px-4 -mx-4 rounded-xl transition-all">
+                <div
+                  key={sIdx}
+                  className="group py-7 border-t border-gray-100 last:border-b hover:bg-gray-50/50 px-4 -mx-4 rounded-xl transition-all"
+                >
                   <div className="grid grid-cols-12 gap-6 items-start">
-                    <span className="col-span-1 text-xs font-mono text-brand-red font-bold pt-0.5">0{sIdx + 1}</span>
+                    <span className="col-span-1 text-xs font-mono text-brand-red font-bold pt-0.5">
+                      0{sIdx + 1}
+                    </span>
                     <div className="col-span-11 space-y-2">
-                      <h4 className="text-h5 font-bold text-brand-dark font-sans group-hover:text-brand-red transition-colors">{service.title}</h4>
-                      <p className="text-base text-gray-500 leading-relaxed">{service.desc}</p>
+                      <h4 className="text-h5 font-bold text-brand-dark font-sans group-hover:text-brand-red transition-colors">
+                        {service.title}
+                      </h4>
+                      <p className="text-base text-gray-500 leading-relaxed">
+                        {service.desc}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -207,7 +251,10 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
             </div>
           </div>
 
-          <motion.div style={{ y: y2 }} className="relative group overflow-hidden order-1 lg:order-2 bg-gray-100 rounded-[2.5rem] shadow-2xl aspect-square">
+          <motion.div
+            style={{ y: y2 }}
+            className="relative group overflow-hidden order-1 lg:order-2 bg-gray-100 rounded-[2.5rem] shadow-2xl aspect-square"
+          >
             <motion.img
               whileInView={{ scale: [1, 1.4] }}
               transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
@@ -227,11 +274,17 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse" />
-                  <span className="text-[9px] font-mono font-bold text-brand-red uppercase tracking-[0.4em]">{domain.solution.outcomeLabel}</span>
+                  <span className="text-[9px] font-mono font-bold text-brand-red uppercase tracking-[0.4em]">
+                    {domain.solution.outcomeLabel}
+                  </span>
                 </div>
                 <div>
-                  <div className="text-h2 font-serif text-white tracking-tight leading-none mb-1">{domain.solution.outcomeValue}</div>
-                  <p className="text-[9px] font-mono text-white/40 uppercase tracking-[0.1em] leading-relaxed max-w-[160px]">{domain.solution.outcomeDesc}</p>
+                  <div className="text-h2 font-serif text-white tracking-tight leading-none mb-1">
+                    {domain.solution.outcomeValue}
+                  </div>
+                  <p className="text-[9px] font-mono text-white/40 uppercase tracking-[0.1em] leading-relaxed max-w-[160px]">
+                    {domain.solution.outcomeDesc}
+                  </p>
                 </div>
               </motion.div>
             </div>

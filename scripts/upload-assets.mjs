@@ -1,18 +1,28 @@
-import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs';
-import path from 'path';
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
+  secure: true,
 });
 
-const ASSETS_DIR = path.join(process.cwd(), 'public');
-const OUTPUT_FILE = path.join(process.cwd(), 'cloudinary-assets.json');
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.mp4', '.webm', '.ogg'];
+const ASSETS_DIR = path.join(process.cwd(), "public");
+const OUTPUT_FILE = path.join(process.cwd(), "cloudinary-assets.json");
+const ALLOWED_EXTENSIONS = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".svg",
+  ".webp",
+  ".mp4",
+  ".webm",
+  ".ogg",
+];
 
 const assetMap = {};
 
@@ -22,15 +32,16 @@ async function uploadFile(filePath, relativePath) {
 
   // Use the relative path as the public_id to maintain structure
   // Remove extension and leading slash
-  const publicId = relativePath.replace(ext, '').replace(/^\//, '');
-  const resourceType = ext === '.mp4' || ext === '.webm' || ext === '.ogg' ? 'video' : 'auto';
+  const publicId = relativePath.replace(ext, "").replace(/^\//, "");
+  const resourceType =
+    ext === ".mp4" || ext === ".webm" || ext === ".ogg" ? "video" : "auto";
 
   console.log(`Uploading: ${relativePath} ...`);
 
   try {
     const result = await cloudinary.uploader.upload(filePath, {
       public_id: publicId,
-      folder: 'floodrix', // Root folder on Cloudinary
+      folder: "floodrix", // Root folder on Cloudinary
       resource_type: resourceType,
       use_filename: true,
       unique_filename: false,
@@ -44,7 +55,7 @@ async function uploadFile(filePath, relativePath) {
   }
 }
 
-async function walkDir(dir, relativeDir = '') {
+async function walkDir(dir, relativeDir = "") {
   const files = fs.readdirSync(dir, { withFileTypes: true });
 
   for (const file of files) {
@@ -60,10 +71,14 @@ async function walkDir(dir, relativeDir = '') {
 }
 
 async function main() {
-  console.log('🚀 Starting asset upload to Cloudinary...');
-  
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-    console.error('❌ Error: Cloudinary credentials missing in environment.');
+  console.log("🚀 Starting asset upload to Cloudinary...");
+
+  if (
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+  ) {
+    console.error("❌ Error: Cloudinary credentials missing in environment.");
     process.exit(1);
   }
 

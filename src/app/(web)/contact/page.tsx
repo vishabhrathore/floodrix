@@ -1,19 +1,25 @@
 "use client";
 
-import React from 'react';
-import { Mail, Phone, MapPin, Linkedin } from 'lucide-react';
-import SmoothReveal from '@/web/components/SmoothReveal';
-import ContactForm from '@/web/components/ContactForm';
-import { useSectionTheme } from '@/web/hooks/useSectionTheme';
+import React from "react";
+
+import { Linkedin, Mail, MapPin, Phone } from "lucide-react";
+
+import ContactForm from "@/web/components/ContactForm";
+import SmoothReveal from "@/web/components/SmoothReveal";
+import { useSectionTheme } from "@/web/hooks/useSectionTheme";
 
 export default function ContactPage() {
-  const containerRef = useSectionTheme<HTMLDivElement>('contact-container', 'light');
+  const containerRef = useSectionTheme<HTMLDivElement>(
+    "contact-container",
+    "light",
+  );
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-[#ffffff] selection:bg-brand-red/10 selection:text-brand-dark pt-32 md:pt-40">
-
+    <div
+      ref={containerRef}
+      className="relative min-h-screen bg-[#ffffff] selection:bg-brand-red/10 selection:text-brand-dark pt-32 md:pt-40"
+    >
       <main className="w-full px-6 md:px-20 lg:px-32">
-
         {/* ── Formal Header (ARUP Style) ── */}
         <header className="mb-24">
           <div className="max-w-4xl mb-20">
@@ -21,9 +27,10 @@ export default function ContactPage() {
               Contact us
             </h1>
             <p className="text-xl md:text-2xl text-gray-500 font-sans font-light leading-relaxed">
-              Our services are delivered by a global network of experts with a depth of expertise and a 
-              commitment to technical excellence. Get in touch using the options below and we&apos;ll connect you to 
-              the right person.
+              Our services are delivered by a global network of experts with a
+              depth of expertise and a commitment to technical excellence. Get
+              in touch using the options below and we&apos;ll connect you to the
+              right person.
             </p>
           </div>
         </header>
@@ -31,18 +38,19 @@ export default function ContactPage() {
         {/* ── Main Interactive Grid ── */}
         <section className="pb-32">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
-
             {/* Left: Engagement & Details */}
             <div className="lg:col-span-5 space-y-16">
               <SmoothReveal direction="up" distance={20}>
                 <div className="space-y-12">
-                  
                   {/* Global Presence Note */}
                   <div className="space-y-4">
-                    <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest font-bold">Expert Connection</p>
+                    <p className="text-[11px] font-mono text-gray-400 uppercase tracking-widest font-bold">
+                      Expert Connection
+                    </p>
                     <p className="text-lg text-brand-dark font-sans font-medium leading-relaxed">
-                      We operate a specialized technical dispatch system to ensure your enquiry reaches 
-                      the most qualified specialist in your region.
+                      We operate a specialized technical dispatch system to
+                      ensure your enquiry reaches the most qualified specialist
+                      in your region.
                     </p>
                   </div>
 
@@ -90,18 +98,17 @@ export default function ContactPage() {
                       Submit an enquiry
                     </h2>
                     <p className="text-sm text-gray-400 font-sans font-light">
-                      Describe your project requirements and technical standards. 
-                      A specialist lead will review and respond within 48 hours.
+                      Describe your project requirements and technical
+                      standards. A specialist lead will review and respond
+                      within 48 hours.
                     </p>
                   </div>
                   <ContactForm />
                 </div>
               </SmoothReveal>
             </div>
-
           </div>
         </section>
-
       </main>
     </div>
   );
@@ -120,8 +127,12 @@ function ContactInfoRow({
     <div className="flex items-start gap-4 py-5 border-b border-gray-100">
       <span className="text-gray-300 mt-0.5 flex-shrink-0">{icon}</span>
       <div>
-        <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-sm font-semibold text-brand-dark font-sans">{value}</p>
+        <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-1">
+          {label}
+        </p>
+        <p className="text-sm font-semibold text-brand-dark font-sans">
+          {value}
+        </p>
       </div>
     </div>
   );

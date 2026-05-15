@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono, Lora, Source_Serif_4, Playfair_Display, Bitter } from "next/font/google";
-import { Provider } from 'jotai'
-import { TRPCReactProvider } from "@/trpc/client";
+import {
+  Bitter,
+  DM_Mono,
+  DM_Sans,
+  Lora,
+  Playfair_Display,
+  Source_Serif_4,
+} from "next/font/google";
+
+import { Provider } from "jotai";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+
 import { Toaster } from "@/components/ui/sonner";
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { TRPCReactProvider } from "@/trpc/client";
+
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -59,12 +69,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${dmMono.variable} ${playfair.variable} ${lora.variable} ${sourceSerif.variable} ${bitter.variable}`} suppressHydrationWarning>
-      <head>
-      </head>
-      <body
-        className="antialiased"
-      >
+    <html
+      lang="en"
+      className={`${dmSans.variable} ${dmMono.variable} ${playfair.variable} ${lora.variable} ${sourceSerif.variable} ${bitter.variable}`}
+      suppressHydrationWarning
+    >
+      <head></head>
+      <body className="antialiased">
         <TRPCReactProvider>
           <NuqsAdapter>
             <Provider>

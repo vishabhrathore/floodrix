@@ -1,15 +1,23 @@
-import { createTRPCRouter, orgProcedure, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { Visibility, WorkflowStatus, LibraryStatus, CollaboratorPermission } from "@/generated/prisma";
 import { z } from "zod";
 
 import { PAGINATION } from "@/config/constants";
-import { isOrgAdmin } from "@/server/context/permission";
+import {
+  CollaboratorPermission,
+  LibraryStatus,
+  Visibility,
+  WorkflowStatus,
+} from "@/generated/prisma";
 import { loadContext } from "@/server/context/context.loader";
 import { assertPolicy } from "@/server/context/guards";
+import { isOrgAdmin } from "@/server/context/permission";
+import {
+  createTRPCRouter,
+  orgProcedure,
+  protectedProcedure,
+} from "@/trpc/init";
 
 export const calcWorkflowsRouter = createTRPCRouter({
-
   // ──────────────────────────────────────────────────────────────────────────
   // GET MANY (Private Organization Dashboard)
   // ──────────────────────────────────────────────────────────────────────────
@@ -18,23 +26,41 @@ export const calcWorkflowsRouter = createTRPCRouter({
       z.object({
         organizationId: z.string().optional(),
         page: z.number().int().min(1).default(PAGINATION.DEFAULT_PAGE),
-        pageSize: z.number().int().min(1).max(100).default(PAGINATION.DEFAULT_PAGE_SIZE),
+        pageSize: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(PAGINATION.DEFAULT_PAGE_SIZE),
         search: z.string().default(""),
         status: z.nativeEnum(WorkflowStatus).optional(),
         visibility: z.nativeEnum(Visibility).optional(),
         libraryStatus: z.nativeEnum(LibraryStatus).optional(),
         category: z.string().optional(),
-        sortBy: z.enum(['createdAt', 'updatedAt', 'name']).optional(),
-        sortOrder: z.enum(['asc', 'desc']).optional(),
-      })
+        sortBy: z.enum(["createdAt", "updatedAt", "name"]).optional(),
+        sortOrder: z.enum(["asc", "desc"]).optional(),
+      }),
     )
     .query(async ({ ctx, input }) => {
-      const { page, pageSize, search, status, visibility, category, libraryStatus, sortBy, sortOrder } = input;
+      const {
+        page,
+        pageSize,
+        search,
+        status,
+        visibility,
+        category,
+        libraryStatus,
+        sortBy,
+        sortOrder,
+      } = input;
       const { reqCtx } = ctx;
 
       const organizationId = input.organizationId || reqCtx.organization?.id;
       if (!organizationId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Organization ID is required." });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Organization ID is required.",
+        });
       }
 
       // todo fix visibility ---- for library, publish
@@ -42,20 +68,24 @@ export const calcWorkflowsRouter = createTRPCRouter({
       const visibilityFilter = isOrgAdmin(reqCtx)
         ? {}
         : {
-          OR: [
-            { visibility: Visibility.PUBLIC },
-            { collaborators: { some: { actorId: reqCtx.actor?.id ?? "" } } },
-          ],
-        };
+            OR: [
+              { visibility: Visibility.PUBLIC },
+              { collaborators: { some: { actorId: reqCtx.actor?.id ?? "" } } },
+            ],
+          };
 
       const whereClause = {
         organizationId,
         deletedAt: null,
         ...visibilityFilter,
-        OR: search ? [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { description: { contains: search, mode: "insensitive" as const } },
-        ] : undefined,
+        OR: search
+          ? [
+              { name: { contains: search, mode: "insensitive" as const } },
+              {
+                description: { contains: search, mode: "insensitive" as const },
+              },
+            ]
+          : undefined,
         ...(status ? { status } : {}),
         ...(visibility ? { visibility } : {}),
         ...(libraryStatus ? { libraryStatus } : {}),
@@ -81,11 +111,13 @@ export const calcWorkflowsRouter = createTRPCRouter({
             updatedAt: true,
             createdAt: true,
             _count: { select: { nodes: true, sessions: true } },
-            ratingAggregate: { select: { averageRating: true, ratingCount: true } },
+            ratingAggregate: {
+              select: { averageRating: true, ratingCount: true },
+            },
             // Include collaborators to show avatars in the UI
             collaborators: {
-              include: { actor: { select: { displayName: true } } }
-            }
+              include: { actor: { select: { displayName: true } } },
+            },
           },
         }),
         ctx.db.calcWorkflow.count({ where: whereClause }),
@@ -110,14 +142,18 @@ export const calcWorkflowsRouter = createTRPCRouter({
   getOne: orgProcedure
     .input(z.object({ organizationId: z.string().optional(), id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const organizationId = input.organizationId || ctx.reqCtx.organization?.id;
+      const organizationId =
+        input.organizationId || ctx.reqCtx.organization?.id;
       const reqCtx = await loadContext(ctx.db, ctx.userId, {
         organizationId,
         workflowId: input.id,
       });
 
       if (!reqCtx.workflow) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workflow not found",
+        });
       }
 
       // The Policy Engine now automatically bypasses assertions if it is in the Public Library
@@ -139,9 +175,18 @@ export const calcWorkflowsRouter = createTRPCRouter({
           updatedAt: true,
           createdAt: true,
           metadata: true,
-          _count: { select: { nodes: true, edges: true, variables: true, sessions: true } },
+          _count: {
+            select: {
+              nodes: true,
+              edges: true,
+              variables: true,
+              sessions: true,
+            },
+          },
           currentVersion: { select: { version: true, publishedAt: true } },
-          collaborators: { include: { actor: { select: { displayName: true } } } }
+          collaborators: {
+            include: { actor: { select: { displayName: true } } },
+          },
         },
       });
     }),
@@ -156,16 +201,22 @@ export const calcWorkflowsRouter = createTRPCRouter({
         name: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
         category: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { reqCtx } = ctx;
       const organizationId = input.organizationId || reqCtx.organization?.id;
       if (!organizationId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Organization ID is required." });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Organization ID is required.",
+        });
       }
       if (!reqCtx.actor) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Actor not found." });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Actor not found.",
+        });
       }
 
       // Auto-Slug generation logic
@@ -175,10 +226,14 @@ export const calcWorkflowsRouter = createTRPCRouter({
         .replace(/^-|-$/g, "");
 
       const existingCount = await ctx.db.calcWorkflow.count({
-        where: { organizationId: input.organizationId, slug: { startsWith: baseSlug } },
+        where: {
+          organizationId: input.organizationId,
+          slug: { startsWith: baseSlug },
+        },
       });
 
-      const slug = existingCount > 0 ? `${baseSlug}-${existingCount + 1}` : baseSlug;
+      const slug =
+        existingCount > 0 ? `${baseSlug}-${existingCount + 1}` : baseSlug;
 
       // Nested create: makes the workflow AND grants the creator ADMIN rights over it
       return ctx.db.calcWorkflow.create({
@@ -214,18 +269,23 @@ export const calcWorkflowsRouter = createTRPCRouter({
         category: z.string().optional(),
         visibility: z.nativeEnum(Visibility).optional(),
         status: z.nativeEnum(WorkflowStatus).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
-      const organizationId = input.organizationId || ctx.reqCtx.organization?.id;
+      const organizationId =
+        input.organizationId || ctx.reqCtx.organization?.id;
 
       const reqCtx = await loadContext(ctx.db, ctx.userId, {
         organizationId,
         workflowId: id,
       });
 
-      if (!reqCtx.workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+      if (!reqCtx.workflow)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workflow not found",
+        });
 
       assertPolicy(reqCtx, "edit", "workflow");
 
@@ -241,13 +301,18 @@ export const calcWorkflowsRouter = createTRPCRouter({
   remove: orgProcedure
     .input(z.object({ organizationId: z.string().optional(), id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const organizationId = input.organizationId || ctx.reqCtx.organization?.id;
+      const organizationId =
+        input.organizationId || ctx.reqCtx.organization?.id;
       const reqCtx = await loadContext(ctx.db, ctx.userId, {
         organizationId,
         workflowId: input.id,
       });
 
-      if (!reqCtx.workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Workflow not found" });
+      if (!reqCtx.workflow)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workflow not found",
+        });
 
       assertPolicy(reqCtx, "delete", "workflow");
 
@@ -266,10 +331,15 @@ export const calcWorkflowsRouter = createTRPCRouter({
     .input(
       z.object({
         page: z.number().int().min(1).default(PAGINATION.DEFAULT_PAGE),
-        pageSize: z.number().int().min(1).max(100).default(PAGINATION.DEFAULT_PAGE_SIZE),
+        pageSize: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(PAGINATION.DEFAULT_PAGE_SIZE),
         search: z.string().default(""),
         category: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const { page, pageSize, search, category } = input;
@@ -280,14 +350,21 @@ export const calcWorkflowsRouter = createTRPCRouter({
         // MUST be marked as listed or public
         OR: [
           { libraryStatus: LibraryStatus.LISTED },
-          { visibility: Visibility.PUBLIC }
+          { visibility: Visibility.PUBLIC },
         ],
-        ...(search ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { description: { contains: search, mode: "insensitive" as const } },
-          ],
-        } : {}),
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: "insensitive" as const } },
+                {
+                  description: {
+                    contains: search,
+                    mode: "insensitive" as const,
+                  },
+                },
+              ],
+            }
+          : {}),
         ...(category && category !== "all" ? { category } : {}),
       };
 
@@ -307,9 +384,11 @@ export const calcWorkflowsRouter = createTRPCRouter({
             tags: true,
             libraryStatus: true,
             publishedAt: true,
-            ratingAggregate: { select: { averageRating: true, ratingCount: true } },
+            ratingAggregate: {
+              select: { averageRating: true, ratingCount: true },
+            },
             // Includes the organization name to show who authored it in the marketplace
-            organization: { select: { name: true } }
+            organization: { select: { name: true } },
           },
         }),
         ctx.db.calcWorkflow.count({ where: whereClause }),

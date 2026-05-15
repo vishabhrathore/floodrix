@@ -1,6 +1,5 @@
 "use client";
 
-
 export interface WorkflowStep {
   title: string;
   desc: string;
@@ -36,7 +35,7 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "#00C9A0",
         toolNote: "USACE · Hydrologic Engineering Centre",
         nodeColor: "#00C9A0",
-        nodeRingColor: "rgba(0,201,160,0.4)"
+        nodeRingColor: "rgba(0,201,160,0.4)",
       },
       {
         title: "Hydraulic Modelling & Scour",
@@ -47,7 +46,7 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "#E8382A",
         toolNote: "USACE · River Analysis System",
         nodeColor: "#E8382A",
-        nodeRingColor: "rgba(232,56,42,0.5)"
+        nodeRingColor: "rgba(232,56,42,0.5)",
       },
       {
         title: "Drainage Design & Mapping",
@@ -58,8 +57,8 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "rgba(240,237,232,0.55)",
         toolNote: "Autodesk · Esri / QGIS",
         nodeColor: "rgba(255,255,255,0.35)",
-        nodeRingColor: "rgba(255,255,255,0.2)"
-      }
+        nodeRingColor: "rgba(255,255,255,0.2)",
+      },
     ],
     outputs: [
       { title: "Hydraulic Report", highlighted: true },
@@ -67,8 +66,8 @@ export const workflows: Record<string, DomainWorkflow> = {
       { title: "Drainage Design Drawings", highlighted: false },
       { title: "HEC-RAS Model Files", highlighted: false },
       { title: "Erosion Protection Design", highlighted: false },
-      { title: "Culvert Sizing Schedule", highlighted: false }
-    ]
+      { title: "Culvert Sizing Schedule", highlighted: false },
+    ],
   },
   infrastructure: {
     id: "infrastructure",
@@ -84,7 +83,7 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "#00C9A0",
         toolNote: "Innovyze · Global Leader",
         nodeColor: "#00C9A0",
-        nodeRingColor: "rgba(0,201,160,0.4)"
+        nodeRingColor: "rgba(0,201,160,0.4)",
       },
       {
         title: "Network Optimization",
@@ -95,7 +94,7 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "#E8382A",
         toolNote: "Stormwater Management Plan",
         nodeColor: "#E8382A",
-        nodeRingColor: "rgba(232,56,42,0.5)"
+        nodeRingColor: "rgba(232,56,42,0.5)",
       },
       {
         title: "Flood Hazard Mapping",
@@ -106,8 +105,8 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "rgba(240,237,232,0.55)",
         toolNote: "BMT · Advance 2D Simulation",
         nodeColor: "rgba(255,255,255,0.35)",
-        nodeRingColor: "rgba(255,255,255,0.2)"
-      }
+        nodeRingColor: "rgba(255,255,255,0.2)",
+      },
     ],
     outputs: [
       { title: "Flood Risk Assessment (FRA)", highlighted: true },
@@ -115,8 +114,8 @@ export const workflows: Record<string, DomainWorkflow> = {
       { title: "Drainage Layouts", highlighted: false },
       { title: "Infiltration Studies", highlighted: false },
       { title: "Basin Sizing Charts", highlighted: false },
-      { title: "Exceedance Flow Routes", highlighted: false }
-    ]
+      { title: "Exceedance Flow Routes", highlighted: false },
+    ],
   },
   groundwater: {
     id: "groundwater",
@@ -132,7 +131,7 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "#00C9A0",
         toolNote: "Conceptualization & Field Data",
         nodeColor: "#00C9A0",
-        nodeRingColor: "rgba(0,201,160,0.4)"
+        nodeRingColor: "rgba(0,201,160,0.4)",
       },
       {
         title: "Numerical Simulation",
@@ -143,7 +142,7 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "#E8382A",
         toolNote: "USGS · 3D Subsurface Experts",
         nodeColor: "#E8382A",
-        nodeRingColor: "rgba(232,56,42,0.5)"
+        nodeRingColor: "rgba(232,56,42,0.5)",
       },
       {
         title: "Dewatering Design",
@@ -154,8 +153,8 @@ export const workflows: Record<string, DomainWorkflow> = {
         softwareTextColor: "rgba(240,237,232,0.55)",
         toolNote: "Schlumberger · Engineering Design",
         nodeColor: "rgba(255,255,255,0.35)",
-        nodeRingColor: "rgba(255,255,255,0.2)"
-      }
+        nodeRingColor: "rgba(255,255,255,0.2)",
+      },
     ],
     outputs: [
       { title: "Impact Assessment (HIA)", highlighted: true },
@@ -163,7 +162,7 @@ export const workflows: Record<string, DomainWorkflow> = {
       { title: "Yield Analysis", highlighted: false },
       { title: "Contaminant Plume Maps", highlighted: false },
       { title: "Monitoring Strategy", highlighted: false },
-      { title: "Seepage Analysis", highlighted: false }
-    ]
-  }
+      { title: "Seepage Analysis", highlighted: false },
+    ],
+  },
 };

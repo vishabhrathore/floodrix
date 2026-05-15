@@ -6,9 +6,9 @@ import { GoogleGenAI } from "@google/genai";
 export const generateWaterAdvice = async (userPrompt: string) => {
   // Initialize instance right before making an API call as per best practices
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: "gemini-3-flash-preview",
     contents: userPrompt,
     config: {
       systemInstruction: `You are floodRIx AI, a senior expert in water resource management. 
@@ -17,7 +17,7 @@ export const generateWaterAdvice = async (userPrompt: string) => {
       and lake rejuvenation. Keep responses concise but highly informative.`,
       temperature: 0.7,
       // Removed maxOutputTokens to avoid response truncation/errors since thinkingBudget is not explicitly configured
-    }
+    },
   });
 
   // response.text is a getter property that returns the generated string

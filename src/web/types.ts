@@ -1,7 +1,7 @@
 "use client";
 
 // Added React import to resolve the missing React namespace error
-import React from 'react';
+import React from "react";
 
 export interface ServiceCardProps {
   title: string;
@@ -52,19 +52,18 @@ export interface BlogPost {
   excerpt: string;
   content: string;
   author: string;
-  reviewedBy?: string;        // Optional: shown as "Technical Review" in header
+  reviewedBy?: string; // Optional: shown as "Technical Review" in header
   date: string;
   image: string;
   category: string;
   readTime: string;
-  regulatoryScope?: string;   // e.g. "CWC / IRC / BIS" — shown in meta + sidebar
-  geographicScope?: string;   // e.g. "Indian Subcontinent"
-  methodologies?: string[];   // e.g. ["SWMM", "HEC-RAS", "MODFLOW"] — shown as tags
-  domains?: BlogDomain[];     // Multi-domain articles get a sticky domain nav
+  regulatoryScope?: string; // e.g. "CWC / IRC / BIS" — shown in meta + sidebar
+  geographicScope?: string; // e.g. "Indian Subcontinent"
+  methodologies?: string[]; // e.g. ["SWMM", "HEC-RAS", "MODFLOW"] — shown as tags
+  domains?: BlogDomain[]; // Multi-domain articles get a sticky domain nav
   references?: BlogReference[]; // Real citations, shown in sidebar
-  reportUrl?: string;         // If a downloadable PDF exists, wire it here
+  reportUrl?: string; // If a downloadable PDF exists, wire it here
 }
-
 
 export interface TeamMember {
   id: number;
@@ -77,12 +76,12 @@ export interface TeamMember {
   yearsOfExp: string;
   notableProject: string;
   publications: number;
-  availability: 'Available' | 'On Project' | 'Consulting Only';
+  availability: "Available" | "On Project" | "Consulting Only";
   region: string;
 }
 
 export interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 

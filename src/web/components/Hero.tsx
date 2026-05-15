@@ -2,9 +2,10 @@
 
 import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 const Hero: React.FC = () => {
-  const heroRef = useRef<HTMLDivElement>(null);
+  const heroRef = useSectionTheme('main-hero', 'dark');
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
   const metaRef = useRef<HTMLDivElement>(null);

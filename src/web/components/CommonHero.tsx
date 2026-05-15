@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -30,6 +31,8 @@ const CommonHero: React.FC<CommonHeroProps> = ({
   backgroundText,
   stats
 }) => {
+  const sectionRef = useSectionTheme(id, 'dark');
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Entrance Animation
@@ -66,7 +69,7 @@ const CommonHero: React.FC<CommonHeroProps> = ({
   };
 
   return (
-    <section id={id} className="hero-section relative min-h-[90vh] bg-brand-dark flex flex-col justify-end px-6 md:px-20 lg:px-32 pb-24 overflow-hidden pt-32">
+    <section ref={sectionRef} id={id} className="hero-section relative min-h-[90vh] bg-brand-dark flex flex-col justify-end px-6 md:px-20 lg:px-32 pb-24 overflow-hidden pt-32">
 
       {/* Background Typography */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">

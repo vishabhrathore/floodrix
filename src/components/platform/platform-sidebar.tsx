@@ -6,14 +6,12 @@ import { usePathname } from 'next/navigation';
 import {
   ChevronDown,
   ChevronRight,
-  Layers,
-  Calculator,
   FolderTree,
   Box,
   LayoutGrid,
   Sigma,
   ArrowRight,
-  Zap
+  Layout
 } from 'lucide-react';
 import { PLATFORM_DATA, Category, Calculator as CalculatorType } from '@/lib/platform-data';
 import { cn } from '@/lib/utils';
@@ -21,12 +19,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuSub,
 } from '@/components/ui/sidebar';
 
 export function PlatformSidebar() {
@@ -40,88 +32,103 @@ export function PlatformSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-sidebar-border bg-white text-sidebar-foreground">
-      <SidebarHeader className="p-6 border-b border-sidebar-border/50">
-        <Link href="/platform" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-red text-white shadow-lg shadow-brand-red/20">
-            <LayoutGrid size={20} />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-sm font-black tracking-tighter text-brand-dark uppercase">FloodRix</h1>
-            <p className="text-[10px] font-bold text-brand-red uppercase tracking-widest">Engineering Portal</p>
-          </div>
-        </Link>
+    <Sidebar className="border-r border-[#e8e8e8] bg-white text-[#0a0a0a]">
+      <SidebarHeader className="h-[56px] px-4 border-b border-[#e8e8e8] flex flex-row items-center gap-2.5">
+        <div className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] bg-[#0a0a0a]">
+          <LayoutGrid size={12} className="text-white" strokeWidth={3} />
+        </div>
+        <div className="flex items-center text-[13px] font-semibold tracking-tight">
+          <span>Floodrix</span>
+          <span className="mx-1 font-light text-[#d4d4d4]">/</span>
+          <span className="font-normal text-[#a1a1a1]">Portal</span>
+        </div>
       </SidebarHeader>
 
-      <SidebarContent className="scrollbar-hide px-3 py-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 mb-4">
-            Workspaces
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-2">
-              {PLATFORM_DATA.map((workspace) => (
-                <SidebarMenuItem key={workspace.id}>
-                  <button
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-4 py-2.5 transition-all hover:bg-muted/50",
-                      expandedWorkspaces[workspace.id] ? "text-brand-dark bg-muted/30" : "text-muted-foreground"
-                    )}
-                    onClick={() => toggleWorkspace(workspace.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Box size={16} className={expandedWorkspaces[workspace.id] ? "text-brand-red" : "opacity-50"} />
-                      <span className="text-[11px] font-black uppercase tracking-[0.1em]">{workspace.name}</span>
-                    </div>
-                    {expandedWorkspaces[workspace.id] ? <ChevronDown size={14} className="opacity-50" /> : <ChevronRight size={14} className="opacity-50" />}
-                  </button>
+      <SidebarContent className="scrollbar-hide flex flex-col gap-0 py-2">
+        {/* GENERAL SECTION */}
+        <div className="py-2 border-b border-[#e8e8e8]">
+          <div className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.04em] text-[#a1a1a1]">General</div>
+          <SidebarItem icon={<LayoutGrid size={14} />} label="Overview" active={pathname === '/platform'} href="/platform" />
+        </div>
 
-                  {expandedWorkspaces[workspace.id] && (
-                    <div className="ml-3 mt-1 border-l-2 border-muted space-y-1 py-1">
-                      {workspace.children.map((child) => (
-                        <RecursiveNavItem key={child.id} item={child} level={1} />
-                      ))}
-                    </div>
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* WORKSPACES SECTION */}
+        <div className="py-2 border-b border-[#e8e8e8] flex-1">
+          <div className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.04em] text-[#a1a1a1]">Workspaces</div>
+          {PLATFORM_DATA.map((workspace) => (
+            <div key={workspace.id} className="mb-0.5">
+              <div
+                className={cn(
+                  "flex w-full items-center gap-2 px-4 py-1.5 text-[13px] transition-all hover:bg-[#fafafa]",
+                  expandedWorkspaces[workspace.id] || pathname.includes(workspace.id) ? "text-[#0a0a0a] font-medium" : "text-[#525252]"
+                )}
+              >
+                <Link 
+                  href={`/platform/${workspace.id}`}
+                  className="flex items-center gap-2 flex-1 min-w-0"
+                >
+                  <Box size={14} className={expandedWorkspaces[workspace.id] || pathname.includes(workspace.id) ? "text-[#0a0a0a]" : "opacity-50"} />
+                  <span className="truncate">{workspace.name}</span>
+                </Link>
+                <button 
+                  onClick={() => toggleWorkspace(workspace.id)}
+                  className="p-1 hover:bg-[#f0f0f0] rounded transition-colors"
+                >
+                  {expandedWorkspaces[workspace.id] ? <ChevronDown size={14} className="opacity-30" /> : <ChevronRight size={14} className="opacity-30" />}
+                </button>
+              </div>
+
+              {expandedWorkspaces[workspace.id] && (
+                <div className="flex flex-col gap-0.5 mt-0.5 border-l-2 border-[#f5f5f5] ml-[23px]">
+                  {workspace.children.map((child) => (
+                    <RecursiveNavItem key={child.id} item={child} level={1} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+
       </SidebarContent>
 
-      <div className="mt-auto px-4 pb-8">
-        <div className="relative overflow-hidden rounded-2xl bg-slate-50 p-5 shadow-sm group border border-slate-200 hover:border-brand-red/30 transition-colors duration-300">
-          {/* Subtle Technical Pattern */}
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:12px_12px]"></div>
-          
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-red/10 text-brand-red">
-                <Zap size={12} fill="currentColor" />
-              </div>
-              <p className="text-[10px] font-black text-brand-dark uppercase tracking-[0.2em]">Bespoke Engineering</p>
-            </div>
-            
-            <div className="space-y-1">
-              <p className="text-[11px] leading-relaxed text-muted-foreground font-medium">
-                Need a custom analytical framework or a bespoke computational tool?
-              </p>
-            </div>
-
-            <Link href="/#contact" className="flex items-center justify-between group/btn w-full bg-white hover:bg-brand-red transition-all duration-300 rounded-lg px-4 py-2.5 border border-slate-200 hover:border-brand-red shadow-sm">
-              <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark group-hover/btn:text-white transition-colors">Contact Experts</span>
-              <ArrowRight size={14} className="text-brand-red group-hover/btn:text-white group-hover/btn:translate-x-1 transition-all" />
-            </Link>
+      {/* Footer / Bespoke Engineering */}
+      <div className="p-3 border-top border-[#e8e8e8]">
+        <div className="rounded-lg border border-[#e8e8e8] bg-[#fafafa] p-3.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#0070f3]" />
+            <span className="text-[11px] font-semibold text-[#0a0a0a]">Bespoke Engineering</span>
           </div>
+          <p className="text-[11px] text-[#a1a1a1] leading-relaxed mb-3">
+            Need a custom framework or bespoke computational tool?
+          </p>
+          <Link href="/contact" className="flex h-8 w-full items-center justify-center rounded-md bg-[#0a0a0a] text-[12px] font-medium text-white transition-opacity hover:opacity-90">
+            Contact Experts
+          </Link>
         </div>
       </div>
     </Sidebar>
   );
 }
 
+function SidebarItem({ icon, label, badge, active, dot, href }: { icon?: React.ReactNode, label: string, badge?: string, active?: boolean, dot?: boolean, href?: string }) {
+  return (
+    <Link 
+      href={href || '#'}
+      className={cn(
+        "flex w-full items-center gap-2 px-4 py-1.5 text-[13px] transition-all border-l-2",
+        active ? "bg-[#fafafa] text-[#0a0a0a] border-[#0a0a0a] font-medium" : "text-[#525252] border-transparent hover:bg-[#fafafa] hover:text-[#0a0a0a]"
+      )}
+    >
+      {icon && <span className={cn("opacity-50", active && "opacity-100")}>{icon}</span>}
+      {dot && <div className="h-1 w-1 rounded-full bg-current opacity-40" />}
+      <span className="flex-1">{label}</span>
+      {badge && <span className="text-[10px] font-medium bg-[#f5f5f5] text-[#a1a1a1] px-1.5 py-0.5 rounded font-mono">{badge}</span>}
+    </Link>
+  );
+}
+
 function RecursiveNavItem({ item, level }: { item: Category | CalculatorType, level: number }) {
-  const [isOpen, setIsOpen] = useState(level < 2); // Auto-open first few levels
+  const [isOpen, setIsOpen] = useState(level < 2);
   const pathname = usePathname();
 
   if (item.type === 'calculator') {
@@ -130,16 +137,14 @@ function RecursiveNavItem({ item, level }: { item: Category | CalculatorType, le
       <Link
         href={`/platform/calculator/${item.id}`}
         className={cn(
-          "group relative flex items-center gap-2 py-2 pl-4 pr-2 text-sm transition-all",
+          "group relative flex items-center gap-2 py-1.5 pl-4 pr-4 text-[13px] transition-all",
           isActive
-            ? "text-brand-red font-bold"
-            : "text-muted-foreground hover:text-brand-dark"
+            ? "text-[#0a0a0a] font-medium bg-[#fafafa]"
+            : "text-[#525252] hover:text-[#0a0a0a] hover:bg-[#fafafa]"
         )}
       >
-        {/* Active high-contrast marker */}
-        {isActive && <div className="absolute left-[-1px] h-full w-[2px] bg-brand-red" />}
-
-        <Sigma size={12} className={cn("shrink-0 transition-colors", isActive ? "text-brand-red" : "opacity-30 group-hover:opacity-100 group-hover:text-brand-red")} />
+        {isActive && <div className="absolute left-[-2px] h-full w-[2px] bg-[#0a0a0a]" />}
+        <Sigma size={14} className={cn("shrink-0 transition-colors", isActive ? "text-[#0a0a0a]" : "opacity-30 group-hover:opacity-100")} />
         <span className="truncate">{item.name}</span>
       </Link>
     );
@@ -149,21 +154,18 @@ function RecursiveNavItem({ item, level }: { item: Category | CalculatorType, le
     <div className="space-y-0.5">
       <button
         className={cn(
-          "flex w-full items-center justify-between py-2 pl-4 pr-2 text-sm transition-all hover:text-brand-red",
-          isOpen ? "text-brand-dark font-bold" : "text-muted-foreground"
+          "flex w-full items-center gap-2 py-1.5 pl-4 pr-4 text-[13px] transition-all hover:bg-[#fafafa]",
+          isOpen ? "text-[#0a0a0a] font-medium" : "text-[#525252]"
         )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-2 truncate">
-          <FolderTree size={14} className="opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
-
-          <span className="truncate">{item.name}</span>
-        </div>
+        <FolderTree size={14} className="opacity-40 shrink-0" />
+        <span className="truncate flex-1 text-left">{item.name}</span>
         {isOpen ? <ChevronDown size={12} className="opacity-30" /> : <ChevronRight size={12} className="opacity-30" />}
       </button>
 
       {isOpen && (
-        <div className="ml-5 border-l border-border/40 flex flex-col gap-0.5">
+        <div className="flex flex-col gap-0.5 ml-3 border-l border-[#f0f0f0]">
           {item.children.map((child) => (
             <RecursiveNavItem key={child.id} item={child} level={level + 1} />
           ))}
@@ -172,3 +174,5 @@ function RecursiveNavItem({ item, level }: { item: Category | CalculatorType, le
     </div>
   );
 }
+
+

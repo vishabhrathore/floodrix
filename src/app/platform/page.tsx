@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, ArrowRight, Search, Sigma, ChevronRight, Database } from 'lucide-react';
+import { Box, ArrowRight, Search, ChevronRight, Clock, ShieldCheck, Database, Layout } from 'lucide-react';
 import { PLATFORM_DATA, getAllCalculators, Calculator as CalculatorType } from '@/lib/platform-data';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { FormulaDisplay } from '@/components/platform/formula-display';
 
 export default function PlatformPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,68 +27,51 @@ export default function PlatformPage() {
     : allCalculators.slice(0, 4);
 
   return (
-    <div className="w-full max-w-[1800px] mx-auto">
-      {/* Structural Header */}
-      <div className="mb-12 border-b border-border pb-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-[22px] font-medium tracking-tight text-brand-dark">Engineering Methodologies</h1>
-            <p className="text-sm text-muted-foreground font-normal max-w-2xl leading-relaxed">
-              Explore our comprehensive library of validated engineering toolsets and analysis frameworks.
-            </p>
-          </div>
-
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input
-              type="text"
-              placeholder="Search methods or standards..."
-              className="h-10 w-full rounded-lg border border-border bg-white pl-10 pr-4 text-xs font-normal text-brand-dark outline-none focus:border-brand-red/50 focus:ring-4 focus:ring-brand-red/5 transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
+    <div className="px-7 md:px-10 py-7 md:py-10 w-full">
+      {/* Page Header */}
+      <div className="mb-10">
+        <h3 className="text-h3 font-semibold text-[#0a0a0a] tracking-tight leading-tight mb-2">Engineering Methodologies</h3>
+        <p className="text-[14px] text-[#a1a1a1] max-w-[600px] leading-relaxed font-normal">
+          Explore our comprehensive library of validated engineering toolsets and analysis frameworks.
+        </p>
       </div>
 
-      <div className="space-y-20 pb-24">
-        {/* Discovery Grid */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-border/50 pb-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-base font-medium text-brand-dark tracking-tight">
-                {searchQuery ? 'Analysis Results' : 'Recommended Methods'}
-              </h2>
-              <span className="text-[10px] font-bold text-muted-foreground/50 bg-muted px-2 py-0.5 rounded uppercase">
-                {filteredCalculators.length} Methods
-              </span>
-            </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 border border-[#e8e8e8] rounded-xl overflow-hidden mb-12">
+        <StatCell value="24" label="Methods available" delta="+ 4 this month" />
+        <StatCell value="6" label="Engineering domains" />
+        <StatCell value="99" label="Validation accuracy" sup="%" sub="IS / IRC / ACI" />
+        <StatCell value="2" label="Active workspaces" />
+      </div>
+
+      <div className="space-y-16 pb-20">
+        {/* Recommended Methods */}
+        <section>
+          <div className="flex items-center justify-between border-b border-[#e8e8e8] pb-3 mb-4">
+            <h4 className="text-[14px] font-semibold text-[#0a0a0a]">Recommended Methods</h4>
+            <span className="text-[12px] text-[#a1a1a1] font-mono">{filteredCalculators.length} methods</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border-l border-t border-border overflow-hidden rounded-xl shadow-sm">
-            <AnimatePresence mode="popLayout">
-              {filteredCalculators.map((calc, i) => (
-                <CalculatorDiscoveryCard
-                  key={calc.id}
-                  calc={calc}
-                  index={i}
-                  workspaceName={calc.workspaceName || 'Platform'}
-                />
-              ))}
-            </AnimatePresence>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {filteredCalculators.map((calc, i) => (
+              <CalculatorDiscoveryCard
+                key={calc.id}
+                calc={calc}
+                index={i}
+                workspaceName={calc.workspaceName || 'Platform'}
+              />
+            ))}
           </div>
         </section>
 
-        {/* Workspace Architecture */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-4 border-b border-border/50 pb-4">
-            <h2 className="text-base font-medium text-brand-dark tracking-tight">Technical Workspaces</h2>
-            <span className="text-[10px] font-bold text-muted-foreground/50 bg-muted px-2 py-0.5 rounded uppercase">
-              {PLATFORM_DATA.length} Domains
-            </span>
+        {/* Technical Workspaces */}
+        <section>
+          <div className="flex items-center justify-between border-b border-[#e8e8e8] pb-3 mb-4">
+            <h4 className="text-[14px] font-semibold text-[#0a0a0a]">Technical Workspaces</h4>
+            <span className="text-[12px] text-[#a1a1a1] font-mono">{PLATFORM_DATA.length} domains</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-t border-border overflow-hidden rounded-xl shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {PLATFORM_DATA.map((workspace, index) => (
               <WorkspaceCard key={workspace.id} workspace={workspace} index={index} />
             ))}
@@ -98,113 +82,118 @@ export default function PlatformPage() {
   );
 }
 
+function StatCell({ value, label, delta, sup, sub }: { value: string, label: string, delta?: string, sup?: string, sub?: string }) {
+  return (
+    <div className="px-6 py-5 border-r border-[#e8e8e8] last:border-r-0 hover:bg-[#fafafa] transition-colors">
+      <div className="flex items-baseline gap-1 mb-1">
+        <span className="text-[28px] font-semibold text-[#0a0a0a] tracking-tighter">{value}</span>
+        {sup && <sup className="text-[14px] font-medium text-[#a1a1a1]">{sup}</sup>}
+      </div>
+      <div className="text-[11px] text-[#a1a1a1] font-medium mb-1">{label}</div>
+      {delta && <div className="text-[11px] text-[#00b341] font-medium font-mono">{delta}</div>}
+      {sub && <div className="text-[11px] text-[#00b341] font-medium font-mono">{sub}</div>}
+    </div>
+  );
+}
+
 export function CalculatorDiscoveryCard({ calc, index, workspaceName }: { calc: any, index: number, workspaceName: string }) {
+  // Chart-based colors for variety
+  const colors = [
+    '#0070f3', // Blue
+    '#f97316', // Orange
+    '#00b341', // Green
+    '#7c3aed', // Purple
+  ];
+  const accentColor = colors[index % colors.length];
+
   return (
     <Link
       href={`/platform/calculator/${calc.id}`}
-      className="group relative flex flex-col bg-white transition-all duration-300 border-r border-b border-border p-5 md:p-6 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] z-0 hover:z-10"
+      className="group flex flex-col bg-white border border-[#e8e8e8] rounded-xl overflow-hidden transition-all hover:border-[#d4d4d4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
     >
-      <motion.div
-        layout
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3, delay: index * 0.05 }}
-        className="flex flex-col h-full"
-      >
-        {/* Atmospheric Gradient Sweep - Top Right Only */}
-        <div className="absolute inset-0 bg-gradient-to-bl from-brand-red/[0.04] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-        {/* Precision Accent Border */}
-        <div className="absolute left-0 top-0 h-full w-px bg-brand-red scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top"></div>
-
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500 group-hover:bg-brand-red group-hover:text-white transition-colors duration-300">
-              <Sigma size={18} />
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-bold text-brand-red uppercase tracking-wider">{calc.formula.region}</span>
-              <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">{workspaceName}</span>
-            </div>
+      <div className="h-0.5 w-full" style={{ backgroundColor: accentColor }} />
+      
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex items-start justify-between mb-4">
+          <div className="h-8 w-8 rounded-lg border border-[#e8e8e8] bg-[#fafafa] flex items-center justify-center">
+             <Layout size={14} className="text-[#525252]" />
           </div>
-
-          <div className="flex-1 space-y-4">
-            <div>
-              <h3 className="text-body font-semibold text-brand-dark leading-snug group-hover:text-brand-red transition-colors duration-300">
-                {calc.name}
-              </h3>
-              <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed line-clamp-2">
-                {calc.description}
-              </p>
-            </div>
-
-            <div className="w-fit rounded-md bg-slate-900 text-white px-3 py-1.5 font-mono text-[11px] tracking-tight border border-slate-800 text-left">
-              {calc.formula.expression}
-            </div>
-          </div>
-
-          <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-4">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-dark uppercase tracking-wider group-hover:translate-x-1 transition-transform duration-300">
-              Calculate <ChevronRight size={12} className="text-brand-red" />
-            </div>
-            <span className="text-[9px] font-medium text-muted-foreground/60 uppercase">{calc.formula.reference}</span>
+          <div className="px-2 py-0.5 rounded-[4px] border border-[#dbeafe] bg-[#eff6ff] text-[10px] font-medium text-[#0070f3]" 
+               style={{ 
+                 borderColor: `${accentColor}20`, 
+                 backgroundColor: `${accentColor}10`, 
+                 color: accentColor 
+               }}>
+            {calc.formula.region || 'International'}
           </div>
         </div>
-      </motion.div>
+
+        <div className="mb-1 text-[10px] uppercase tracking-wider text-[#a1a1a1] font-medium">
+          {workspaceName}
+        </div>
+        <h4 className="text-[14px] font-semibold text-[#0a0a0a] leading-tight mb-2">
+          {calc.name}
+        </h4>
+        <p className="text-[12px] text-[#a1a1a1] leading-relaxed line-clamp-2 mb-4 flex-1">
+          {calc.description}
+        </p>
+
+        <div className="bg-[#fafafa] border border-[#e8e8e8] rounded-lg px-3 py-2.5 mb-2 overflow-hidden">
+           <FormulaDisplay expression={calc.formula.expression} className="text-[13px] text-[#0a0a0a]" />
+        </div>
+      </div>
+
+      <div className="px-4 py-3 border-t border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#525252] group-hover:text-[#0a0a0a] transition-colors">
+          Calculate <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+        </div>
+        <span className="text-[10px] text-[#d4d4d4] font-mono">{calc.formula.reference}</span>
+      </div>
     </Link>
   );
 }
 
-
-
 function WorkspaceCard({ workspace, index }: { workspace: any, index: number }) {
-  const methodCount = getAllCalculators(workspace.children).length;
-
   return (
     <Link
       href={`/platform/${workspace.id}`}
-      className="group relative flex flex-col bg-white transition-all duration-300 p-6 md:p-8 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] z-0 hover:z-10 border-r border-b border-border"
+      className="group bg-white border border-[#e8e8e8] rounded-xl overflow-hidden transition-all hover:border-[#d4d4d4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
     >
-      {/* Atmospheric Gradient Sweep - Top Right Only */}
-      <div className="absolute inset-0 bg-gradient-to-bl from-brand-red/[0.04] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-      {/* Precision Accent Border */}
-      <div className="absolute left-0 top-0 h-full w-px bg-brand-red scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top"></div>
-
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="flex items-start justify-between mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 group-hover:bg-brand-red group-hover:text-white transition-all duration-300">
-            <Box size={24} />
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="h-10 w-10 rounded-xl border border-[#e8e8e8] bg-[#fafafa] flex items-center justify-center">
+            <Box size={20} className="text-[#525252]" />
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-bold text-brand-red uppercase tracking-wider">Workspace</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-[#dcfce7] bg-[#f0fdf4] text-[11px] font-medium text-[#00b341]">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#00b341]" />
+            Active
           </div>
         </div>
 
-        <div className="flex-1 space-y-4">
-          <div>
-            <h3 className="text-base font-semibold text-brand-dark leading-snug group-hover:text-brand-red transition-colors duration-300">
-              {workspace.name}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed line-clamp-2">
-              {workspace.description}
-            </p>
-          </div>
-        </div>
+        <h4 className="text-[18px] font-semibold text-[#0a0a0a] tracking-tight mb-2">
+          {workspace.name}
+        </h4>
+        <p className="text-[13px] text-[#a1a1a1] leading-relaxed max-w-[450px]">
+          {workspace.description}
+        </p>
+      </div>
 
-        <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-6">
-          <div className="flex items-center gap-2 text-[11px] font-bold text-brand-dark uppercase tracking-wider group-hover:translate-x-1 transition-transform duration-300">
-            Enter Workspace <ChevronRight size={14} className="text-brand-red" />
-          </div>
-          <span className="text-[10px] font-bold text-brand-red bg-brand-red/5 px-2 py-0.5 rounded uppercase tracking-tighter">
-            {methodCount} Methods
-          </span>
+      <div className="px-6 py-4 border-t border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between">
+        <div className="flex gap-1.5">
+          {['Empirical', 'Rational', 'Simulation'].map((tag) => (
+            <span key={tag} className="px-2 py-0.5 rounded-[4px] border border-[#e8e8e8] bg-white text-[10px] font-mono text-[#a1a1a1]">
+              {tag}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#525252] group-hover:text-[#0a0a0a] transition-colors">
+          Open workspace <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
         </div>
       </div>
     </Link>
   );
 }
+
 
 
 

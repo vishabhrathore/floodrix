@@ -4,7 +4,6 @@ import { Provider } from 'jotai'
 import { TRPCReactProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
-
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -61,6 +60,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${dmSans.variable} ${dmMono.variable} ${playfair.variable} ${lora.variable} ${sourceSerif.variable} ${bitter.variable}`} suppressHydrationWarning>
+      <head>
+      </head>
       <body
         className="antialiased"
       >

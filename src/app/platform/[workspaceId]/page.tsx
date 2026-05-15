@@ -6,15 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight,
   Box,
-  Filter,
-  X,
-  Check,
-  ChevronDown
+  ChevronDown,
+  Layout,
+  ArrowRight
 } from 'lucide-react';
 import { PLATFORM_DATA, Category, Calculator as CalculatorType, getAllCalculators } from '@/lib/platform-data';
 import Link from 'next/link';
-import { CalculatorDiscoveryCard } from '../page';
 import { cn } from '@/lib/utils';
+import { FormulaDisplay } from '@/components/platform/formula-display';
 
 export default function WorkspaceDetailPage() {
   const params = useParams();
@@ -25,123 +24,77 @@ export default function WorkspaceDetailPage() {
   const [regionFilter, setRegionFilter] = useState<string>('All');
   const [methodTypeFilter, setMethodTypeFilter] = useState<string>('All');
 
-  if (!workspace) return <div>Workspace not found</div>;
+  if (!workspace) return <div className="p-20 text-center">Workspace not found</div>;
 
   const allCalculators = useMemo(() => getAllCalculators(workspace.children), [workspace]);
-
   const regions = ['All', ...Array.from(new Set(allCalculators.map(c => c.formula.region)))];
   const methodTypes = ['All', 'Empirical', 'Rational', 'Simulation'];
 
-  const filteredCalculators = allCalculators.filter(calc => {
-    const regionMatch = regionFilter === 'All' || calc.formula.region === regionFilter;
-    const typeMatch = methodTypeFilter === 'All' || calc.name.toLowerCase().includes(methodTypeFilter.toLowerCase()) || calc.categoryLabel?.toLowerCase().includes(methodTypeFilter.toLowerCase());
-    return regionMatch && typeMatch;
-  });
-
   return (
-    <div className="w-full max-w-[1800px] mx-auto">
-      {/* Structural Header - Standard Professional Style */}
-      <div className="mb-12 border-b border-border pb-8">
-        <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-6">
-          <Link href="/platform" className="hover:text-brand-red transition-colors">Workspaces</Link>
-          <ChevronRight size={10} />
-          <span className="text-brand-dark">{workspace.name}</span>
+    <div className="px-7 md:px-10 py-7 md:py-10 w-full">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10">
+        <div className="space-y-2">
+          <h3 className="text-h3 font-semibold text-[#0a0a0a] tracking-tight leading-tight">{workspace.name}</h3>
+          <p className="text-[14px] text-[#a1a1a1] max-w-[600px] leading-relaxed font-normal">
+            {workspace.description}
+          </p>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-[22px] font-medium tracking-tight text-brand-dark">{workspace.name}</h1>
-            <p className="text-sm text-muted-foreground font-normal max-w-2xl leading-relaxed">
-              {workspace.description}
-            </p>
-          </div>
+      </div>
 
-          <div className="flex items-center gap-3 bg-muted/30 px-4 py-2 rounded-lg border border-border/50">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-dark">Methodology Engine Active</span>
+      {/* Filter Bar */}
+      <div className="flex items-center gap-8 bg-[#fafafa] border border-[#e8e8e8] rounded-xl px-6 py-4 mb-12">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1a1]">Region</span>
+          <div className="flex items-center gap-1.5">
+            {regions.map(region => (
+              <button
+                key={region}
+                onClick={() => setRegionFilter(region)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
+                  regionFilter === region
+                    ? "bg-[#0a0a0a] text-white shadow-sm"
+                    : "text-[#525252] border border-[#e8e8e8] bg-white hover:border-[#d4d4d4]"
+                )}
+              >
+                {region}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-6 w-px bg-[#e8e8e8]" />
+
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1a1]">Type</span>
+          <div className="flex items-center gap-1.5">
+            {methodTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setMethodTypeFilter(type)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all",
+                  methodTypeFilter === type
+                    ? "bg-[#0a0a0a] text-white shadow-sm"
+                    : "text-[#525252] border border-[#e8e8e8] bg-white hover:border-[#d4d4d4]"
+                )}
+              >
+                {type}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Primary Filter Bar - Rapid Selection Pills */}
-      <div className="mb-12 space-y-6">
-        <div className="flex flex-wrap items-center gap-8">
-          <div className="space-y-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Region Scope</span>
-            <div className="flex items-center gap-2">
-              {regions.map(region => (
-                <button
-                  key={region}
-                  onClick={() => setRegionFilter(region)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-medium transition-all border",
-                    regionFilter === region
-                      ? "bg-brand-dark text-white border-brand-dark shadow-sm"
-                      : "bg-white text-muted-foreground border-border hover:border-brand-dark/30"
-                  )}
-                >
-                  {region}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="h-10 w-px bg-border/50 hidden md:block"></div>
-
-          <div className="space-y-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Analysis Type</span>
-            <div className="flex items-center gap-2">
-              {methodTypes.map(type => (
-                <button
-                  key={type}
-                  onClick={() => setMethodTypeFilter(type)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-medium transition-all border",
-                    methodTypeFilter === type
-                      ? "bg-brand-dark text-white border-brand-dark shadow-sm"
-                      : "bg-white text-muted-foreground border-border hover:border-brand-dark/30"
-                  )}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Active Filter Chips */}
-        {(regionFilter !== 'All' || methodTypeFilter !== 'All') && (
-          <div className="flex items-center gap-2 pt-2">
-            <span className="text-[10px] font-bold uppercase text-muted-foreground mr-2">Active:</span>
-            {regionFilter !== 'All' && (
-              <button
-                onClick={() => setRegionFilter('All')}
-                className="flex items-center gap-1.5 px-2 py-1 bg-brand-red/5 border border-brand-red/20 rounded text-[10px] font-bold text-brand-red"
-              >
-                Region: {regionFilter} <X size={10} />
-              </button>
-            )}
-            {methodTypeFilter !== 'All' && (
-              <button
-                onClick={() => setMethodTypeFilter('All')}
-                className="flex items-center gap-1.5 px-2 py-1 bg-brand-red/5 border border-brand-red/20 rounded text-[10px] font-bold text-brand-red"
-              >
-                Type: {methodTypeFilter} <X size={10} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Discovery Grid - Structural Hierarchy */}
-      <div className="space-y-16 pb-24">
+      {/* Content Sections */}
+      <div className="space-y-12 pb-24">
         {workspace.children.map((child, i) => (
           <NavSection
             key={child.id}
             item={child}
             workspaceName={workspace.name}
-            workspaceId={workspace.id}
-            index={i}
             activeRegion={regionFilter}
             activeType={methodTypeFilter}
           />
@@ -154,132 +107,128 @@ export default function WorkspaceDetailPage() {
 function NavSection({
   item,
   workspaceName,
-  workspaceId,
-  depth = 0,
-  index = 0,
   activeRegion,
   activeType
 }: {
   item: Category | CalculatorType,
   workspaceName: string,
-  workspaceId: string,
-  depth?: number,
-  index?: number,
   activeRegion: string,
   activeType: string
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (item.type === 'calculator') {
+    const show = (activeRegion === 'All' || item.formula.region === activeRegion) &&
+      (activeType === 'All' || item.name.includes(activeType) || item.categoryLabel?.includes(activeType));
+    if (!show) return null;
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border-l border-t border-border overflow-hidden rounded-xl">
-        <CalculatorDiscoveryCard calc={{ ...item, workspaceId }} index={0} workspaceName={workspaceName} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+        <CalculatorDiscoveryCard calc={item} workspaceName={workspaceName} index={0} />
       </div>
     );
   }
 
-  const allCalculatorsInTree = getAllCalculators([item]);
-
-  // Filtering for counts
-  const filteredInTree = allCalculatorsInTree.filter(calc => {
+  const allInTree = getAllCalculators([item]);
+  const filteredInTree = allInTree.filter(calc => {
     const regionMatch = activeRegion === 'All' || calc.formula.region === activeRegion;
     const typeMatch = activeType === 'All' || calc.name.toLowerCase().includes(activeType.toLowerCase()) || calc.categoryLabel?.toLowerCase().includes(activeType.toLowerCase());
     return regionMatch && typeMatch;
   });
 
-  const subCategories = item.children.filter(child => child.type === 'category') as Category[];
-  const directCalculators = item.children.filter(child => child.type === 'calculator') as CalculatorType[];
-
   if (filteredInTree.length === 0 && (activeRegion !== 'All' || activeType !== 'All')) return null;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4 }}
-      className={cn("space-y-6", depth > 0 && "pt-2")}
-    >
-      {/* Category Header - Accordion Toggle */}
+    <div className="space-y-6">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between gap-6 border-b border-border/50 pb-4 group hover:border-brand-red/30 transition-colors"
+        className="flex items-center gap-3 group"
       >
-        <div className="flex items-center gap-4">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-500 group-hover:bg-brand-red group-hover:text-white transition-all">
-            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-          <h2 className={cn(
-            "font-medium text-brand-dark tracking-tight",
-            depth === 0 ? "text-base" : "text-sm text-muted-foreground"
-          )}>
-            {item.name}
-          </h2>
-          <span className="text-[10px] font-bold text-muted-foreground/50 bg-muted px-2 py-0.5 rounded uppercase">
-            {filteredInTree.length} {filteredInTree.length === 1 ? 'Method' : 'Methods'}
-          </span>
+        <div className="flex h-6 w-6 items-center justify-center rounded border border-[#e8e8e8] bg-[#fafafa] text-[#a1a1a1] transition-all group-hover:border-[#d4d4d4] group-hover:text-[#525252]">
+          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
-
-        <div className="h-px flex-1 bg-border/30 mx-4 hidden md:block"></div>
+        <h4 className="text-[14px] font-semibold text-[#0a0a0a]">{item.name}</h4>
+        <span className="text-[11px] text-[#a1a1a1] bg-[#f5f5f5] px-1.5 py-0.5 rounded font-mono">
+          {filteredInTree.length} {filteredInTree.length === 1 ? 'method' : 'methods'}
+        </span>
       </button>
 
-      {/* Content Area - Animated Accordion */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className={cn(
-              "space-y-12 relative pb-4",
-              depth > 0 && "ml-[10px] border-l border-border pl-8"
-            )}>
-              {/* Direct Calculator Grid */}
-              {directCalculators.length > 0 && (
-                <div className=" bg-accent grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border-l border-t border-border overflow-hidden rounded-xl shadow-sm">
-                  <AnimatePresence mode="popLayout">
-                    {directCalculators
-                      .filter(calc => {
-                        const regionMatch = activeRegion === 'All' || calc.formula.region === activeRegion;
-                        const typeMatch = activeType === 'All' || calc.name.toLowerCase().includes(activeType.toLowerCase()) || calc.categoryLabel?.toLowerCase().includes(activeType.toLowerCase());
-                        return regionMatch && typeMatch;
-                      })
-                      .map((calc, i) => (
-                        <CalculatorDiscoveryCard
-                          key={calc.id}
-                          calc={{ ...calc, workspaceId }}
-                          index={i}
-                          workspaceName={workspaceName}
-                        />
-                      ))}
-                  </AnimatePresence>
-                </div>
-              )}
-
-              {/* Recursive Sub-Sections */}
-              {subCategories.length > 0 && (
-                <div className="space-y-12">
-                  {subCategories.map((subCat, i) => (
-                    <NavSection
-                      key={subCat.id}
-                      item={subCat}
-                      workspaceName={workspaceName}
-                      workspaceId={workspaceId}
-                      depth={depth + 1}
-                      index={i}
-                      activeRegion={activeRegion}
-                      activeType={activeType}
-                    />
-                  ))}
-                </div>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {filteredInTree.map((calc, i) => (
+                <CalculatorDiscoveryCard
+                  key={calc.id}
+                  calc={calc}
+                  workspaceName={workspaceName}
+                  index={i}
+                />
+              ))}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.section>
+    </div>
+  );
+}
+
+function CalculatorDiscoveryCard({ calc, workspaceName, index }: { calc: CalculatorType, workspaceName: string, index: number }) {
+  const colors = [
+    '#0070f3', // Blue
+    '#f97316', // Orange
+    '#00b341', // Green
+    '#7c3aed', // Purple
+  ];
+  const accentColor = colors[index % colors.length];
+
+  return (
+    <Link
+      href={`/platform/calculator/${calc.id}`}
+      className="group flex flex-col bg-white border border-[#e8e8e8] rounded-xl overflow-hidden transition-all hover:border-[#d4d4d4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+    >
+      <div className="h-0.5 w-full" style={{ backgroundColor: accentColor }} />
+
+      <div className="p-5 flex-1 flex flex-col">
+        <div className="flex items-start justify-between mb-4">
+          <div className="h-8 w-8 rounded-lg border border-[#e8e8e8] bg-[#fafafa] flex items-center justify-center">
+            <Layout size={14} className="text-[#a1a1a1]" />
+          </div>
+          <div className="px-2 py-0.5 rounded-[4px] border border-[#dbeafe] bg-[#eff6ff] text-[10px] font-medium text-[#0070f3]"
+            style={{
+              borderColor: `${accentColor}20`,
+              backgroundColor: `${accentColor}10`,
+              color: accentColor
+            }}>
+            {calc.formula.region || 'International'}
+          </div>
+        </div>
+
+        <div className="mb-1 text-[10px] uppercase tracking-wider text-[#a1a1a1] font-medium">
+          {workspaceName}
+        </div>
+        <h4 className="text-[15px] font-semibold text-[#0a0a0a] leading-tight mb-2">
+          {calc.name}
+        </h4>
+        <p className="text-[12px] text-[#a1a1a1] leading-relaxed line-clamp-2 mb-5 flex-1">
+          {calc.description}
+        </p>
+
+        <div className="bg-[#fafafa] border border-[#e8e8e8] rounded-lg px-3 py-3 mb-2">
+          <FormulaDisplay expression={calc.formula.expression} className="text-[14px] text-[#0a0a0a]" />
+        </div>
+      </div>
+
+      <div className="px-5 py-3.5 border-t border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#525252] group-hover:text-[#0a0a0a] transition-colors">
+          Calculate <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+        </div>
+        <span className="text-[10px] text-[#d4d4d4] font-mono">{calc.formula.reference}</span>
+      </div>
+    </Link>
   );
 }

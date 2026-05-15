@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Globe, ArrowLeft, ArrowRight, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { useSectionTheme } from '../hooks/useSectionTheme';
 
 const SAMPLE_PROJECTS = [
   {
@@ -91,8 +92,10 @@ const WorksGist: React.FC = () => {
     ease: [0.22, 1, 0.36, 1] as const
   };
 
+  const sectionRef = useSectionTheme('home-projects', 'light');
+
   return (
-    <section id="projects" className="py-24 lg:py-32 bg-white border-t border-gray-200 overflow-hidden flex flex-col justify-center">
+    <section ref={sectionRef} id="projects" className="py-24 lg:py-32 bg-white border-t border-gray-200 overflow-hidden flex flex-col justify-center">
       <div className="w-full overflow-x-hidden">
 
         {/* Top Section - Cleaner and Seamless */}

@@ -31,7 +31,7 @@ const Blog: React.FC = () => {
               Insights
             </h1>
             <p className="text-xl md:text-2xl text-gray-500 font-sans font-light leading-relaxed">
-              Our experts share their insights, gained from shaping the built environment. 
+              Our experts share their insights, gained from shaping the built environment.
               Explore our ideas for creating a low carbon, resilient, and more equitable future.
             </p>
           </div>
@@ -86,10 +86,10 @@ const Blog: React.FC = () => {
                         {featuredPost.readTime}
                       </span>
                     </div>
-                    <h2 className="text-4xl lg:text-5xl font-serif text-brand-dark tracking-tight leading-tight group-hover:text-brand-red transition-colors duration-500">
+                    <h2 className="text-h2 font-serif text-brand-dark tracking-tight leading-tight group-hover:text-brand-red transition-colors duration-500">
                       {featuredPost.title}
                     </h2>
-                    <p className="text-lg text-gray-500 font-sans font-light leading-relaxed line-clamp-3">
+                    <p className="text-body text-gray-500 font-sans font-light leading-relaxed line-clamp-3">
                       {featuredPost.excerpt}
                     </p>
                     <div className="pt-4">
@@ -130,11 +130,11 @@ const Blog: React.FC = () => {
                         <span>{post.readTime}</span>
                       </div>
 
-                      <h2 className="text-2xl font-serif text-brand-dark tracking-tight leading-tight group-hover:text-brand-red transition-colors duration-500">
+                      <h2 className="text-h3 font-serif text-brand-dark tracking-tight leading-tight group-hover:text-brand-red transition-colors duration-500">
                         {post.title}
                       </h2>
 
-                      <p className="text-sm text-gray-500 font-sans font-light leading-relaxed line-clamp-3">
+                      <p className="text-body text-gray-500 font-sans font-light leading-relaxed line-clamp-3">
                         {post.excerpt}
                       </p>
 
@@ -161,10 +161,10 @@ const Blog: React.FC = () => {
                 Formal notification of regulatory updates, peer-reviewed analysis, and case documentation.
               </p>
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-4 items-center w-full">
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="professional@email.com"
                 className="flex-1 w-full bg-[#f9f9f9] border border-gray-100 px-8 py-5 text-sm font-sans focus:outline-none focus:border-brand-dark transition-all rounded-full"
               />

@@ -284,8 +284,7 @@
   p,
   li,
   td,
-  th,
-  a {
+  th {
     font-size: var(--fs-body);
     line-height: 1.6;
   }

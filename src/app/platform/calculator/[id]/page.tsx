@@ -418,16 +418,16 @@ export default function CalculatorPage() {
                     <table className="w-full text-left text-[12px]">
                       <thead>
                         <tr className="bg-[#fafafa] border-b border-[#e8e8e8]">
-                          <th className="px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px]">
+                          <th className="text-sm px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px]">
                             Notation
                           </th>
-                          <th className="px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px]">
+                          <th className="text-sm px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px]">
                             Description
                           </th>
-                          <th className="px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px]">
+                          <th className="text-sm px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px]">
                             Value
                           </th>
-                          <th className="px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px] text-right">
+                          <th className="text-sm px-5 py-4 font-bold uppercase tracking-widest text-[#a1a1a1] text-[10px] text-right">
                             Unit
                           </th>
                         </tr>
@@ -441,16 +441,16 @@ export default function CalculatorPage() {
                               step.isResult && "bg-[#fff1f2] font-semibold",
                             )}
                           >
-                            <td className="px-5 py-3.5 font-mono text-[#e11d48]">
+                            <td className="text-sm px-5 py-3.5 font-mono text-[#e11d48]">
                               {step.notation}
                             </td>
-                            <td className="px-5 py-3.5 text-[#0a0a0a]/80">
+                            <td className="text-sm px-5 py-3.5 text-[#0a0a0a]/80">
                               {step.label}
                             </td>
-                            <td className="px-5 py-3.5 font-mono text-[#0a0a0a]">
+                            <td className="text-sm px-5 py-3.5 font-mono text-[#0a0a0a]">
                               {step.value}
                             </td>
-                            <td className="px-5 py-3.5 text-[#a1a1a1] uppercase tracking-tight text-right text-[10px]">
+                            <td className="text-sm px-5 py-3.5 text-[#a1a1a1] uppercase tracking-tight text-right text-[10px]">
                               {step.unit}
                             </td>
                           </tr>

@@ -17,20 +17,7 @@ const RunoffCalculator: React.FC = () => {
   // Calculate Q
   const q = (coefficient * intensity * area) / 360;
 
-  // Motion value for smooth counting
-  const springValue = useSpring(0, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
-
-  useEffect(() => {
-    springValue.set(q);
-  }, [q, springValue]);
-
-  const displayResult = useTransform(springValue, (latest) =>
-    latest.toFixed(3),
-  );
+  const displayResult = q.toFixed(3);
 
   const getSeverityColor = (val: number) => {
     if (val < 0.5) return "text-brand-teal";
@@ -42,7 +29,7 @@ const RunoffCalculator: React.FC = () => {
     <section
       ref={sectionRef}
       data-header-theme="dark"
-      className="relative z-10 py-32 bg-black border-b border-white/5"
+      className="relative z-10 py-32 bg-black border-b border-white/5 overflow-hidden"
     >
       {/* Background ambient light */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_top_right,rgba(13,148,136,0.08)_0%,transparent_70%)] -z-10" />
@@ -143,39 +130,39 @@ const RunoffCalculator: React.FC = () => {
             className="relative"
           >
             {/* The "Mac" Frame */}
-            <div className="relative bg-[#0f0f0f] rounded-[2.5rem] border border-white/10 shadow-xl overflow-hidden">
+            <div className="relative bg-[#0f0f0f] rounded-[1.5rem] md:rounded-[2.5rem] border border-white/10 shadow-xl overflow-hidden">
               {/* Header Bar */}
-              <div className="bg-[#1a1a1a] px-6 py-4 flex items-center border-b border-white/10">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#ff5f56] shadow-inner" />
-                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-inner" />
-                  <div className="w-3 h-3 rounded-full bg-[#27c93f] shadow-inner" />
+              <div className="bg-[#1a1a1a] px-4 md:px-6 py-3 md:py-4 flex items-center justify-center border-b border-white/10 relative">
+                <div className="flex gap-1.5 md:gap-2 absolute left-4 md:left-6">
+                  <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f56] shadow-inner" />
+                  <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e] shadow-inner" />
+                  <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#27c93f] shadow-inner" />
                 </div>
-                <div className="flex-1 text-center">
-                  <span className="text-[9px] font-mono text-white/40 uppercase tracking-[0.3em] ml-[-40px]">
+                <div className="text-center truncate px-12 md:px-0">
+                  <span className="text-[7.5px] md:text-[9px] font-mono text-white/40 uppercase tracking-[0.1em] md:tracking-[0.3em]">
                     Rational_Runoff_Simulator.dmg
                   </span>
                 </div>
               </div>
 
               {/* Browser/App Content */}
-              <div className="p-8 lg:p-12 space-y-12">
-                <div className="flex items-center justify-between">
+              <div className="p-6 md:p-8 lg:p-12 space-y-8 md:space-y-12">
+                <div className="flex items-start sm:items-center justify-between gap-3 md:gap-4">
                   <div>
-                    <h3 className="text-white font-serif text-h3 leading-none">
+                    <h3 className="text-white font-serif text-2xl md:text-h3 leading-tight md:leading-none">
                       Rational Method
                     </h3>
                   </div>
-                  <div className="bg-brand-red/10 px-4 py-2 rounded-lg border border-brand-red/20">
-                    <span className="text-brand-red font-mono font-bold text-sm">
+                  <div className="bg-brand-red/10 px-3 md:px-4 py-2 rounded-lg border border-brand-red/20 shrink-0">
+                    <span className="text-brand-red font-mono font-bold text-[11px] md:text-sm whitespace-nowrap">
                       Q = CiA / 360
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-10">
+                <div className="space-y-8 md:space-y-10">
                   {/* Params Grid */}
-                  <div className="grid grid-cols-1 gap-8">
+                  <div className="grid grid-cols-1 gap-6 md:gap-8">
                     <div className="space-y-4">
                       <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-white/40 font-mono">
                         <span>Runoff Coeff (C)</span>
@@ -230,16 +217,16 @@ const RunoffCalculator: React.FC = () => {
                   </div>
 
                   {/* Result Box */}
-                  <div className="bg-black border border-white/10 rounded-[2rem] p-10 text-center relative group overflow-hidden shadow-2xl">
+                  <div className="bg-black border border-white/10 rounded-[1.25rem] md:rounded-[2rem] p-6 md:p-10 text-center relative group overflow-hidden shadow-2xl">
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-red/20 to-transparent" />
                     <div className="absolute inset-0 bg-brand-red/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    <div className="relative z-10 space-y-4">
+                    <div className="relative z-10 space-y-2 md:space-y-4">
                       <h4 className="text-[10px] font-mono tracking-[0.5em] uppercase text-white/40">
                         Peak Discharge
                       </h4>
                       <motion.div
-                        className={`text-h1 font-serif font-bold tracking-tighter ${getSeverityColor(q)}`}
+                        className={`text-4xl md:text-h1 font-serif font-bold tracking-tighter ${getSeverityColor(q)}`}
                       >
                         {displayResult}
                       </motion.div>

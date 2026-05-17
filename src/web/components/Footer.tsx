@@ -19,12 +19,10 @@ const Footer: React.FC = () => {
         gsap.fromTo(
           footerBrand,
           {
-            y: 300,
             scale: 0.9,
             opacity: 0,
           },
           {
-            y: 50,
             scale: 1,
             opacity: 0.08,
             ease: "none",
@@ -64,9 +62,9 @@ const Footer: React.FC = () => {
       {/* Background Decorative Text - Parallax Target */}
       <div
         id="footer-brand-reveal"
-        className="absolute bottom-0 left-0 w-full flex items-center justify-center select-none pointer-events-none opacity-0 overflow-hidden pb-10"
+        className="absolute bottom-0 left-0 w-full flex items-center justify-center select-none pointer-events-none opacity-0 pb-10"
       >
-        <span className="text-[35vh] md:text-[45vh] font-serif font-bold tracking-tighter leading-none text-white block transform-gpu whitespace-nowrap uppercase">
+        <span className="text-[16vw] md:text-[45vh] font-serif font-bold tracking-tighter leading-none text-white block transform-gpu whitespace-nowrap uppercase">
           FLOODRIX
         </span>
       </div>
@@ -235,11 +233,12 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-16 flex flex-col md:flex-row justify-between items-center text-white/30 text-[10px] font-mono uppercase tracking-widest leading-none gap-8 footer-stagger">
-          <p className="order-2 md:order-1 opacity-60">
-            © 2026 FloodRix Global Engineering. All Rights Reserved.
+        <div className="border-t border-white/10 pt-12 md:pt-16 flex flex-col md:flex-row justify-between items-center text-white/50 md:text-white/30 text-[10px] font-mono uppercase tracking-widest leading-loose md:leading-none gap-10 md:gap-8 footer-stagger text-center md:text-left">
+          <p className="order-2 md:order-1 opacity-80 md:opacity-60 max-w-[280px] md:max-w-none mx-auto md:mx-0">
+            © 2026 FloodRix Global Engineering.
+            <br className="block md:hidden" /> All Rights Reserved.
           </p>
-          <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 order-1 md:order-2">
+          <div className="flex flex-col md:flex-row flex-wrap justify-center items-center gap-x-12 gap-y-5 order-1 md:order-2">
             <a href="/privacy" className="hover:text-white transition-colors">
               Privacy Policy
             </a>

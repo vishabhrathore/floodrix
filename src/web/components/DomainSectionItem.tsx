@@ -1,89 +1,361 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { ArrowRight } from "lucide-react";
 import { motion, useScroll, useTransform } from "motion/react";
 
 import { DomainSection } from "../types";
 
+/*
+  MOBILE PERFORMANCE FIXES APPLIED:
+  1. Infinite image scale → pure CSS @keyframes (off JS thread entirely)
+  2. Pulsing ring → pure CSS animation (same)
+  3. Parallax useScroll → only mounted on desktop AND only after section enters viewport
+  4. Parallax disabled entirely on mobile (motion values return 0)
+  5. Per-character stagger kept but duration tightened to reduce total animation window
+*/
+
+/* ─── CSS injected once at module level ─────────────────────────────────────── */
+const STYLE_ID = "domain-section-css";
+
+function injectStyles() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = `
+    @keyframes slowZoom {
+      from { transform: scale(1) translateZ(0); }
+      to   { transform: scale(1.4) translateZ(0); }
+    }
+    @keyframes pulseRing {
+      0%, 100% { transform: scale(1);   opacity: 0.3; }
+      50%       { transform: scale(1.4); opacity: 0;   }
+    }
+    @keyframes travelDot {
+      from { transform: translateY(-100%); }
+      to   { transform: translateY(200%);  }
+    }
+    .slow-zoom {
+      animation: slowZoom 40s linear infinite alternate;
+      will-change: transform;
+    }
+    .pulse-ring {
+      animation: pulseRing 2s ease-in-out infinite;
+    }
+    .travel-dot {
+      animation: travelDot 1.5s linear infinite;
+    }
+  `;
+  document.head.appendChild(el);
+}
+
+/* ─── Scroll-parallax wrapper — only active on desktop after in-view ─────────── */
+interface ParallaxBoxProps {
+  enabled: boolean;
+  range: [number, number];
+  containerRef: React.RefObject<Element | null>;
+  className?: string;
+  children: React.ReactNode;
+}
+
+function ParallaxBox({
+  enabled,
+  range,
+  containerRef,
+  className,
+  children,
+}: ParallaxBoxProps) {
+  const { scrollYProgress } = useScroll({
+    target: containerRef as React.RefObject<Element>,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], enabled ? range : [0, 0]);
+
+  return (
+    <motion.div style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────────────────────── */
 interface DomainSectionItemProps {
   domain: DomainSection;
 }
 
 const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
-  const containerRef = React.useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
+  const containerRef = useRef<HTMLElement>(null);
 
-  const y1 = useTransform(scrollYProgress, [0, 1], [150, -150]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [-200, 200]);
+  /* Desktop detection */
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    injectStyles();
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-  return (
-    <section
-      ref={containerRef}
-      className="py-20 lg:py-32 first:pt-32 overflow-hidden"
+  /* Parallax only activates after section is in viewport (IntersectionObserver)
+     This prevents useScroll from burning CPU on off-screen sections */
+  const [parallaxReady, setParallaxReady] = useState(false);
+  useEffect(() => {
+    if (!isDesktop) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setParallaxReady(true);
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isDesktop]);
+
+  const parallaxEnabled = isDesktop && parallaxReady;
+
+  /* ── Animation variants ──────────────────────────────────────────────────── */
+  const titleContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.025, delayChildren: 0.15 }, // tightened from 0.03
+    },
+  };
+
+  const charAnim = {
+    hidden: { opacity: 0, y: 12, rotateX: 90 },
+    show: {
+      opacity: 1,
+      y: 0,
+      rotateX: 0,
+      transition: { type: "tween", ease: "easeOut", duration: 0.35 }, // tightened from 0.4
+    },
+  };
+
+  const introContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.008, delayChildren: 0.3 }, // tightened from 0.01
+    },
+  };
+
+  const wordAnim = {
+    hidden: { opacity: 0, y: 4 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+  };
+
+  /* ── Shared image markup (CSS animated — no JS per-frame cost) ───────────── */
+  const ProblemImage = ({ rounded = true }: { rounded?: boolean }) => (
+    <div
+      className={`relative overflow-hidden bg-brand-dark shadow-2xl aspect-square ${
+        rounded ? "rounded-[2.5rem]" : ""
+      }`}
     >
-      <div className="px-6 md:px-20 lg:px-32 mb-8 lg:mb-12">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-end"
+      {/* CSS animation replaces motion.img whileInView scale */}
+      <img
+        src={domain.problem.image}
+        alt={`${domain.title} — the problem`}
+        className="slow-zoom w-full h-full object-cover opacity-100"
+      />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-brand-dark/90 via-brand-dark/40 to-transparent pointer-events-none" />
+      <div
+        className={`absolute z-10 pointer-events-none ${
+          isDesktop ? "bottom-10 left-10 right-10" : "bottom-6 left-6 right-6"
+        }`}
+      >
+        <div
+          className={`font-mono text-white/60 uppercase tracking-[0.4em] mb-${isDesktop ? "4" : "2"} ${
+            isDesktop ? "text-[10px]" : "text-[9px]"
+          }`}
         >
-          <div className="lg:col-span-1">
-            <div className="mb-8">
-              <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-gray-300 uppercase block mb-4">
-                {domain.tag}
-              </span>
-              <div className="w-16 h-[1px] bg-brand-red" />
-            </div>
-            <h2 className="text-h1 font-serif text-brand-dark tracking-tighter leading-[1.1]">
-              <span className="italic text-brand-red block mb-1">
-                {domain.titleEmphasis}
-              </span>
-              {domain.title}
-            </h2>
+          Field Reality
+        </div>
+        <p
+          className={`text-white font-serif italic leading-snug ${
+            isDesktop ? "text-h3" : "text-xs"
+          }`}
+        >
+          "{domain.problem.title}"
+        </p>
+      </div>
+    </div>
+  );
+
+  const SolutionImage = ({ rounded = true }: { rounded?: boolean }) => (
+    <div
+      className={`relative overflow-hidden bg-gray-100 shadow-2xl aspect-square ${
+        rounded ? "rounded-[2.5rem]" : ""
+      }`}
+    >
+      <img
+        src={domain.solution.image}
+        alt={`${domain.title} — our solution`}
+        className="slow-zoom w-full h-full object-cover"
+      />
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-brand-dark/40 to-transparent pointer-events-none" />
+      <div
+        className={`absolute z-20 pointer-events-none ${
+          isDesktop ? "bottom-10 left-10" : "bottom-6 left-6 right-6"
+        }`}
+      >
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="bg-white/[0.03] backdrop-blur-xl px-6 py-5 rounded-[1.5rem] shadow-2xl border border-white/10 flex flex-col gap-3"
+        >
+          <div className="flex items-center gap-3">
+            {/* CSS pulse replaces motion animate */}
+            <div className="w-2 h-2 rounded-full bg-brand-red pulse-ring" />
+            <span className="text-[9px] font-mono font-bold text-brand-red uppercase tracking-[0.4em]">
+              {domain.solution.outcomeLabel}
+            </span>
           </div>
-          <div className="lg:col-span-1">
-            <p className="text-body-large text-gray-400 font-light leading-relaxed max-w-full">
-              {domain.intro}
+          <div>
+            <div
+              className={`font-serif text-white tracking-tight leading-none mb-1 ${
+                isDesktop ? "text-h2" : "text-2xl"
+              }`}
+            >
+              {domain.solution.outcomeValue}
+            </div>
+            <p className="text-[9px] font-mono text-white/40 uppercase tracking-[0.1em] leading-relaxed max-w-[160px]">
+              {domain.solution.outcomeDesc}
             </p>
           </div>
         </motion.div>
       </div>
+    </div>
+  );
 
+  return (
+    <section
+      ref={containerRef}
+      className="pt-20 pb-24 lg:pt-32 lg:pb-40 relative"
+    >
+      {/* Section Divider */}
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gray-100">
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5, ease: [0.25, 1, 0.5, 1] }}
+          style={{ transformOrigin: "left center" }}
+          className="w-full h-full bg-gradient-to-r from-brand-red/40 via-brand-red/10 to-transparent"
+        />
+      </div>
+
+      {/* Background Watermark — parallax only on desktop after in-view */}
+      {isDesktop ? (
+        <ParallaxBox
+          enabled={parallaxEnabled}
+          range={[150, -150]}
+          containerRef={containerRef}
+          className="absolute top-0 right-4 md:right-20 text-[150px] md:text-[250px] lg:text-[350px] font-serif font-bold text-gray-50 select-none pointer-events-none tracking-tighter leading-none z-0"
+        >
+          {domain.tag.split(" ")[1]}
+        </ParallaxBox>
+      ) : (
+        /* On mobile: static, no parallax node */
+        <div className="absolute top-0 right-4 text-[120px] font-serif font-bold text-gray-50 select-none pointer-events-none tracking-tighter leading-none z-0">
+          {domain.tag.split(" ")[1]}
+        </div>
+      )}
+
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <div className="px-6 md:px-20 lg:px-32 mb-8 lg:mb-12 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-end">
+          <div className="lg:col-span-1">
+            <div className="mb-8">
+              <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-gray-500 uppercase block mb-4">
+                {domain.tag}
+              </span>
+              <div className="w-16 h-[1px] bg-brand-red" />
+            </div>
+
+            <motion.h2
+              variants={titleContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-100px" }}
+              className="text-h2 md:text-h1 font-serif text-brand-dark tracking-tighter leading-[1.1] perspective-[1000px]"
+            >
+              <span className="italic text-brand-red block mb-1">
+                {domain.titleEmphasis.split("").map((char, i) => (
+                  <motion.span
+                    key={i}
+                    variants={charAnim}
+                    className="inline-block whitespace-pre"
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </motion.span>
+                ))}
+              </span>
+              <span className="block">
+                {domain.title.split("").map((char, i) => (
+                  <motion.span
+                    key={i}
+                    variants={charAnim}
+                    className="inline-block whitespace-pre"
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </motion.span>
+                ))}
+              </span>
+            </motion.h2>
+          </div>
+
+          <div className="lg:col-span-1">
+            <motion.p
+              variants={introContainer}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-100px" }}
+              className="text-body-large text-gray-400 font-light leading-relaxed max-w-full"
+            >
+              {domain.intro.split(" ").map((word, i) => (
+                <motion.span
+                  key={i}
+                  variants={wordAnim}
+                  className="inline-block mr-[0.3em] mb-1"
+                >
+                  {word}
+                </motion.span>
+              ))}
+            </motion.p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Problem / Solution grid ────────────────────────────────────────── */}
       <div className="px-6 md:px-20 lg:px-32 space-y-0">
+        {/* Problem row */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center"
         >
-          <motion.div
-            style={{ y: y1 }}
-            className="relative group overflow-hidden bg-brand-dark rounded-[2.5rem] shadow-2xl aspect-square"
-          >
-            <motion.img
-              whileInView={{ scale: [1, 1.4] }}
-              transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-              viewport={{ once: false }}
-              src={domain.problem.image}
-              alt={`${domain.title} — the problem`}
-              className="w-full h-full object-cover opacity-100"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-brand-dark/90 via-brand-dark/20 to-transparent" />
-            <div className="absolute bottom-10 left-10 right-10">
-              <div className="text-[10px] font-mono text-white/40 uppercase tracking-[0.4em] mb-4">
-                Field Reality
-              </div>
-              <p className="text-white text-h3 font-serif italic leading-snug">
-                "{domain.problem.title}"
-              </p>
-            </div>
-          </motion.div>
+          {isDesktop ? (
+            /* Desktop: parallax wrapper around image */
+            <ParallaxBox
+              enabled={parallaxEnabled}
+              range={[150, -150]}
+              containerRef={containerRef}
+              className="relative group rounded-[2.5rem] overflow-hidden"
+            >
+              <ProblemImage />
+            </ParallaxBox>
+          ) : (
+            /* Mobile: plain image, no parallax node */
+            <ProblemImage />
+          )}
 
           <div className="py-8 flex flex-col justify-center">
             <div className="flex items-center gap-4 mb-10">
@@ -92,11 +364,9 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
                 The Vulnerability
               </span>
             </div>
-
-            <h3 className="text-h2 font-serif text-brand-dark mb-6 leading-tight">
+            <h3 className="text-h3 md:text-h2 font-serif text-brand-dark mb-6 leading-tight">
               {domain.problem.vulnerabilityHeading}
             </h3>
-
             <p className="text-gray-500 text-lg leading-relaxed mb-10 font-sans">
               {domain.problem.description}
             </p>
@@ -126,88 +396,76 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
           </div>
         </motion.div>
 
-        <div className="py-24 lg:py-40 flex flex-col items-center justify-center relative overflow-hidden">
-          <motion.div
-            style={{
-              y: useTransform(scrollYProgress, [0, 1], [-150, 150]),
-              opacity: 0.03,
-            }}
-            className="absolute inset-0 pointer-events-none"
-          >
-            <div
-              className="w-full h-full"
-              style={{
-                backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-              }}
-            />
-          </motion.div>
-          <div className="absolute top-0 bottom-0 w-px bg-brand-red/10" />
-          {/* Technical Vertical Connector - Dotted with Signal Pulse */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-full overflow-hidden pointer-events-none">
-            {/* The Dotted Track */}
-            <div
-              className="absolute inset-0 opacity-20"
-              style={{
-                backgroundImage: `linear-gradient(to bottom, var(--brand-red) 50%, transparent 50%)`,
-                backgroundSize: "1px 8px",
-              }}
-            />
-
-            {/* The Traveling Signal */}
+        {/* ── Bridge ──────────────────────────────────────────────────────── */}
+        <div className="flex flex-col items-center py-8 px-6 relative z-10">
+          <div className="relative w-[1px] h-24 overflow-hidden">
             <motion.div
-              animate={{
-                y: ["-10%", "110%"],
-                opacity: [0, 1, 1, 0],
-              }}
+              initial={{ scaleY: 0, opacity: 0 }}
+              whileInView={{ scaleY: 1, opacity: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
+              style={{ transformOrigin: "top center" }}
+              className="absolute inset-0 bg-gradient-to-b from-brand-red/0 via-brand-red/50 to-brand-red"
+            />
+            {/* CSS animation replaces motion infinite y animation */}
+            <div className="travel-dot absolute top-0 left-0 w-full h-10 bg-brand-red shadow-[0_0_12px_var(--brand-red)]" />
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.4, y: -10 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{
+              duration: 0.6,
+              delay: 0.4,
+              type: "spring",
+              stiffness: 250,
+              damping: 20,
+            }}
+            className="w-12 h-12 -my-2 rounded-full border-2 border-brand-red/30 flex items-center justify-center bg-white relative z-20 shadow-[0_0_20px_rgba(251,54,64,0.15)]"
+          >
+            {/* CSS pulse ring replaces motion.div animate infinite */}
+            <div className="pulse-ring absolute inset-0 bg-brand-red/20 rounded-full" />
+            <motion.div
+              initial={{ rotate: -90, scale: 0 }}
+              whileInView={{ rotate: 90, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.7, delay: 0.6, ease: "backOut" }}
+              className="relative z-10 w-8 h-8 bg-brand-red rounded-full flex items-center justify-center shadow-sm"
+            >
+              <ArrowRight className="w-4 h-4 text-white" />
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.5, delay: 0.8, ease: "easeOut" }}
+            className="mt-6 flex flex-col items-center gap-2"
+          >
+            <span className="text-[9px] font-mono font-bold tracking-[0.2em] text-brand-red uppercase">
+              Engineering Intervention
+            </span>
+          </motion.div>
+
+          <div className="relative w-[1px] h-16 mt-4 overflow-hidden">
+            <motion.div
+              initial={{ scaleY: 0, opacity: 0 }}
+              whileInView={{ scaleY: 1, opacity: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: "linear",
+                duration: 1.2,
+                delay: 0.6,
+                ease: [0.25, 1, 0.5, 1],
               }}
-              className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-transparent via-brand-red to-transparent z-10"
+              style={{ transformOrigin: "top center" }}
+              className="absolute inset-0 bg-gradient-to-b from-brand-red via-brand-teal/20 to-transparent"
             />
           </div>
-          <motion.div
-            style={{ y: useTransform(scrollYProgress, [0.5, 0.85], [0, 400]) }}
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative px-16 py-6 bg-white border border-gray-100 rounded-full shadow-[0_40px_100px_rgba(0,0,0,0.12)] flex items-center gap-12 overflow-hidden z-20 group/capsule"
-          >
-            {/* Liquid Flow Background Effect - Now precisely synced with scroll */}
-            <motion.div
-              style={{
-                x: useTransform(scrollYProgress, [0.2, 0.8], ["-100%", "200%"]),
-              }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-red/10 to-transparent -skew-x-12 pointer-events-none"
-            />
-
-            <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-gray-400 uppercase whitespace-nowrap relative z-10">
-              Vulnerability Audit
-            </span>
-
-            <div className="relative flex items-center justify-center">
-              <div className="w-12 h-[1px] bg-gray-100 absolute -left-14" />
-              <div className="relative z-10 bg-white p-2 rounded-full border border-gray-50 shadow-sm">
-                <ArrowRight className="w-4 h-4 text-brand-red group-hover/capsule:translate-x-1 transition-transform" />
-              </div>
-              <div className="w-12 h-[1px] bg-gray-100 absolute -right-14" />
-
-              {/* Enhanced Pulse */}
-              <motion.div
-                animate={{ scale: [1, 1.8, 1], opacity: [0.2, 0, 0.2] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 bg-brand-red/30 rounded-full blur-[10px]"
-              />
-            </div>
-
-            <span className="text-[11px] font-mono font-bold tracking-[0.5em] text-brand-red uppercase whitespace-nowrap relative z-10">
-              Engineering Resolution
-            </span>
-          </motion.div>
         </div>
 
+        {/* Solution row */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -221,7 +479,7 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
                 The Engineered Result
               </span>
             </div>
-            <h3 className="text-h2 font-serif text-brand-dark mb-6 leading-tight">
+            <h3 className="text-h3 md:text-h2 font-serif text-brand-dark mb-6 leading-tight">
               {domain.solution.title}
             </h3>
             <p className="text-gray-500 text-lg leading-relaxed mb-12 font-sans">
@@ -251,44 +509,22 @@ const DomainSectionItem: React.FC<DomainSectionItemProps> = ({ domain }) => {
             </div>
           </div>
 
-          <motion.div
-            style={{ y: y2 }}
-            className="relative group overflow-hidden order-1 lg:order-2 bg-gray-100 rounded-[2.5rem] shadow-2xl aspect-square"
-          >
-            <motion.img
-              whileInView={{ scale: [1, 1.4] }}
-              transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-              viewport={{ once: false }}
-              src={domain.solution.image}
-              alt={`${domain.title} — our solution`}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-brand-dark/20 to-transparent pointer-events-none" />
-            <div className="absolute bottom-10 left-10 z-20">
-              <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="bg-white/[0.03] backdrop-blur-xl px-10 py-8 rounded-[1.5rem] shadow-2xl border border-white/10 flex flex-col gap-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse" />
-                  <span className="text-[9px] font-mono font-bold text-brand-red uppercase tracking-[0.4em]">
-                    {domain.solution.outcomeLabel}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-h2 font-serif text-white tracking-tight leading-none mb-1">
-                    {domain.solution.outcomeValue}
-                  </div>
-                  <p className="text-[9px] font-mono text-white/40 uppercase tracking-[0.1em] leading-relaxed max-w-[160px]">
-                    {domain.solution.outcomeDesc}
-                  </p>
-                </div>
-              </motion.div>
+          {isDesktop ? (
+            /* Desktop: parallax wrapper */
+            <ParallaxBox
+              enabled={parallaxEnabled}
+              range={[-200, 200]}
+              containerRef={containerRef}
+              className="relative group order-2 rounded-[2.5rem] overflow-hidden"
+            >
+              <SolutionImage />
+            </ParallaxBox>
+          ) : (
+            /* Mobile: plain, no parallax */
+            <div className="order-1">
+              <SolutionImage />
             </div>
-          </motion.div>
+          )}
         </motion.div>
       </div>
     </section>

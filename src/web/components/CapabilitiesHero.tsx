@@ -17,7 +17,7 @@ const CapabilitiesHero: React.FC = () => {
     ),
     description:
       "From highway drainage networks and flood model submissions to aquifer investigations and hydraulic structure design — FloodRix delivers engineering that is technically defensible, code-compliant, and built to outlast the infrastructure it serves.",
-    backgroundText: "WATER",
+    backgroundText: "SERVICES",
     stats: [
       {
         value: "04",

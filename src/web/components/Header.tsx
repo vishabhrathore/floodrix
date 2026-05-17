@@ -236,7 +236,7 @@ const Header: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-8 py-10 space-y-8">
+              <div className="flex-1 overflow-y-auto px-8 py-8 space-y-3">
                 {navLinks.map((link, idx) => (
                   <motion.div
                     key={link.name}
@@ -248,19 +248,29 @@ const Header: React.FC = () => {
                       <a
                         href={link.href}
                         onClick={() => setIsMenuOpen(false)}
-                        className="group flex items-center justify-between text-white/70 hover:text-brand-red text-2xl font-serif transition-colors"
+                        className="group flex items-center justify-between py-2 transition-colors"
                       >
-                        {link.name}
-                        <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all" />
+                        <div className="flex items-center gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-red scale-0 group-hover:scale-100 transition-transform duration-300" />
+                          <span className="text-[17px] font-serif tracking-wide text-white/75 group-hover:text-brand-red transition-colors">
+                            {link.name}
+                          </span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-brand-red opacity-0 group-hover:opacity-100 -translate-x-3 group-hover:translate-x-0 transition-all duration-300" />
                       </a>
                     ) : (
                       <Link
                         href={link.href}
                         onClick={() => setIsMenuOpen(false)}
-                        className="group flex items-center justify-between text-white/70 hover:text-brand-red text-2xl font-serif transition-colors"
+                        className="group flex items-center justify-between py-2 transition-colors"
                       >
-                        {link.name}
-                        <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all" />
+                        <div className="flex items-center gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-red scale-0 group-hover:scale-100 transition-transform duration-300" />
+                          <span className="text-[17px] font-serif tracking-wide text-white/75 group-hover:text-brand-red transition-colors">
+                            {link.name}
+                          </span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-brand-red opacity-0 group-hover:opacity-100 -translate-x-3 group-hover:translate-x-0 transition-all duration-300" />
                       </Link>
                     )}
                   </motion.div>

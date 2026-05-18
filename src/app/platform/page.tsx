@@ -16,6 +16,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import {
+  CalculatorDiscoveryCard,
+  WorkspaceCard,
+} from "@/components/platform/cards";
 import { FormulaDisplay } from "@/components/platform/formula-display";
 import {
   Calculator as CalculatorType,
@@ -154,135 +158,5 @@ function StatCell({
         </div>
       )}
     </div>
-  );
-}
-
-export function CalculatorDiscoveryCard({
-  calc,
-  index,
-  workspaceName,
-}: {
-  calc: any;
-  index: number;
-  workspaceName: string;
-}) {
-  // Chart-based colors for variety
-  const colors = [
-    "#0070f3", // Blue
-    "#f97316", // Orange
-    "#00b341", // Green
-    "#7c3aed", // Purple
-  ];
-  const accentColor = colors[index % colors.length];
-
-  return (
-    <Link
-      href={`/platform/calculator/${calc.id}`}
-      className="group flex flex-col bg-white border border-[#e8e8e8] rounded-xl overflow-hidden transition-all hover:border-[#d4d4d4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
-    >
-      <div className="h-0.5 w-full" style={{ backgroundColor: accentColor }} />
-
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-start justify-between mb-4">
-          <div className="h-8 w-8 rounded-lg border border-[#e8e8e8] bg-[#fafafa] flex items-center justify-center">
-            <Layout size={14} className="text-[#525252]" />
-          </div>
-          <div
-            className="px-2 py-0.5 rounded-[4px] border border-[#dbeafe] bg-[#eff6ff] text-[10px] font-medium text-[#0070f3]"
-            style={{
-              borderColor: `${accentColor}20`,
-              backgroundColor: `${accentColor}10`,
-              color: accentColor,
-            }}
-          >
-            {calc.formula.region || "International"}
-          </div>
-        </div>
-
-        <div className="mb-1 text-[10px] uppercase tracking-wider text-[#a1a1a1] font-medium">
-          {workspaceName}
-        </div>
-        <h4 className="text-[14px] font-semibold text-[#0a0a0a] leading-tight mb-2">
-          {calc.name}
-        </h4>
-        <p className="text-[12px] text-[#a1a1a1] leading-relaxed line-clamp-2 mb-4 flex-1">
-          {calc.description}
-        </p>
-
-        <div className="bg-[#fafafa] border border-[#e8e8e8] rounded-lg px-3 py-2.5 mb-2 overflow-hidden">
-          <FormulaDisplay
-            expression={calc.formula.expression}
-            className="text-[13px] text-[#0a0a0a]"
-          />
-        </div>
-      </div>
-
-      <div className="px-4 py-3 border-t border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#525252] group-hover:text-[#0a0a0a] transition-colors">
-          Calculate{" "}
-          <ArrowRight
-            size={12}
-            className="group-hover:translate-x-0.5 transition-transform"
-          />
-        </div>
-        <span className="text-[10px] text-[#d4d4d4] font-mono">
-          {calc.formula.reference}
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function WorkspaceCard({
-  workspace,
-  index,
-}: {
-  workspace: any;
-  index: number;
-}) {
-  return (
-    <Link
-      href={`/platform/${workspace.id}`}
-      className="group bg-white border border-[#e8e8e8] rounded-xl overflow-hidden transition-all hover:border-[#d4d4d4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
-    >
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="h-10 w-10 rounded-xl border border-[#e8e8e8] bg-[#fafafa] flex items-center justify-center">
-            <Box size={20} className="text-[#525252]" />
-          </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-[#dcfce7] bg-[#f0fdf4] text-[11px] font-medium text-[#00b341]">
-            <div className="h-1.5 w-1.5 rounded-full bg-[#00b341]" />
-            Active
-          </div>
-        </div>
-
-        <h4 className="text-[18px] font-semibold text-[#0a0a0a] tracking-tight mb-2">
-          {workspace.name}
-        </h4>
-        <p className="text-[13px] text-[#a1a1a1] leading-relaxed max-w-[450px]">
-          {workspace.description}
-        </p>
-      </div>
-
-      <div className="px-6 py-4 border-t border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between">
-        <div className="flex gap-1.5">
-          {["Empirical", "Rational", "Simulation"].map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 rounded-[4px] border border-[#e8e8e8] bg-white text-[10px] font-mono text-[#a1a1a1]"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#525252] group-hover:text-[#0a0a0a] transition-colors">
-          Open workspace{" "}
-          <ArrowRight
-            size={12}
-            className="group-hover:translate-x-0.5 transition-transform"
-          />
-        </div>
-      </div>
-    </Link>
   );
 }

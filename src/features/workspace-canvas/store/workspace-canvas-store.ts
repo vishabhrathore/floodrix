@@ -1,13 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════
-//  Workspace Canvas Editor — Complete Frontend + Backend System
-//
-//  This file contains:
-//    1. Zustand store (single source of truth on frontend)
-//    2. DB → React Flow converter (load)
-//    3. React Flow → DB converter (save)
-//    4. Debounced auto-save with dirty tracking
-//    5. Optimistic operations (create, move, connect, delete)
-// ═══════════════════════════════════════════════════════════════════════════
 import { createId } from "@paralleldrive/cuid2";
 import {
   type OnConnect,
@@ -18,9 +8,8 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
 } from "@xyflow/react";
-import { create } from "zustand";
+import { ObservableMap, makeAutoObservable } from "mobx";
 
-// The DB shape — what gets saved to workspace_nodes table
 export interface WorkspaceNodeData {
   id: string;
   workspaceId: string;
@@ -39,22 +28,21 @@ export interface WorkspaceNodeData {
   canvasX: number | null;
   canvasY: number | null;
   metadata: Record<string, unknown>;
-  // Hydrated from include (read-only, not saved back)
   linkedWorkflow?: {
     id: string;
     name: string;
     status: string;
     category: string | null;
   } | null;
-  // Client-only tracking
-  _isNew?: boolean; // Created this session, not yet in DB
-  _isDeleted?: boolean; // Marked for deletion
-  _isDirty?: boolean; // Modified since last save
+  _isNew?: boolean;
+  _isDeleted?: boolean;
+  _isDirty?: boolean;
 }
 
-// ─── Conversion Functions ────────────────────────────────────────────────
-
-function deriveReactFlow(dbNodes: WorkspaceNodeData[]) {
+function deriveReactFlow(
+  dbNodes: WorkspaceNodeData[],
+  deleteNodeCb: (id: string) => void,
+) {
   const rfNodes: RFNode[] = [];
   const rfEdges: RFEdge[] = [];
 
@@ -95,7 +83,7 @@ function deriveReactFlow(dbNodes: WorkspaceNodeData[]) {
         isExpanded: node.isExpanded,
         linkedWorkflow: node.linkedWorkflow,
         status: (node.metadata as Record<string, string>)?.status ?? "active",
-        onDelete: () => useWorkspaceCanvas.getState().deleteNode(node.id),
+        onDelete: () => deleteNodeCb(node.id),
       },
     });
 
@@ -140,149 +128,183 @@ function computeDepth(
   return depth;
 }
 
-// ─── The Store ───────────────────────────────────────────────────────────
+class WorkspaceCanvasStore {
+  workspaceId: string | null = null;
 
-interface WorkspaceCanvasStore {
-  workspaceId: string | null;
-  dbNodes: WorkspaceNodeData[];
-  rootId: string | null;
-  rfNodes: RFNode[];
-  rfEdges: RFEdge[];
-  isDirty: boolean;
-  pendingChanges: number;
-  lastSavedAt: Date | null;
-  isSaving: boolean;
+  // Native MobX map for true O(1) object reference tracking
+  nodeMap = new ObservableMap<string, WorkspaceNodeData>();
 
-  initialize: (workspaceId: string, nodes: WorkspaceNodeData[]) => void;
-  onNodesChange: OnNodesChange;
-  onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
+  rootId: string | null = null;
+  rfNodes: RFNode[] = [];
+  rfEdges: RFEdge[] = [];
+  isDirty: boolean = false;
+  pendingChanges: number = 0;
+  lastSavedAt: Date | null = null;
+  isSaving: boolean = false;
 
-  createFolder: (
+  treeSearchQuery: string = "";
+  editingNodeId: string | null = null;
+  editingNodeValue: string = "";
+
+  constructor() {
+    makeAutoObservable(this, {}, { autoBind: true });
+  }
+
+  // Computed getter for array-based operations (like saving or full derives)
+  get dbNodes(): WorkspaceNodeData[] {
+    return Array.from(this.nodeMap.values());
+  }
+
+  get childIdMap() {
+    const map = new Map<string | null, string[]>();
+    for (const node of this.nodeMap.values()) {
+      if (node._isDeleted) continue;
+      const parentId = node.parentId;
+      if (!map.has(parentId)) map.set(parentId, []);
+      map.get(parentId)!.push(node.id);
+    }
+    // Sort
+    for (const [, childIds] of map) {
+      childIds.sort((a, b) => {
+        const na = this.nodeMap.get(a);
+        const nb = this.nodeMap.get(b);
+        return (na?.sortOrder ?? 0) - (nb?.sortOrder ?? 0);
+      });
+    }
+    return map;
+  }
+
+  get searchMatches() {
+    const q = this.treeSearchQuery.toLowerCase().trim();
+    if (!q) return null; // null indicates no active search
+
+    const matches = new Set<string>();
+    const childIdMap = this.childIdMap;
+
+    const checkNode = (id: string): boolean => {
+      const node = this.nodeMap.get(id);
+      if (!node) return false;
+      let matched = node.name.toLowerCase().includes(q);
+      const children = childIdMap.get(id) || [];
+      for (const childId of children) {
+        if (checkNode(childId)) matched = true;
+      }
+      if (matched) matches.add(id);
+      return matched;
+    };
+
+    if (this.rootId) {
+      const rootChildren = childIdMap.get(this.rootId) || [];
+      for (const childId of rootChildren) {
+        checkNode(childId);
+      }
+    }
+    return matches;
+  }
+
+  setTreeSearchQuery(query: string) {
+    this.treeSearchQuery = query;
+  }
+
+  startRenameUI(id: string, name: string) {
+    this.editingNodeId = id;
+    this.editingNodeValue = name;
+  }
+
+  setEditValueUI(val: string) {
+    this.editingNodeValue = val;
+  }
+
+  commitRenameUI() {
+    if (this.editingNodeId && this.editingNodeValue.trim()) {
+      this.renameNode(this.editingNodeId, this.editingNodeValue.trim());
+    }
+    this.editingNodeId = null;
+    this.editingNodeValue = "";
+  }
+
+  initialize(workspaceId: string, nodes: WorkspaceNodeData[]) {
+    const rootId = nodes.find((n) => n.nodeType === "ROOT")?.id ?? null;
+    const tempMap = new Map(nodes.map((n) => [n.id, n]));
+
+    this.nodeMap.clear();
+    for (const n of nodes) {
+      this.nodeMap.set(n.id, {
+        ...n,
+        path: computePath(n.id, tempMap),
+        depth: computeDepth(n.id, tempMap),
+      });
+    }
+
+    const { rfNodes, rfEdges } = deriveReactFlow(this.dbNodes, this.deleteNode);
+
+    this.workspaceId = workspaceId;
+    this.rootId = rootId;
+    this.rfNodes = rfNodes;
+    this.rfEdges = rfEdges;
+    this.isDirty = false;
+    this.pendingChanges = 0;
+  }
+
+  onNodesChange(changes: any) {
+    const hasPositionChange = changes.some(
+      (c: any) => c.type === "position" && c.position,
+    );
+    this.rfNodes = applyNodeChanges(changes, this.rfNodes);
+
+    if (hasPositionChange) {
+      for (const c of changes) {
+        if (c.type === "position" && c.position) {
+          const node = this.nodeMap.get(c.id);
+          if (node) {
+            node.canvasX = c.position.x;
+            node.canvasY = c.position.y;
+            node._isDirty = true;
+          }
+        }
+      }
+      this._markDirty();
+    }
+  }
+
+  selectNode(nodeId: string) {
+    this.rfNodes = this.rfNodes.map((rn) => ({
+      ...rn,
+      selected: rn.id === nodeId,
+    }));
+  }
+
+  onEdgesChange(changes: any) {
+    this.rfEdges = applyEdgeChanges(changes, this.rfEdges);
+  }
+
+  onConnect(connection: any) {
+    if (!connection.source || !connection.target) return;
+    const targetNode = this.nodeMap.get(connection.target);
+    if (targetNode?.parentId === connection.source) return;
+    this.moveNode(connection.target, connection.source);
+  }
+
+  createFolder(
     parentId: string,
     name: string,
     icon?: string,
     position?: { x: number; y: number },
-  ) => string;
-  createWorkflowLink: (
-    parentId: string,
-    name: string,
-    workflowId: string,
-    position?: { x: number; y: number },
-  ) => string;
-  renameNode: (nodeId: string, name: string) => void;
-  deleteNode: (nodeId: string) => void;
-  moveNode: (nodeId: string, newParentId: string) => void;
-  updateMetadata: (nodeId: string, metadata: Record<string, unknown>) => void;
-  attachWorkflow: (
-    nodeId: string,
-    workflowId: string,
-    version?: number | null,
-  ) => void;
-  reconnectEdge: (
-    nodeId: string,
-    oldParentId: string,
-    newParentId: string,
-  ) => void;
-
-  _markDirty: () => void;
-  flush: () => void;
-}
-
-export const useWorkspaceCanvas = create<WorkspaceCanvasStore>((set, get) => ({
-  workspaceId: null,
-  dbNodes: [],
-  rootId: null,
-  rfNodes: [],
-  rfEdges: [],
-  isDirty: false,
-  pendingChanges: 0,
-  lastSavedAt: null,
-  isSaving: false,
-
-  initialize(workspaceId, nodes) {
-    const rootId = nodes.find((n) => n.nodeType === "ROOT")?.id ?? null;
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-    const hydratedNodes = nodes.map((n) => ({
-      ...n,
-      path: computePath(n.id, nodeMap),
-      depth: computeDepth(n.id, nodeMap),
-    }));
-
-    const { rfNodes, rfEdges } = deriveReactFlow(hydratedNodes);
-
-    set({
-      workspaceId,
-      dbNodes: hydratedNodes,
-      rootId,
-      rfNodes,
-      rfEdges,
-      isDirty: false,
-      pendingChanges: 0,
-    });
-  },
-
-  onNodesChange(changes) {
-    const hasPositionChange = changes.some(
-      (c) => c.type === "position" && c.position,
-    );
-    set((state) => {
-      const newRfNodes = applyNodeChanges(changes, state.rfNodes);
-      if (hasPositionChange) {
-        const newDbNodes = state.dbNodes.map((n) => {
-          const change = changes.find(
-            (c) => c.id === n.id && c.type === "position",
-          ) as any;
-          if (change?.position) {
-            return {
-              ...n,
-              canvasX: change.position.x,
-              canvasY: change.position.y,
-              _isDirty: true,
-            };
-          }
-          return n;
-        });
-        return { rfNodes: newRfNodes, dbNodes: newDbNodes };
-      }
-      return { rfNodes: newRfNodes };
-    });
-    if (hasPositionChange) {
-      get()._markDirty();
-    }
-  },
-
-  onEdgesChange(changes) {
-    set((state) => ({ rfEdges: applyEdgeChanges(changes, state.rfEdges) }));
-  },
-
-  onConnect(connection) {
-    if (!connection.source || !connection.target) return;
-    const nodeMap = new Map(get().dbNodes.map((n) => [n.id, n]));
-    const targetNode = nodeMap.get(connection.target);
-    if (targetNode?.parentId === connection.source) return;
-    get().moveNode(connection.target, connection.source);
-  },
-
-  createFolder(parentId, name, icon, position) {
-    const state = get();
-    const nodeMap = new Map(state.dbNodes.map((n) => [n.id, n]));
-    const parent = nodeMap.get(parentId);
+  ) {
+    const parent = this.nodeMap.get(parentId);
     if (!parent) throw new Error(`Parent ${parentId} not found`);
 
     const id = createId();
-    const siblingCount = state.dbNodes.filter(
-      (n) => n.parentId === parentId && !n._isDeleted,
-    ).length;
+    const siblingCount = (this.childIdMap.get(parentId) || []).length;
 
     const newNode: WorkspaceNodeData = {
       id,
-      workspaceId: state.workspaceId!,
+      workspaceId: this.workspaceId!,
       parentId,
       nodeType: "FOLDER",
       name,
       description: null,
-      icon: icon ?? "📁",
+      icon: icon ?? null,
       color: null,
       linkedWorkflowId: null,
       linkedVersion: null,
@@ -297,26 +319,27 @@ export const useWorkspaceCanvas = create<WorkspaceCanvasStore>((set, get) => ({
       _isDirty: true,
     };
 
-    const newDbNodes = [...state.dbNodes, newNode];
-    const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-    set({ dbNodes: newDbNodes, rfNodes, rfEdges });
-    get()._markDirty();
+    this.nodeMap.set(id, newNode);
+    this._rebuildReactFlow();
+    this._markDirty();
     return id;
-  },
+  }
 
-  createWorkflowLink(parentId, name, workflowId, position) {
-    const state = get();
-    const parent = state.dbNodes.find((n) => n.id === parentId);
+  createWorkflowLink(
+    parentId: string,
+    name: string,
+    workflowId: string,
+    position?: { x: number; y: number },
+  ) {
+    const parent = this.nodeMap.get(parentId);
     if (!parent) throw new Error(`Parent ${parentId} not found`);
 
     const id = createId();
-    const siblingCount = state.dbNodes.filter(
-      (n) => n.parentId === parentId && !n._isDeleted,
-    ).length;
+    const siblingCount = (this.childIdMap.get(parentId) || []).length;
 
     const newNode: WorkspaceNodeData = {
       id,
-      workspaceId: state.workspaceId!,
+      workspaceId: this.workspaceId!,
       parentId,
       nodeType: "WORKFLOW_LINK",
       name,
@@ -336,149 +359,146 @@ export const useWorkspaceCanvas = create<WorkspaceCanvasStore>((set, get) => ({
       _isDirty: true,
     };
 
-    const newDbNodes = [...state.dbNodes, newNode];
-    const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-    set({ dbNodes: newDbNodes, rfNodes, rfEdges });
-    get()._markDirty();
+    this.nodeMap.set(id, newNode);
+    this._rebuildReactFlow();
+    this._markDirty();
     return id;
-  },
+  }
 
-  renameNode(nodeId, name) {
-    set((state) => {
-      const newDbNodes = state.dbNodes.map((n) =>
-        n.id === nodeId ? { ...n, name, _isDirty: true } : n,
-      );
-      const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-      return { dbNodes: newDbNodes, rfNodes, rfEdges };
-    });
-    get()._markDirty();
-  },
+  // In-place granular mutation
+  renameNode(nodeId: string, name: string) {
+    const node = this.nodeMap.get(nodeId);
+    if (node) {
+      node.name = name;
+      node._isDirty = true;
+      this._updateSingleRfNode(nodeId);
+      this._markDirty();
+    }
+  }
 
-  deleteNode(nodeId) {
-    set((state) => {
-      const newDbNodes = state.dbNodes.map((n) =>
-        n.id === nodeId ? { ...n, _isDeleted: true, _isDirty: true } : n,
-      );
-      const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-      return { dbNodes: newDbNodes, rfNodes, rfEdges };
-    });
-    get()._markDirty();
-  },
+  // In-place granular mutation
+  updateMetadata(nodeId: string, metadata: Record<string, unknown>) {
+    const node = this.nodeMap.get(nodeId);
+    if (node) {
+      node.metadata = { ...(node.metadata || {}), ...metadata };
+      node._isDirty = true;
+      this._updateSingleRfNode(nodeId);
+      this._markDirty();
+    }
+  }
 
-  moveNode(nodeId, newParentId) {
-    set((state) => {
-      const nodeMap = new Map(state.dbNodes.map((n) => [n.id, n]));
-      const node = nodeMap.get(nodeId);
-      const newParent = nodeMap.get(newParentId);
-      if (!node || !newParent || !node.path || !newParent.path) return state;
+  // In-place granular mutation
+  attachWorkflow(
+    nodeId: string,
+    workflowId: string,
+    version: number | null = null,
+  ) {
+    const node = this.nodeMap.get(nodeId);
+    if (node) {
+      node.linkedWorkflowId = workflowId;
+      node.linkedVersion = version;
+      node._isDirty = true;
+      this._updateSingleRfNode(nodeId);
+      this._markDirty();
+    }
+  }
 
-      if (
-        node.path &&
-        newParent.path &&
-        newParent.path.startsWith(node.path + "/")
-      )
-        return state;
+  deleteNode(nodeId: string) {
+    const node = this.nodeMap.get(nodeId);
+    if (node) {
+      node._isDeleted = true;
+      node._isDirty = true;
+      this._rebuildReactFlow();
+      this._markDirty();
+    }
+  }
 
-      const oldPath = node.path;
-      const newPath = `${newParent.path}/${nodeId}`;
-      const depthDiff = newParent.depth + 1 - node.depth;
-      const siblingCount = state.dbNodes.filter(
-        (n) => n.parentId === newParentId && !n._isDeleted && n.id !== nodeId,
-      ).length;
+  moveNode(nodeId: string, newParentId: string) {
+    const node = this.nodeMap.get(nodeId);
+    const newParent = this.nodeMap.get(newParentId);
+    if (!node || !newParent || !node.path || !newParent.path) return;
 
-      const newDbNodes = state.dbNodes.map((n) => {
-        if (n.id === nodeId) {
-          return {
-            ...n,
-            parentId: newParentId,
-            path: newPath,
-            depth: newParent.depth + 1,
-            sortOrder: siblingCount,
-            _isDirty: true,
-          };
-        }
-        if (n.path && n.path.startsWith(oldPath + "/")) {
-          return {
-            ...n,
-            path: newPath + n.path.substring(oldPath.length),
-            depth: n.depth + depthDiff,
-            _isDirty: true,
-          };
-        }
-        return n;
-      });
+    if (
+      node.path &&
+      newParent.path &&
+      newParent.path.startsWith(node.path + "/")
+    )
+      return;
 
-      const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-      return { dbNodes: newDbNodes, rfNodes, rfEdges };
-    });
-    get()._markDirty();
-  },
+    const oldPath = node.path;
+    const newPath = `${newParent.path}/${nodeId}`;
+    const depthDiff = newParent.depth + 1 - node.depth;
+    const siblingCount = (this.childIdMap.get(newParentId) || []).filter(
+      (id) => id !== nodeId,
+    ).length;
 
-  updateMetadata(nodeId, metadata) {
-    set((state) => {
-      const newDbNodes = state.dbNodes.map((n) =>
-        n.id === nodeId
-          ? {
-              ...n,
-              metadata: { ...(n.metadata || {}), ...metadata },
-              _isDirty: true,
-            }
-          : n,
-      );
-      const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-      return { dbNodes: newDbNodes, rfNodes, rfEdges };
-    });
-    get()._markDirty();
-  },
+    // Mutate the specific node
+    node.parentId = newParentId;
+    node.path = newPath;
+    node.depth = newParent.depth + 1;
+    node.sortOrder = siblingCount;
+    node._isDirty = true;
 
-  attachWorkflow(nodeId, workflowId, version = null) {
-    set((state) => {
-      const newDbNodes = state.dbNodes.map((n) =>
-        n.id === nodeId
-          ? {
-              ...n,
-              linkedWorkflowId: workflowId,
-              linkedVersion: version ?? null,
-              _isDirty: true,
-            }
-          : n,
-      );
-      const { rfNodes, rfEdges } = deriveReactFlow(newDbNodes);
-      return { dbNodes: newDbNodes, rfNodes, rfEdges };
-    });
-    get()._markDirty();
-  },
+    // Mutate all descendants
+    for (const n of this.nodeMap.values()) {
+      if (n.path && n.path.startsWith(oldPath + "/") && n.id !== nodeId) {
+        n.path = newPath + n.path.substring(oldPath.length);
+        n.depth = n.depth + depthDiff;
+        n._isDirty = true;
+      }
+    }
 
-  reconnectEdge(nodeId, _oldParentId, newParentId) {
-    get().moveNode(nodeId, newParentId);
-  },
+    this._rebuildReactFlow();
+    this._markDirty();
+  }
+
+  reconnectEdge(nodeId: string, _oldParentId: string, newParentId: string) {
+    this.moveNode(nodeId, newParentId);
+  }
+
+  // Helper to sync ReactFlow specific node when performing in-place tree edits
+  _updateSingleRfNode(nodeId: string) {
+    const dbNode = this.nodeMap.get(nodeId);
+    if (!dbNode) return;
+
+    // React Flow requires a new array and new node object reference for it to trigger the node re-render
+    this.rfNodes = this.rfNodes.map((rn) =>
+      rn.id === nodeId
+        ? { ...rn, data: { ...rn.data, dbNode: { ...dbNode } } }
+        : rn,
+    );
+  }
+
+  _rebuildReactFlow() {
+    const { rfNodes, rfEdges } = deriveReactFlow(this.dbNodes, this.deleteNode);
+    this.rfNodes = rfNodes;
+    this.rfEdges = rfEdges;
+  }
 
   _markDirty() {
-    set((s) => ({
-      isDirty: true,
-      pendingChanges: s.dbNodes.filter((n) => n._isDirty).length,
-    }));
-  },
+    this.isDirty = true;
+    let pending = 0;
+    for (const n of this.nodeMap.values()) {
+      if (n._isDirty) pending++;
+    }
+    this.pendingChanges = pending;
+  }
 
   flush() {
-    set((state) => ({
-      dbNodes: state.dbNodes
-        .filter((n) => !n._isDeleted)
-        .map((n) => ({ ...n, _isNew: false, _isDirty: false })),
-      isDirty: false,
-      pendingChanges: 0,
-      isSaving: false,
-      lastSavedAt: new Date(),
-    }));
-  },
-}));
+    for (const n of this.nodeMap.values()) {
+      if (n._isDeleted) {
+        this.nodeMap.delete(n.id);
+      } else {
+        n._isNew = false;
+        n._isDirty = false;
+      }
+    }
+    this.isDirty = false;
+    this.pendingChanges = 0;
+    this.isSaving = false;
+    this.lastSavedAt = new Date();
+  }
+}
 
-/**
- * Materialized Path & Tree Logic Note:
- *
- * We use path and depth to:
- * 1. Prevent cyclic moves (moving parent into child)
- * 2. Efficiently update all descendants when a folder moves
- *
- * These fields are hydrated on load and NOT stored in the database.
- */
+export const workspaceCanvasStore = new WorkspaceCanvasStore();
+export const useWorkspaceCanvas = () => workspaceCanvasStore;

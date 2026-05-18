@@ -1,4 +1,5 @@
 import { dashboardRouter } from "@/features/admin/dashboard/server/routers";
+import { adminUsersRouter } from "@/features/admin/users/server/routers";
 import { calcWorkflowsRouter } from "@/features/calc-workflows/server/routers";
 import { credentialsRouter } from "@/features/credentials/server/routers";
 import { executionsRouter } from "@/features/executions/server/routers";
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
   executions: executionsRouter,
   dashboard: dashboardRouter,
   organizations: organizationsRouter,
+  adminUsers: adminUsersRouter,
   calcWorkflows: calcWorkflowsRouter,
   workspaces: workspacesRouter,
   librarySubmissions: librarySubmissionsRouter,

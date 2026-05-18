@@ -18,13 +18,13 @@ export function CreateFolderDialog({
   defaultName = "",
 }: CreateFolderDialogProps) {
   const [name, setName] = useState(defaultName);
-  const [icon, setIcon] = useState("📁");
+  const [icon, setIcon] = useState("");
 
   // Reset state when opened
   useEffect(() => {
     if (isOpen) {
       setName(defaultName);
-      setIcon("📁");
+      setIcon("");
     }
   }, [isOpen, defaultName]);
 
@@ -43,7 +43,7 @@ export function CreateFolderDialog({
       <div className="bg-white rounded-xl shadow-xl w-[400px] overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
           <div className="flex items-center gap-2 text-gray-700 font-semibold text-sm">
-            <FolderPlus size={16} className="text-amber-500" />
+            <FolderPlus size={16} className="text-[#0a0a0a]" />
             Create Folder
           </div>
           <button

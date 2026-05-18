@@ -13,14 +13,9 @@ import {
   type NodeTypes,
   Position,
 } from "@xyflow/react";
-import {
-  ChevronRight,
-  ExternalLink,
-  FileText,
-  Folder,
-  StickyNote,
-  Trash2,
-} from "lucide-react";
+import { ChevronRight, ExternalLink, Trash2 } from "lucide-react";
+
+import { WORKSPACE_ICONS } from "../components/workspace-icons";
 
 // ─── Folder Node ─────────────────────────────────────────────────────────
 
@@ -46,10 +41,10 @@ function WorkspaceFolderInner({ data, selected }: NodeProps) {
         minWidth: 180,
         maxWidth: 240,
         borderRadius: 10,
-        border: `1.5px solid ${selected ? "#f59e0b" : "#e5e7eb"}`,
+        border: `1.5px solid ${selected ? "#0a0a0a" : "#e5e7eb"}`,
         backgroundColor: "white",
         boxShadow: selected
-          ? "0 0 0 2px rgba(245,158,11,0.15), 0 4px 12px rgba(0,0,0,0.06)"
+          ? "0 0 0 2px rgba(10,10,10,0.1), 0 4px 12px rgba(0,0,0,0.06)"
           : "0 1px 4px rgba(0,0,0,0.04)",
         fontFamily: "'Inter', system-ui, sans-serif",
         transition: "border-color 0.15s, box-shadow 0.15s",
@@ -63,8 +58,8 @@ function WorkspaceFolderInner({ data, selected }: NodeProps) {
           width: 8,
           height: 8,
           borderRadius: "50%",
-          backgroundColor: "#fbbf24",
-          border: "2px solid #f59e0b",
+          backgroundColor: "#0a0a0a",
+          border: "2px solid #0a0a0a",
           top: -4,
         }}
       />
@@ -78,18 +73,18 @@ function WorkspaceFolderInner({ data, selected }: NodeProps) {
           height: 8,
           borderRadius: "50%",
           backgroundColor: "white",
-          border: "2px solid #f59e0b",
+          border: "2px solid #0a0a0a",
           bottom: -4,
         }}
       />
 
       {/* Content */}
       <div className="flex items-center gap-2 px-3 py-2.5">
-        <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
           {d.dbNode.icon ? (
             <span className="text-sm">{d.dbNode.icon}</span>
           ) : (
-            <Folder size={16} className="text-amber-500" />
+            <WORKSPACE_ICONS.FOLDER size={16} className="text-slate-600" />
           )}
         </div>
 
@@ -183,7 +178,10 @@ function WorkflowLinkInner({ data, selected }: NodeProps) {
           {d.dbNode.icon ? (
             <span className="text-xs">{d.dbNode.icon}</span>
           ) : (
-            <FileText size={13} className="text-blue-500" />
+            <WORKSPACE_ICONS.WORKFLOW_LINK
+              size={13}
+              className="text-blue-500"
+            />
           )}
         </div>
 
@@ -246,11 +244,11 @@ function WorkspaceNoteInner({ data, selected }: NodeProps) {
         maxWidth: 220,
         padding: "8px 10px",
         borderRadius: 6,
-        backgroundColor: d.dbNode.color || "#fef3c7",
-        border: `1.5px solid ${selected ? "#f59e0b" : "transparent"}`,
+        backgroundColor: d.dbNode.color || "#f9f9f9",
+        border: `1.5px solid ${selected ? "#0a0a0a" : "#e8e8e8"}`,
         fontSize: 11,
         lineHeight: 1.5,
-        color: "#78350f",
+        color: "#525252",
         fontFamily: "'Inter', system-ui, sans-serif",
       }}
     >

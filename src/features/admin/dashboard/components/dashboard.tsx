@@ -1,9 +1,9 @@
 "use client";
 
+import React from "react";
+
 import {
   AlertTriangleIcon,
-  ArrowDownRightIcon,
-  ArrowUpRightIcon,
   Building2Icon,
   CalculatorIcon,
   ClockIcon,
@@ -14,15 +14,7 @@ import {
   ZapIcon,
 } from "lucide-react";
 
-import {
-  EntityContainer,
-  EntityHeader,
-  ErrorView,
-  LoadingView,
-} from "@/components/entity-components";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ErrorView, LoadingView } from "@/components/entity-components";
 import { cn } from "@/lib/utils";
 
 import {
@@ -32,95 +24,79 @@ import {
 
 export const AdminDashboardHeader = () => {
   return (
-    <EntityHeader
-      title="Admin Dashboard"
-      description="System-wide overview and administrative controls"
-    />
+    <div className="mb-10">
+      <h3 className="text-h3 font-semibold text-[#0a0a0a] tracking-tight leading-tight mb-2">
+        Admin Dashboard
+      </h3>
+      <p className="text-[14px] text-[#a1a1a1] max-w-[600px] leading-relaxed font-normal">
+        System-wide overview and administrative controls.
+      </p>
+    </div>
   );
 };
 
 export const AdminDashboardStats = () => {
   const { data: stats } = useSuspenseSuperAdminStats();
 
-  const cards = [
-    {
-      label: "Total organizations",
-      value: stats.organizations.total,
-      delta: `+${stats.organizations.thisMonth} this month`,
-      deltaType: "up",
-      icon: Building2Icon,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-    },
-    {
-      label: "Calc workflows",
-      value: stats.calcWorkflows.total,
-      delta: `+${stats.calcWorkflows.thisMonth} this month`,
-      deltaType: "up",
-      icon: CalculatorIcon,
-      color: "text-red-600",
-      bgColor: "bg-red-100",
-    },
-    {
-      label: "Active sessions today",
-      value: stats.sessions.activeToday,
-      delta: "Running or paused",
-      deltaType: "neutral",
-      icon: PlayCircleIcon,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-    },
-    {
-      label: "Library submissions",
-      value: stats.library.pendingReview,
-      delta: "Awaiting review",
-      deltaType: "down",
-      icon: ClockIcon,
-      color: "text-amber-600",
-      bgColor: "bg-amber-100",
-    },
-  ];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <Card key={card.label} className="shadow-none border-border">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase">
-                {card.label}
-              </span>
-              <div className={cn("p-1.5 rounded-md", card.bgColor)}>
-                <card.icon className={cn("size-4", card.color)} />
-              </div>
-            </div>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <div className="flex items-center mt-1">
-              {card.deltaType === "up" && (
-                <ArrowUpRightIcon className="size-3 text-green-600 mr-1" />
-              )}
-              {card.deltaType === "down" && (
-                <ArrowDownRightIcon className="size-3 text-red-600 mr-1" />
-              )}
-              <span
-                className={cn(
-                  "text-xs font-medium",
-                  card.deltaType === "up"
-                    ? "text-green-600"
-                    : card.deltaType === "down"
-                      ? "text-red-600"
-                      : "text-muted-foreground",
-                )}
-              >
-                {card.delta}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid grid-cols-2 md:grid-cols-4 border border-[#e8e8e8] rounded-xl overflow-hidden mb-10 bg-white">
+      <StatCell
+        value={String(stats.organizations.total)}
+        label="Total Organizations"
+        delta={`+${stats.organizations.thisMonth} this month`}
+      />
+      <StatCell
+        value={String(stats.calcWorkflows.total)}
+        label="Calc Workflows"
+        delta={`+${stats.calcWorkflows.thisMonth} this month`}
+      />
+      <StatCell
+        value={String(stats.sessions.activeToday)}
+        label="Active Sessions Today"
+        delta="Running or paused"
+      />
+      <StatCell
+        value={String(stats.library.pendingReview)}
+        label="Library Submissions"
+        delta="Awaiting review"
+        isWarning={stats.library.pendingReview > 0}
+      />
     </div>
   );
 };
+
+function StatCell({
+  value,
+  label,
+  delta,
+  isWarning,
+}: {
+  value: string;
+  label: string;
+  delta?: string;
+  isWarning?: boolean;
+}) {
+  return (
+    <div className="px-6 py-5 border-r border-[#e8e8e8] last:border-r-0 hover:bg-[#fafafa] transition-colors">
+      <div className="flex items-baseline gap-1 mb-1">
+        <span className="text-[28px] font-semibold text-[#0a0a0a] tracking-tighter">
+          {value}
+        </span>
+      </div>
+      <div className="text-[11px] text-[#a1a1a1] font-medium mb-1">{label}</div>
+      {delta && (
+        <div
+          className={cn(
+            "text-[11px] font-medium font-mono",
+            isWarning ? "text-[#fb3640]" : "text-[#00b341]",
+          )}
+        >
+          {delta}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const AdminDashboardQuickCreate = () => {
   const items = [
@@ -128,65 +104,65 @@ export const AdminDashboardQuickCreate = () => {
       title: "New calc workflow",
       desc: "IRC hydraulics calculation",
       icon: CalculatorIcon,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      color: "#fb3640", // Brand Red
     },
     {
       title: "New automation",
       desc: "n8n-style automation",
       icon: ZapIcon,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "#0070f3", // Blue
     },
     {
       title: "New workspace",
       desc: "Folder canvas for org",
       icon: FolderPlusIcon,
-      color: "text-teal-600",
-      bgColor: "bg-teal-50",
+      color: "#0d9488", // Teal
     },
     {
       title: "Publish formula",
       desc: "Add to public registry",
       icon: FileCodeIcon,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      color: "#7c3aed", // Purple
     },
     {
       title: "Publish table",
       desc: "Add system coefficient table",
       icon: TableIcon,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
+      color: "#f97316", // Orange
     },
     {
       title: "New organization",
       desc: "Manually onboard a team",
       icon: Building2Icon,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      color: "#fb3640", // Brand Red
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
       {items.map((item) => (
-        <Card
+        <div
           key={item.title}
-          className="shadow-none border-border hover:border-muted-foreground/50 cursor-pointer transition-colors"
+          className="group flex flex-col bg-white border border-[#e8e8e8] rounded-xl overflow-hidden transition-all hover:border-[#d4d4d4] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] cursor-pointer"
         >
-          <CardContent className="p-3 flex items-center gap-3">
-            <div className={cn("p-2 rounded-lg shrink-0", item.bgColor)}>
-              <item.icon className={cn("size-5", item.color)} />
+          <div
+            className="h-0.5 w-full"
+            style={{ backgroundColor: item.color }}
+          />
+          <div className="p-4 flex items-center gap-3.5">
+            <div className="h-9 w-9 rounded-lg border border-[#e8e8e8] bg-[#fafafa] flex items-center justify-center shrink-0">
+              <item.icon size={16} className="text-[#525252]" />
             </div>
-            <div>
-              <div className="text-sm font-semibold">{item.title}</div>
-              <div className="text-xs text-muted-foreground line-clamp-1">
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-[#0a0a0a] leading-tight mb-0.5">
+                {item.title}
+              </div>
+              <div className="text-[11px] text-[#a1a1a1] truncate leading-none">
                 {item.desc}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -201,8 +177,8 @@ export const AdminDashboardAlerts = () => {
       title: `${alerts.stuckBatchJobsCount} batch jobs stuck > 30 min`,
       desc: "Inngest queue may need attention",
       icon: AlertTriangleIcon,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
+      color: "#f97316",
+      bgColor: "bg-amber-50/50 border-amber-100",
     });
   }
   alerts.failedPayments.forEach((orgName) => {
@@ -210,50 +186,50 @@ export const AdminDashboardAlerts = () => {
       title: `${orgName} — payment failed`,
       desc: "Account suspended · contact required",
       icon: AlertTriangleIcon,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      color: "#fb3640",
+      bgColor: "bg-red-50/50 border-red-100",
     });
   });
 
-  if (alertItems.length === 0) {
-    return (
-      <Card className="shadow-none border-border h-full">
-        <CardHeader className="p-4 pb-2">
-          <CardTitle className="text-sm font-semibold">System Alerts</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="text-xs text-muted-foreground py-4">
-            No critical system alerts.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="shadow-none border-border h-full">
-      <CardHeader className="p-4 pb-2">
-        <CardTitle className="text-sm font-semibold">System Alerts</CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-2 flex flex-col gap-3">
-        {alertItems.map((item, i) => (
-          <div key={i} className="flex gap-3 items-start">
-            <div className={cn("p-1.5 rounded-full shrink-0", item.bgColor)}>
-              <item.icon className={cn("size-4", item.color)} />
+    <div className="bg-white border border-[#e8e8e8] rounded-xl p-5 shadow-sm h-full">
+      <h4 className="text-[14px] font-semibold text-[#0a0a0a] border-b border-[#e8e8e8] pb-3 mb-4">
+        System Alerts
+      </h4>
+      {alertItems.length === 0 ? (
+        <div className="text-[12px] text-[#a1a1a1] py-4">
+          No critical system alerts.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {alertItems.map((item, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex gap-3 items-start p-3 rounded-lg border",
+                item.bgColor,
+              )}
+            >
+              <div className="p-1 rounded shrink-0">
+                <item.icon size={14} style={{ color: item.color }} />
+              </div>
+              <div>
+                <div className="text-[12px] font-semibold text-[#0a0a0a] leading-tight mb-1">
+                  {item.title}
+                </div>
+                <div className="text-[11px] text-[#a1a1a1] leading-none">
+                  {item.desc}
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-medium">{item.title}</div>
-              <div className="text-xs text-muted-foreground">{item.desc}</div>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
 export const AdminDashboardOrganizations = () => {
-  // This could also be a hook if we had a trpc route for recent orgs
   const mockOrgs = [
     {
       name: "Bridge House Consultants",
@@ -274,48 +250,48 @@ export const AdminDashboardOrganizations = () => {
   ];
 
   return (
-    <Card className="shadow-none border-border">
-      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-semibold">Organizations</CardTitle>
-        <Button variant="outline" size="sm" className="text-[10px] h-7 px-2">
+    <div className="bg-white border border-[#e8e8e8] rounded-xl p-5 shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#e8e8e8] pb-3 mb-4">
+        <h4 className="text-[14px] font-semibold text-[#0a0a0a]">
+          Organizations
+        </h4>
+        <button className="text-[11px] font-semibold text-[#525252] hover:text-[#0a0a0a] transition-colors border border-[#e8e8e8] rounded-md px-2 py-0.5 bg-white">
           View all
-        </Button>
-      </CardHeader>
-      <CardContent className="p-4 pt-2 flex flex-col gap-4">
+        </button>
+      </div>
+      <div className="flex flex-col gap-4">
         {mockOrgs.map((org) => (
           <div key={org.name} className="flex items-center gap-3">
-            <div className="size-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="size-8 rounded-lg bg-[#fafafa] border border-[#e8e8e8] flex items-center justify-center text-[11px] font-bold text-[#0a0a0a] shrink-0">
               {org.initial}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">{org.name}</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[13px] font-semibold text-[#0a0a0a] truncate leading-tight mb-1">
+                {org.name}
+              </div>
+              <div className="text-[11px] text-[#a1a1a1] leading-none">
                 {org.members} members · {org.workflows} workflows
               </div>
             </div>
-            <div className="flex gap-1">
-              <Badge
-                variant="outline"
-                className="bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 h-5"
-              >
+            <div className="flex gap-1.5 shrink-0">
+              <span className="px-1.5 py-0.5 rounded-[4px] border border-[#dcfce7] bg-[#f0fdf4] text-[10px] font-medium text-[#00b341]">
                 Active
-              </Badge>
-              <Badge
-                variant="outline"
+              </span>
+              <span
                 className={cn(
-                  "text-[10px] px-1.5 py-0 h-5",
+                  "px-1.5 py-0.5 rounded-[4px] border text-[10px] font-medium",
                   org.plan === "Pro"
-                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : "bg-gray-50 text-gray-700 border-gray-200",
+                    ? "border-[#dbeafe] bg-[#eff6ff] text-[#0070f3]"
+                    : "border-[#e8e8e8] bg-white text-[#a1a1a1]",
                 )}
               >
                 {org.plan}
-              </Badge>
+              </span>
             </div>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -327,7 +303,7 @@ export const AdminDashboardAuditLog = () => {
       org: "Bridge House",
       action: "Published",
       resource: "Flood calc v3",
-      actionColor: "text-blue-600 bg-blue-50 border-blue-200",
+      actionColor: "border-[#dbeafe] bg-[#eff6ff] text-[#0070f3]",
     },
     {
       time: "14 min ago",
@@ -335,79 +311,88 @@ export const AdminDashboardAuditLog = () => {
       org: "TechRoads",
       action: "Run completed",
       resource: "Scour depth session",
-      actionColor: "text-green-600 bg-green-50 border-green-200",
+      actionColor: "border-[#dcfce7] bg-[#f0fdf4] text-[#00b341]",
     },
   ];
 
   return (
-    <Card className="shadow-none border-border">
-      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-semibold">
+    <div className="bg-white border border-[#e8e8e8] rounded-xl overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#e8e8e8] p-5 pb-3">
+        <h4 className="text-[14px] font-semibold text-[#0a0a0a]">
           Recent audit events
-        </CardTitle>
-        <Button variant="outline" size="sm" className="text-[10px] h-7 px-2">
+        </h4>
+        <button className="text-[11px] font-semibold text-[#525252] hover:text-[#0a0a0a] transition-colors border border-[#e8e8e8] rounded-md px-2 py-0.5 bg-white">
           Full audit log
-        </Button>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="p-3 text-xs font-medium text-muted-foreground">
-                  Time
-                </th>
-                <th className="p-3 text-xs font-medium text-muted-foreground">
-                  Actor
-                </th>
-                <th className="p-3 text-xs font-medium text-muted-foreground">
-                  Organization
-                </th>
-                <th className="p-3 text-xs font-medium text-muted-foreground">
-                  Action
-                </th>
-                <th className="p-3 text-xs font-medium text-muted-foreground">
-                  Resource
-                </th>
+        </button>
+      </div>
+      <div className="overflow-x-auto w-full">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-[#e8e8e8] bg-[#fafafa]">
+              <th className="p-3 px-5 text-[11px] font-semibold text-[#a1a1a1] uppercase tracking-wider">
+                Time
+              </th>
+              <th className="p-3 px-5 text-[11px] font-semibold text-[#a1a1a1] uppercase tracking-wider">
+                Actor
+              </th>
+              <th className="p-3 px-5 text-[11px] font-semibold text-[#a1a1a1] uppercase tracking-wider">
+                Organization
+              </th>
+              <th className="p-3 px-5 text-[11px] font-semibold text-[#a1a1a1] uppercase tracking-wider">
+                Action
+              </th>
+              <th className="p-3 px-5 text-[11px] font-semibold text-[#a1a1a1] uppercase tracking-wider">
+                Resource
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {mockEvents.map((event, i) => (
+              <tr
+                key={i}
+                className="border-b border-[#e8e8e8] last:border-b-0 hover:bg-[#fafafa]/50 transition-colors"
+              >
+                <td className="p-3 px-5 text-[12px] text-[#a1a1a1] font-mono whitespace-nowrap">
+                  {event.time}
+                </td>
+                <td className="p-3 px-5 text-[12px] font-semibold text-[#0a0a0a]">
+                  {event.actor}
+                </td>
+                <td className="p-3 px-5 text-[12px] text-[#525252]">
+                  {event.org}
+                </td>
+                <td className="p-3 px-5 text-[12px]">
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.5 rounded-[4px] border text-[10px] font-medium leading-none",
+                      event.actionColor,
+                    )}
+                  >
+                    {event.action}
+                  </span>
+                </td>
+                <td className="p-3 px-5 text-[12px] text-[#525252]">
+                  {event.resource}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {mockEvents.map((event, i) => (
-                <tr
-                  key={i}
-                  className="border-b last:border-0 hover:bg-muted/10"
-                >
-                  <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
-                    {event.time}
-                  </td>
-                  <td className="p-3 text-xs">{event.actor}</td>
-                  <td className="p-3 text-xs">{event.org}</td>
-                  <td className="p-3 text-xs">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] px-1.5 py-0 h-5 font-normal",
-                        event.actionColor,
-                      )}
-                    >
-                      {event.action}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-xs">{event.resource}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
 export const AdminDashboardList = () => {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <AdminDashboardStats />
+
+      <div className="flex items-center justify-between border-b border-[#e8e8e8] pb-3 mb-4">
+        <h4 className="text-[13px] font-semibold text-[#a1a1a1] uppercase tracking-wider">
+          Quick Administrative Actions
+        </h4>
+      </div>
       <AdminDashboardQuickCreate />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -429,9 +414,10 @@ export const AdminDashboardContainer = ({
   children: React.ReactNode;
 }) => {
   return (
-    <EntityContainer header={<AdminDashboardHeader />}>
+    <div className="px-7 md:px-10 py-7 md:py-10 w-full flex flex-col gap-y-6">
+      <AdminDashboardHeader />
       {children}
-    </EntityContainer>
+    </div>
   );
 };
 

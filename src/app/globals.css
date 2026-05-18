@@ -134,12 +134,12 @@
   --chart-4: #ffb900;
   --chart-5: #fe9a00;
   --sidebar: #ffffff;
-  --sidebar-foreground: #171717;
-  --sidebar-primary: #fb3640;
+  --sidebar-foreground: #525252;
+  --sidebar-primary: #0a0a0a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f1f2;
-  --sidebar-accent-foreground: #2b2b2b;
-  --sidebar-border: #e4e4e7;
+  --sidebar-accent: #fafafa;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e8e8e8;
   --sidebar-ring: #fb3640;
 
   /* fonts */

@@ -2,32 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { useQuery } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
-import {
-  Building2,
-  Calendar,
-  ChevronRight,
-  Folder,
-  LayoutGrid,
-  MoreVertical,
-  Plus,
-  Search,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Folder, Plus, Search } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
+import { WorkspaceRegistryCard } from "@/components/platform/cards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -36,12 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -65,66 +42,74 @@ export default function WorkspacesAdminPage() {
     setCreateOpen(true);
   };
 
-  // In a real admin view, we might want to list ALL workspaces.
-  // For now, we'll list organizations and their workspaces.
   const { data: orgs, isLoading: isLoadingOrgs } = useQuery(
     trpc.organizations.getMany.queryOptions({}),
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="px-7 md:px-10 py-7 md:py-10 w-full space-y-10">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#e8e8e8] pb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Workspaces</h1>
-          <p className="text-muted-foreground">
+          <h3 className="text-h3 font-semibold text-[#0a0a0a] tracking-tight leading-tight mb-2">
+            Workspaces
+          </h3>
+          <p className="text-[14px] text-[#a1a1a1] max-w-[600px] leading-relaxed font-normal">
             Manage folder canvases and workflow organization across the system.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#a1a1a1]" />
             <Input
               placeholder="Search workspaces..."
-              className="pl-9 h-9"
+              className="pl-9 h-9 border-[#e8e8e8] focus-visible:ring-1 focus-visible:ring-[#0a0a0a] text-[13px] rounded-md"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <Button
             size="sm"
-            className="bg-red-600 hover:bg-red-700 h-9"
+            className="bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white text-[12px] h-9 px-4 rounded-md font-medium transition-colors"
             onClick={() => openCreate()}
           >
-            <Plus className="mr-2 h-4 w-4" /> New Workspace
+            <Plus className="mr-1.5 h-4 w-4 shrink-0" /> New Workspace
           </Button>
         </div>
       </div>
 
       {isLoadingOrgs ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-xl" />
+          {[1, 2, 3].map((i) => (
+            <Skeleton
+              key={i}
+              className="h-44 w-full rounded-xl border border-[#e8e8e8]"
+            />
           ))}
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-12">
           {orgs?.items.map((org) => (
             <div key={org.id} className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              {/* Organization Section Title */}
+              <div className="flex items-center gap-2 border-b border-[#e8e8e8] pb-2 mb-4 px-1">
+                <Building2 className="h-4 w-4 text-[#525252]" />
+                <h4 className="text-[12px] font-semibold text-[#0a0a0a] uppercase tracking-wider font-mono">
                   {org.name}
-                </h2>
-                <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                </h4>
+                <Badge
+                  variant="outline"
+                  className="ml-1 text-[9px] px-1.5 py-0 border-[#e8e8e8] text-[#a1a1a1] font-mono h-4"
+                >
                   Organization
                 </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-auto text-xs text-red-600 hover:text-red-700 hover:bg-red-50 gap-1.5 h-7"
+                  className="ml-auto text-[11px] font-semibold text-[#0a0a0a] hover:bg-[#fafafa] border border-transparent hover:border-[#e8e8e8] gap-1 h-7 px-2.5 rounded-md"
                   onClick={() => openCreate(org.id)}
                 >
-                  <Plus size={14} /> Create
+                  <Plus size={12} /> Create
                 </Button>
               </div>
 
@@ -169,7 +154,6 @@ function CreateWorkspaceDialog({
   const [description, setDescription] = useState("");
   const [orgId, setOrgId] = useState(prefilledOrgId || "");
 
-  // Reset when prefilled changes or dialog opens
   useEffect(() => {
     if (open) {
       setOrgId(prefilledOrgId || "");
@@ -193,8 +177,7 @@ function CreateWorkspaceDialog({
         organizationId: orgId,
       });
       onOpenChange(false);
-      // Redirect to the new workspace canvas
-      router.push(`/admin/workflows/workspaces/${workspace.id}`);
+      router.push(`/admin/workspaces/${workspace.id}`);
     } catch (err) {
       console.error("Failed to create workspace:", err);
       alert("Failed to create workspace. Please try again.");
@@ -234,7 +217,7 @@ function CreateWorkspaceDialog({
             <Label htmlFor="name">Workspace Name</Label>
             <Input
               id="name"
-              placeholder="e.g. Finance Workflows"
+              placeholder="e.g. Hydrology Studies"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -259,7 +242,7 @@ function CreateWorkspaceDialog({
             </Button>
             <Button
               type="submit"
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white"
               disabled={createMutation.isPending || !name || !orgId}
             >
               {createMutation.isPending && (
@@ -292,7 +275,7 @@ function WorkspaceList({
     trpc.workspaceCanvas.delete.mutationOptions(),
   );
 
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
   const handleDelete = async (
     e: React.MouseEvent,
@@ -311,7 +294,9 @@ function WorkspaceList({
 
     try {
       await deleteMutation.mutateAsync({ workspaceId });
-      utils.workspaceCanvas.list.invalidate({ organizationId });
+      queryClient.invalidateQueries(
+        trpc.workspaceCanvas.list.queryOptions({ organizationId }),
+      );
     } catch (err) {
       console.error("Failed to delete workspace:", err);
       alert("Failed to delete workspace.");
@@ -329,7 +314,10 @@ function WorkspaceList({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2].map((i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          <Skeleton
+            key={i}
+            className="h-36 w-full rounded-xl border border-[#e8e8e8]"
+          />
         ))}
       </div>
     );
@@ -337,15 +325,15 @@ function WorkspaceList({
 
   if (filtered.length === 0 && !search) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 border border-dashed rounded-xl bg-muted/30">
-        <Folder className="h-10 w-10 text-muted-foreground/30 mb-3" />
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-10 border border-dashed rounded-xl bg-[#fafafa]/50 border-[#e8e8e8]">
+        <Folder className="h-10 w-10 text-[#a1a1a1]/50 mb-3" />
+        <p className="text-[13px] text-[#a1a1a1]">
           No workspaces created for this organization.
         </p>
         <Button
           variant="link"
           size="sm"
-          className="text-red-600"
+          className="text-[#0a0a0a] font-semibold text-[12px] hover:text-[#333]"
           onClick={onCreateClick}
         >
           Create one now
@@ -358,66 +346,16 @@ function WorkspaceList({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filtered.map((workspace) => (
-        <Link
+      {filtered.map((workspace, index) => (
+        <WorkspaceRegistryCard
           key={workspace.id}
-          href={`/admin/workflows/workspaces/${workspace.id}`}
-          className="group"
-        >
-          <Card className="shadow-none border-border group-hover:border-red-200 transition-all group-hover:shadow-md h-full">
-            <CardHeader className="p-4 pb-2">
-              <div className="flex justify-between items-start">
-                <div className="p-2 rounded-lg bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors">
-                  <LayoutGrid className="h-5 w-5" />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    asChild
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
-                    <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-600"
-                      onClick={(e) =>
-                        handleDelete(e, workspace.id, workspace.name)
-                      }
-                      disabled={deleteMutation.isPending}
-                    >
-                      {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-2">
-              <CardTitle className="text-base mb-1">{workspace.name}</CardTitle>
-              <CardDescription className="text-xs line-clamp-2 h-8">
-                {workspace.description ||
-                  "Visual canvas for workflow organization."}
-              </CardDescription>
-
-              <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  Updated {new Date(workspace.updatedAt).toLocaleDateString()}
-                </div>
-                <div className="flex items-center text-red-600 text-[10px] font-bold uppercase tracking-wider group-hover:translate-x-1 transition-transform">
-                  Open Canvas <ChevronRight className="ml-1 h-3 w-3" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+          workspace={workspace}
+          index={index}
+          href={`/admin/workspaces/${workspace.id}`}
+          onDeleteClick={(e) => handleDelete(e, workspace.id, workspace.name)}
+          deletePending={deleteMutation.isPending}
+          actionLabel="Open Canvas"
+        />
       ))}
     </div>
   );

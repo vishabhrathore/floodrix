@@ -43,124 +43,14 @@ export function useWorkspaceCanvasData(workspaceId: string) {
   // 2. Initialize store when data arrives
   useEffect(() => {
     if (query.data?.nodes && store.workspaceId !== workspaceId) {
-      store.initialize(workspaceId, query.data.nodes as WorkspaceNodeData[]);
+      store.initialize(
+        workspaceId,
+        query.data.nodes as unknown as WorkspaceNodeData[],
+      );
     }
   }, [query.data, workspaceId, store]);
 
-  // 3. Wire flush → tRPC saveCanvas mutation
-  const saveMutation = useMutation(
-    trpc.workspaceCanvas.saveCanvas.mutationOptions({
-      onError(err) {
-        console.error("Workspace save failed:", err);
-      },
-    }),
-  );
-
-  const saveRef = useRef(saveMutation.mutate);
-  saveRef.current = saveMutation.mutate;
-
-  useEffect(() => {
-    // Override the store's flush() with a real tRPC call
-    store.flush = async () => {
-      const state = useWorkspaceCanvas.getState();
-      if (!state.isDirty || state.isSaving || !state.workspaceId) return;
-
-      useWorkspaceCanvas.setState({ isSaving: true });
-
-      try {
-        // Partition dbNodes into create/update/delete
-        const nodesToCreate: {
-          id: string;
-          parentId: string;
-          nodeType: WorkspaceNodeData["nodeType"];
-          name: string;
-          icon: string | null;
-          sortOrder: number;
-          canvasX: number | null;
-          canvasY: number | null;
-          linkedWorkflowId: string | null;
-          metadata: Record<string, unknown>;
-        }[] = [];
-
-        const nodesToUpdate: { id: string; data: Record<string, unknown> }[] =
-          [];
-        const nodeIdsToDelete: string[] = [];
-
-        for (const node of state.dbNodes) {
-          if (node._isDeleted) {
-            if (!node._isNew) nodeIdsToDelete.push(node.id);
-          } else if (node._isNew) {
-            nodesToCreate.push({
-              id: node.id,
-              parentId: node.parentId!,
-              nodeType: node.nodeType,
-              name: node.name,
-              icon: node.icon,
-              sortOrder: node.sortOrder,
-              canvasX: node.canvasX,
-              canvasY: node.canvasY,
-              linkedWorkflowId: node.linkedWorkflowId,
-              metadata: node.metadata ?? {},
-            });
-          } else if (node._isDirty) {
-            nodesToUpdate.push({
-              id: node.id,
-              data: {
-                parentId: node.parentId,
-                name: node.name,
-                icon: node.icon,
-                sortOrder: node.sortOrder,
-                canvasX: node.canvasX,
-                canvasY: node.canvasY,
-                linkedWorkflowId: node.linkedWorkflowId,
-                linkedVersion: node.linkedVersion,
-                metadata: node.metadata,
-              },
-            });
-          }
-        }
-
-        // Nothing to save
-        if (
-          nodesToCreate.length === 0 &&
-          nodesToUpdate.length === 0 &&
-          nodeIdsToDelete.length === 0
-        ) {
-          useWorkspaceCanvas.setState({ isDirty: false, isSaving: false });
-          return;
-        }
-
-        // ONE tRPC call with everything batched
-        await new Promise<void>((resolve, reject) => {
-          saveRef.current(
-            {
-              workspaceId: state.workspaceId!,
-              create: nodesToCreate,
-              update: nodesToUpdate,
-              delete: nodeIdsToDelete,
-            },
-            { onSuccess: () => resolve(), onError: reject },
-          );
-        });
-
-        // Clear dirty flags
-        useWorkspaceCanvas.setState((s) => ({
-          dbNodes: s.dbNodes
-            .filter((n) => !n._isDeleted)
-            .map((n) => ({ ...n, _isNew: false, _isDirty: false })),
-          isDirty: false,
-          pendingChanges: 0,
-          isSaving: false,
-          lastSavedAt: new Date(),
-        }));
-      } catch {
-        useWorkspaceCanvas.setState({ isSaving: false });
-        // Don't clear isDirty — will retry on next change
-      }
-    };
-
-    // No cleanup needed — store.flush is overwritten each time
-  }, [workspaceId]);
+  // No longer overwriting flush here since workspace-canvas.tsx handles save natively.
 
   return {
     isLoading: query.isLoading,

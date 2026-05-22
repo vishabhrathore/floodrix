@@ -101,6 +101,8 @@ export const WorkspaceCanvasEditor = observer(function WorkspaceCanvasEditor({
   const handleSave = async () => {
     if (!isDirty || isSaving) return;
 
+    store.setIsSaving(true);
+
     // Extract changes from store
     const dbNodes = store.dbNodes;
     const create = dbNodes
@@ -147,6 +149,7 @@ export const WorkspaceCanvasEditor = observer(function WorkspaceCanvasEditor({
       flushStore();
     } catch (err) {
       console.error("Failed to save workspace:", err);
+      store.setIsSaving(false);
     }
   };
 
@@ -161,8 +164,8 @@ export const WorkspaceCanvasEditor = observer(function WorkspaceCanvasEditor({
     if (targetNodeId) {
       attachWorkflow(targetNodeId, workflowId);
       // Optionally rename the node to the workflow name if it's still default
-      const node = rfNodes.find((n) => n.id === targetNodeId) as any;
-      if (node?.data?.dbNode?.name === "New workflow link") {
+      const dbNode = store.nodeMap.get(targetNodeId);
+      if (dbNode?.name === "New workflow link") {
         store.renameNode(targetNodeId, name);
       }
     }
@@ -174,7 +177,7 @@ export const WorkspaceCanvasEditor = observer(function WorkspaceCanvasEditor({
   const onNodeDoubleClick = useCallback(
     (_e: React.MouseEvent, node: any) => {
       if (node.type === "workflowLink") {
-        const dbNode = node.data?.dbNode;
+        const dbNode = store.nodeMap.get(node.id);
         const linkedId = dbNode?.linkedWorkflowId;
         if (linkedId && onOpenWorkflow) {
           onOpenWorkflow(linkedId);
@@ -184,7 +187,7 @@ export const WorkspaceCanvasEditor = observer(function WorkspaceCanvasEditor({
         }
       }
     },
-    [onOpenWorkflow],
+    [onOpenWorkflow, store],
   );
 
   // Add folder at canvas center
@@ -218,6 +221,7 @@ export const WorkspaceCanvasEditor = observer(function WorkspaceCanvasEditor({
         lastSavedAt={lastSavedAt}
         addFolderAtCenter={addFolderAtCenter}
         addLinkAtCenter={addLinkAtCenter}
+        onLayout={() => store.layoutCanvasTree()}
       />
 
       {/* ── Main area ───────────────────────────────────────────── */}

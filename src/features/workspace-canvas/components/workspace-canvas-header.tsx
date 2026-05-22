@@ -16,9 +16,15 @@ import {
   List,
   Loader2,
   Save,
+  Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface WorkspaceCanvasHeaderProps {
   onBack?: () => void;
@@ -28,6 +34,7 @@ interface WorkspaceCanvasHeaderProps {
   lastSavedAt: Date | null;
   addFolderAtCenter: () => void;
   addLinkAtCenter: () => void;
+  onLayout?: () => void;
 }
 
 export function WorkspaceCanvasHeader({
@@ -38,6 +45,7 @@ export function WorkspaceCanvasHeader({
   lastSavedAt,
   addFolderAtCenter,
   addLinkAtCenter,
+  onLayout,
 }: WorkspaceCanvasHeaderProps) {
   return (
     <div className="h-[56px]  bg-white border-b border-gray-100 flex items-center px-3 gap-2 flex-shrink-0">
@@ -63,42 +71,88 @@ export function WorkspaceCanvasHeader({
       {/* Save status */}
       <div className="flex items-center gap-1.5 mr-3">
         {isSaving ? (
-          <div className="flex items-center gap-1 text-[11px] text-blue-500">
-            <Loader2 size={12} className="animate-spin" /> Saving
-          </div>
+          <Button
+            variant="default"
+            size="sm"
+            disabled
+            className="h-8 rounded-lg bg-[#0a0a0a] text-white opacity-80 flex items-center justify-center cursor-not-allowed"
+          >
+            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+            <span className="text-[11px]">Saving...</span>
+          </Button>
         ) : isDirty ? (
           <Button
             variant="default"
             size="sm"
             onClick={handleSave}
-            className="h-8 rounded-lg cursor-pointer bg-[#0a0a0a] text-white hover:bg-[#1a1a1a]"
+            className="h-8 rounded-lg cursor-pointer bg-[#0a0a0a] text-white hover:bg-[#1a1a1a] flex items-center justify-center"
           >
-            <Save size={11} /> Save Changes
+            <Save size={11} className="mr-1.5" /> Save Changes
           </Button>
-        ) : lastSavedAt ? (
-          <div className="flex items-center gap-1 text-[11px] text-gray-400">
-            <Check size={12} /> Saved
-          </div>
-        ) : null}
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            className="h-8 rounded-lg border border-[#e8e8e8] bg-[#fafafa] text-gray-400 cursor-not-allowed flex items-center justify-center"
+          >
+            <Check size={11} className="mr-1.5" /> Saved
+          </Button>
+        )}
       </div>
 
       {/* Action buttons */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={addFolderAtCenter}
-        className="h-8 rounded-lg cursor-pointer border border-[#e8e8e8] bg-white text-gray-600 hover:bg-gray-50"
-      >
-        <FolderPlus size={13} /> Folder
-      </Button>
-      <Button
-        variant="default"
-        size="sm"
-        onClick={addLinkAtCenter}
-        className="h-8 rounded-lg cursor-pointer bg-[#0a0a0a] text-white hover:bg-[#1a1a1a]"
-      >
-        <LinkIcon size={13} /> Link workflow
-      </Button>
+      <div className="flex items-center gap-1.5">
+        {onLayout && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLayout}
+                className="w-8 h-8 rounded-lg cursor-pointer border border-[#e8e8e8] bg-white text-gray-700 hover:bg-gray-50 hover:text-amber-600 transition-colors p-0 flex items-center justify-center"
+              >
+                <Sparkles size={15} className="text-amber-500 fill-amber-100" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="center" className="text-[11px] bg-slate-900 text-white border border-slate-800 px-2 py-1 shadow-md">
+              Auto Layout
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addFolderAtCenter}
+              className="w-8 h-8 rounded-lg cursor-pointer border border-[#e8e8e8] bg-white text-gray-600 hover:bg-gray-50 p-0 flex items-center justify-center"
+            >
+              <FolderPlus size={15} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="center" className="text-[11px] bg-slate-900 text-white border border-slate-800 px-2 py-1 shadow-md">
+            Add Folder
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={addLinkAtCenter}
+              className="w-8 h-8 rounded-lg cursor-pointer bg-[#0a0a0a] text-white hover:bg-[#1a1a1a] p-0 flex items-center justify-center"
+            >
+              <LinkIcon size={15} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="center" className="text-[11px] bg-slate-900 text-white border border-slate-800 px-2 py-1 shadow-md">
+            Link Workflow
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }

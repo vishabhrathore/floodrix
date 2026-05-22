@@ -23,6 +23,35 @@ export async function loadContext(
   userId: string,
   opts: LoadOptions,
 ): Promise<RequestContext> {
+  // Dynamically resolve organizationId from resource IDs if not explicitly provided
+  if (!opts.organizationId) {
+    if (opts.workspaceId) {
+      const ws = await db.workspace.findUnique({
+        where: { id: opts.workspaceId },
+        select: { organizationId: true },
+      });
+      if (ws) opts.organizationId = ws.organizationId;
+    } else if (opts.workflowId) {
+      const wf = await db.calcWorkflow.findUnique({
+        where: { id: opts.workflowId },
+        select: { organizationId: true },
+      });
+      if (wf) opts.organizationId = wf.organizationId;
+    } else if (opts.formulaRegistryId) {
+      const f = await db.formulaRegistryItem.findUnique({
+        where: { id: opts.formulaRegistryId },
+        select: { organizationId: true },
+      });
+      if (f) opts.organizationId = f.organizationId;
+    } else if (opts.tableRegistryId) {
+      const t = await db.tableRegistryItem.findUnique({
+        where: { id: opts.tableRegistryId },
+        select: { organizationId: true },
+      });
+      if (t) opts.organizationId = t.organizationId;
+    }
+  }
+
   let userWithRelations: any;
 
   if (opts.organizationId) {

@@ -1,6 +1,7 @@
 import { workflowPolicies } from "@/features/calc-workflows/server/policy";
 import { formulaPolicies } from "@/features/registery/formula/server/policy";
 import { tablePolicies } from "@/features/registery/table/server/policy";
+import { workspacePolicies } from "@/features/workspace-canvas/server/policy";
 
 import {
   PolicyInput,
@@ -13,7 +14,7 @@ const policyRegistry: Record<ResourceType, ResourcePolicyMap> = {
   workflow: workflowPolicies, // workflowPolicies,
   formula: formulaPolicies,
   table: tablePolicies, // tablePolicies,
-  workspace: {}, // Default empty, add workspacePolicies later
+  workspace: workspacePolicies,
   batch: {}, // Default empty, add batchPolicies later
 };
 

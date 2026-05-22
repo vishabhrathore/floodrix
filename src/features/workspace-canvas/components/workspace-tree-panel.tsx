@@ -25,6 +25,26 @@ import { WORKSPACE_ICONS } from "./workspace-icons";
 
 export const WorkspaceTreeSidebar = observer(function WorkspaceTreeSidebar() {
   const store = useWorkspaceCanvas();
+  const [isRootDragOver, setIsRootDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsRootDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsRootDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsRootDragOver(false);
+    const draggedId = e.dataTransfer.getData("text/plain");
+    if (draggedId && store.rootId && draggedId !== store.rootId) {
+      store.moveNode(draggedId, store.rootId);
+    }
+  };
 
   return (
     <div className="w-[240px] border-r border-[#e8e8e8] bg-white text-[#0a0a0a] flex flex-col h-full flex-shrink-0 z-20">
@@ -39,7 +59,15 @@ export const WorkspaceTreeSidebar = observer(function WorkspaceTreeSidebar() {
         </div>
       </div>
 
-      <div className="scrollbar-hide flex-1 flex flex-col gap-0 py-2 bg-white overflow-y-auto">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "scrollbar-hide flex-1 flex flex-col gap-0 py-2 overflow-y-auto transition-colors duration-200",
+          isRootDragOver ? "bg-slate-50/50" : "bg-white",
+        )}
+      >
         <TreeSearchInput />
 
         <div className="flex-1 px-1 space-y-0.5">
@@ -139,8 +167,8 @@ const TreeNode = observer(function TreeNode({
   const store = useWorkspaceCanvas();
   const node = store.nodeMap.get(nodeId);
 
-  const [expanded, setExpanded] = useState(node?.isExpanded ?? false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   if (!node) return null;
 
@@ -148,12 +176,46 @@ const TreeNode = observer(function TreeNode({
   const isLink = node.nodeType === "WORKFLOW_LINK";
   const isNote = node.nodeType === "NOTE";
   const isEditing = store.editingNodeId === node.id;
-  const isSelected = store.rfNodes.find((rn) => rn.id === node.id)?.selected;
+  const isSelected = store.selectedNodeId === node.id;
+  const expanded = node.isExpanded;
 
   const handleRowClick = (e: React.MouseEvent) => {
     store.selectNode(node.id);
     if (isFolder) {
-      setExpanded(!expanded);
+      node.isExpanded = !node.isExpanded;
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", node.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isFolder) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!isFolder) return;
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isFolder) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const draggedId = e.dataTransfer.getData("text/plain");
+    console.log("[TreeNode] handleDrop on target node:", node.id, "draggedId:", draggedId);
+    if (draggedId && draggedId !== node.id) {
+      store.moveNode(draggedId, node.id);
+    } else {
+      console.warn("[TreeNode] handleDrop skipped, draggedId is missing or identical to target.");
     }
   };
 
@@ -183,6 +245,8 @@ const TreeNode = observer(function TreeNode({
     return (
       <div className="relative">
         <div
+          draggable={true}
+          onDragStart={handleDragStart}
           className={cn(
             "group relative flex w-full items-center gap-2 py-1.5 pl-4 pr-4 text-[13px] transition-all cursor-pointer select-none",
             isSelected
@@ -270,11 +334,18 @@ const TreeNode = observer(function TreeNode({
   return (
     <div className="space-y-0.5">
       <div
+        draggable={true}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={cn(
           "group flex w-full items-center gap-2 py-1.5 pl-4 pr-4 text-[13px] transition-all cursor-pointer hover:bg-[#fafafa] select-none",
-          expanded || isSelected
-            ? "text-[#0a0a0a] font-medium"
-            : "text-[#525252]",
+          isDragOver
+            ? "bg-blue-50/70 text-blue-600 font-semibold border-l-2 border-blue-500 pl-[14px]"
+            : expanded || isSelected
+              ? "text-[#0a0a0a] font-medium"
+              : "text-[#525252]",
         )}
         onClick={handleRowClick}
         onDoubleClick={() => store.startRenameUI(node.id, node.name)}

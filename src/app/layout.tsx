@@ -122,7 +122,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head></head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <TRPCReactProvider>
           <NuqsAdapter>
             <Provider>

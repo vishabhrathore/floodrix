@@ -41,6 +41,7 @@ interface LookupConfig {
   data?: RangeRow[];
   input_keys?: { key: string; type: "exact" | "range"; unit?: string }[];
   fallback_mode?: "error" | "first" | "last" | "nearest";
+  snapshot?: any;
 }
 
 export class LookupTableHandler implements NodeHandler {
@@ -56,11 +57,15 @@ export class LookupTableHandler implements NodeHandler {
       let matchMode: "range" | "exact" | "nearest";
 
       if (config.source === "registry" && config.registry_id) {
-        const registry = await ctx.registry.resolveTable(
-          ctx.db,
-          config.registry_id,
-          config.registry_version ?? null,
-        );
+        const registry =
+          (config.snapshot as Awaited<
+            ReturnType<typeof ctx.registry.resolveTable>
+          >) ??
+          (await ctx.registry.resolveTable(
+            ctx.db,
+            config.registry_id,
+            config.registry_version ?? null,
+          ));
         const bindings = config.variable_bindings ?? {};
         inputKeys = registry.inputKeys.map(
           (k) => bindings[k.notation] ?? k.key,

@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import * as Icons from "lucide-react";
+import { observer } from "mobx-react-lite";
 
 import { useWorkflowCanvasStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
 import { useExecutionHighlightStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
@@ -99,10 +100,9 @@ function BaseNodeInner({
   ];
 
   // Get store actions — these work for all node types without explicit props
-  const store = useWorkflowCanvasStore;
-  const handleDelete = onDeleteProp ?? (() => store.getState().deleteNode(id));
-  const handleDuplicate =
-    onDuplicateProp ?? (() => store.getState().duplicateNode(id));
+  const store = useWorkflowCanvasStore();
+  const handleDelete = onDeleteProp ?? (() => store.deleteNode(id));
+  const handleDuplicate = onDuplicateProp ?? (() => store.duplicateNode(id));
 
   // For configure, we dispatch a custom event that the canvas component listens to.
   // This avoids needing to thread the config drawer through every node type.
@@ -114,12 +114,9 @@ function BaseNodeInner({
       );
     });
 
-  const executionStatusValue = useExecutionHighlightStore(
-    (s) => s.nodeExecutionStatus[id],
-  );
-  const isActiveExecutionNode = useExecutionHighlightStore(
-    (s) => s.activeExecutionNodeId === id,
-  );
+  const highlightStore = useExecutionHighlightStore();
+  const executionStatusValue = highlightStore.nodeExecutionStatus[id];
+  const isActiveExecutionNode = highlightStore.activeExecutionNodeId === id;
 
   // Prioritize real-time store status over static prop
   const effectiveStatus = executionStatusValue || executionStatusProp;
@@ -136,7 +133,9 @@ function BaseNodeInner({
       style={{
         width,
         borderRadius: 10,
-        border: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
+        borderTop: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
+        borderRight: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
+        borderBottom: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
         borderLeft: `3px solid ${accent.accent}`,
         backgroundColor: "white",
         boxShadow: selected
@@ -250,7 +249,8 @@ function BaseNodeInner({
                   : "none",
               flexShrink: 0,
               animation:
-                effectiveStatus === "RUNNING" || effectiveStatus === "running"
+                (effectiveStatus as string) === "RUNNING" ||
+                (effectiveStatus as string) === "running"
                   ? "pulse 1.2s ease-in-out infinite"
                   : undefined,
             }}
@@ -326,7 +326,7 @@ function BaseNodeInner({
   );
 }
 
-export const BaseNode = memo(BaseNodeInner);
+export const BaseNode = observer(BaseNodeInner);
 
 // ─── Node Menu (3-dot dropdown) ──────────────────────────────────────────
 

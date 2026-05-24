@@ -24,15 +24,7 @@ import { useTRPC } from "@/trpc/client";
 
 export function useExecutionHighlightSync(sessionId: string | null) {
   const trpc = useTRPC();
-  const syncHighlights = useExecutionHighlightStore(
-    (s) => s.syncExecutionHighlights,
-  );
-  const setActiveNode = useExecutionHighlightStore(
-    (s) => s.setActiveExecutionNode,
-  );
-  const clearHighlights = useExecutionHighlightStore(
-    (s) => s.clearExecutionHighlights,
-  );
+  const highlightStore = useExecutionHighlightStore();
 
   const { data } = useQuery(
     trpc.calcExecution.getSession.queryOptions(
@@ -42,18 +34,18 @@ export function useExecutionHighlightSync(sessionId: string | null) {
         refetchInterval: 1500,
       },
     ),
-  );
+  ) as any;
 
   useEffect(() => {
     if (!data) return;
-    syncHighlights(data.nodeExecutions);
-    setActiveNode(data.currentNodeId);
-  }, [data, syncHighlights, setActiveNode]);
+    highlightStore.syncExecutionHighlights(data.nodeExecutions);
+    highlightStore.setActiveExecutionNode(data.currentNodeId);
+  }, [data, highlightStore]);
 
   // Clear when sessionId becomes null (run ended / panel closed)
   useEffect(() => {
-    if (!sessionId) clearHighlights();
-  }, [sessionId, clearHighlights]);
+    if (!sessionId) highlightStore.clearExecutionHighlights();
+  }, [sessionId, highlightStore]);
 }
 
 // ─── Usage in the run page or runner component ────────────────────────────

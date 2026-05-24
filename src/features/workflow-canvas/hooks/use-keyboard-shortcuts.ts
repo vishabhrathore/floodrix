@@ -35,8 +35,7 @@ export function useKeyboardShortcuts({
   onDelete,
   disabled = false,
 }: UseKeyboardShortcutsOptions) {
-  const { undo, redo, deleteSelectedNode, canUndo, canRedo } =
-    useWorkflowCanvasStore();
+  const store = useWorkflowCanvasStore();
 
   useEffect(() => {
     if (disabled) return;
@@ -54,14 +53,14 @@ export function useKeyboardShortcuts({
       // Undo: Ctrl+Z
       if (meta && !e.shiftKey && e.key === "z") {
         e.preventDefault();
-        if (canUndo) undo();
+        if (store.history.canUndo) store.history.undo();
         return;
       }
 
       // Redo: Ctrl+Shift+Z or Ctrl+Y
       if ((meta && e.shiftKey && e.key === "z") || (meta && e.key === "y")) {
         e.preventDefault();
-        if (canRedo) redo();
+        if (store.history.canRedo) store.history.redo();
         return;
       }
 
@@ -71,21 +70,12 @@ export function useKeyboardShortcuts({
         !isInputTarget(e.target)
       ) {
         e.preventDefault();
-        onDelete ? onDelete() : deleteSelectedNode();
+        onDelete ? onDelete() : store.deleteSelectedNode();
         return;
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    disabled,
-    onSave,
-    onDelete,
-    undo,
-    redo,
-    deleteSelectedNode,
-    canUndo,
-    canRedo,
-  ]);
+  }, [disabled, onSave, onDelete, store]);
 }

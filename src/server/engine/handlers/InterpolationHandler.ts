@@ -21,6 +21,7 @@ interface InterpolationConfig {
   data_points?: { x: number; y: number }[];
   interpolation_method?: "linear" | "cubic_spline" | "step";
   extrapolation?: "clamp" | "extend" | "error";
+  snapshot?: any;
 }
 
 export class InterpolationHandler implements NodeHandler {
@@ -37,11 +38,15 @@ export class InterpolationHandler implements NodeHandler {
       let extrapolation: string;
 
       if (config.source === "registry" && config.registry_id) {
-        const registry = await ctx.registry.resolveTable(
-          ctx.db,
-          config.registry_id,
-          config.registry_version ?? null,
-        );
+        const registry =
+          (config.snapshot as Awaited<
+            ReturnType<typeof ctx.registry.resolveTable>
+          >) ??
+          (await ctx.registry.resolveTable(
+            ctx.db,
+            config.registry_id,
+            config.registry_version ?? null,
+          ));
         const bindings = config.variable_bindings ?? {};
         const inputDef = registry.inputKeys[0];
         inputVar = bindings[inputDef.notation] ?? inputDef.key;

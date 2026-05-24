@@ -25,6 +25,7 @@ interface FormulaConfig {
   result_variable?: string;
   result_unit?: string;
   result_precision?: number;
+  snapshot?: any;
 }
 
 export class FormulaHandler implements NodeHandler {
@@ -41,11 +42,15 @@ export class FormulaHandler implements NodeHandler {
       let evalScope: Record<string, number | boolean>;
 
       if (config.source === "registry" && config.registry_id) {
-        const registry = await ctx.registry.resolveFormula(
-          ctx.db,
-          config.registry_id,
-          config.registry_version ?? null,
-        );
+        const registry =
+          (config.snapshot as Awaited<
+            ReturnType<typeof ctx.registry.resolveFormula>
+          >) ??
+          (await ctx.registry.resolveFormula(
+            ctx.db,
+            config.registry_id,
+            config.registry_version ?? null,
+          ));
 
         const bindings = config.variable_bindings ?? {};
         expression = registry.expressionNotation;

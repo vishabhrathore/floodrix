@@ -75,34 +75,32 @@ export function useExecution(workflowId: string) {
   const [state, setState] = useState<ExecutionState>(initialState);
   const pollingRef = useRef(false);
 
-  const syncHighlights = useExecutionHighlightStore(
-    (s) => s.syncExecutionHighlights,
-  );
-  const setActiveNode = useExecutionHighlightStore(
-    (s) => s.setActiveExecutionNode,
-  );
+  const highlightStore = useExecutionHighlightStore();
 
   // Helper to absorb a server response into state
-  const ingest = useCallback((data: any) => {
-    setState((s) => ({
-      ...s,
-      status: data.status as SessionStatus,
-      sessionId: data.sessionId ?? s.sessionId,
-      currentNodeId: data.currentNodeId ?? data.pausedNode?.nodeId ?? null,
-      pauseReason: data.pauseReason ?? null,
-      pausedNode: (data.pausedNode as PausedNode) ?? null,
-      stepOutput: (data.stepOutput as StepOutput) ?? null,
-      variables: (data.variables as Record<string, unknown>) ?? s.variables,
-      completedAt: data.completedAt ?? null,
-      error: data.error?.message ?? null,
-    }));
-    pollingRef.current = data.status === "RUNNING";
-    // NEW: sync highlights
-    if (Array.isArray(data.nodeExecutions)) {
-      syncHighlights(data.nodeExecutions);
-    }
-    setActiveNode(data.currentNodeId ?? null);
-  }, []);
+  const ingest = useCallback(
+    (data: any) => {
+      setState((s) => ({
+        ...s,
+        status: data.status as SessionStatus,
+        sessionId: data.sessionId ?? s.sessionId,
+        currentNodeId: data.currentNodeId ?? data.pausedNode?.nodeId ?? null,
+        pauseReason: data.pauseReason ?? null,
+        pausedNode: (data.pausedNode as PausedNode) ?? null,
+        stepOutput: (data.stepOutput as StepOutput) ?? null,
+        variables: (data.variables as Record<string, unknown>) ?? s.variables,
+        completedAt: data.completedAt ?? null,
+        error: data.error?.message ?? null,
+      }));
+      pollingRef.current = data.status === "RUNNING";
+      // NEW: sync highlights
+      if (Array.isArray(data.nodeExecutions)) {
+        highlightStore.syncExecutionHighlights(data.nodeExecutions);
+      }
+      highlightStore.setActiveExecutionNode(data.currentNodeId ?? null);
+    },
+    [highlightStore],
+  );
 
   const startMutation = useMutation(
     trpc.calcExecution.startRun.mutationOptions({
@@ -169,10 +167,6 @@ export function useExecution(workflowId: string) {
   //     ingest(sessionQuery.data);
   // }
 
-  const clearHighlights = useExecutionHighlightStore(
-    (s) => s.clearExecutionHighlights,
-  );
-
   // ─── Actions ──────────────────────────────────────────────────────────
   //todo:ai-check
   useEffect(() => {
@@ -184,7 +178,7 @@ export function useExecution(workflowId: string) {
   const startRun = useCallback(
     (opts: { stepMode?: boolean } = {}) => {
       if (!workflowId) return;
-      clearHighlights();
+      highlightStore.clearExecutionHighlights();
       setState({ ...initialState, status: "RUNNING" });
       startMutation.mutate({
         workflowId,
@@ -192,7 +186,7 @@ export function useExecution(workflowId: string) {
         liveUpdates: opts.stepMode ?? false,
       });
     },
-    [workflowId, startMutation, clearHighlights],
+    [workflowId, startMutation, highlightStore],
   );
 
   const submitInput = useCallback(
@@ -224,9 +218,9 @@ export function useExecution(workflowId: string) {
 
   const reset = useCallback(() => {
     pollingRef.current = false;
-    clearHighlights();
+    highlightStore.clearExecutionHighlights();
     setState(initialState);
-  }, [clearHighlights]);
+  }, [highlightStore]);
 
   return {
     ...state,

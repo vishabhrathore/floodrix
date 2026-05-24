@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  src/features/workflow-canvas/store/workflow-canvas-store.ts
-//  Zustand store for the calculation workflow React Flow canvas
+//  MobX store for the calculation workflow React Flow canvas
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
@@ -16,22 +16,19 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
 } from "@xyflow/react";
-import { create } from "zustand";
+import { makeAutoObservable, runInAction, toJS } from "mobx";
 
 import { NodeExecutionStatus } from "@/generated/prisma";
 import type { NodeTypeKey } from "@/theme/calc-theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 export interface ExecutionHighlightSlice {
-  /** Per-node status during an active run. Cleared when the run ends. */
   nodeExecutionStatus: Record<string, NodeExecutionStatus>;
-  /** The node the executor is currently working on (paused-at or running). */
   activeExecutionNodeId: string | null;
 
   setNodeExecutionStatus: (nodeId: string, status: NodeExecutionStatus) => void;
   setActiveExecutionNode: (nodeId: string | null) => void;
   clearExecutionHighlights: () => void;
-  /** Bulk update from a server response (e.g. after stepForward). */
   syncExecutionHighlights: (
     executions: { calcNodeId: string | null; status: NodeExecutionStatus }[],
   ) => void;
@@ -41,59 +38,6 @@ export interface ExecutionHighlightSlice {
 interface CanvasSnapshot {
   nodes: Node[];
   edges: Edge[];
-}
-
-interface WorkflowCanvasState {
-  workflowId: string | null;
-  nodes: Node[];
-  edges: Edge[];
-
-  // Dirty tracking — split so auto-save can use different debounce timers
-  isDirty: boolean;
-  isPositionOnlyDirty: boolean;
-  isSaving: boolean;
-  _saveTimer: ReturnType<typeof setTimeout> | null;
-
-  // Selection
-  selectedNodeId: string | null;
-
-  // Undo / redo stacks
-  _past: CanvasSnapshot[];
-  _future: CanvasSnapshot[];
-  canUndo: boolean;
-  canRedo: boolean;
-
-  // ── Lifecycle ─────────────────────────────────────────────────────────
-  initialize: (workflowId: string, nodes: Node[], edges: Edge[]) => void;
-
-  // ── React Flow event handlers ─────────────────────────────────────────
-  onNodesChange: OnNodesChange;
-  onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
-
-  // ── Node mutations ────────────────────────────────────────────────────
-  addNode: (
-    type: NodeTypeKey,
-    position: { x: number; y: number },
-    config?: Record<string, unknown>,
-  ) => string;
-  updateNodeConfig: (nodeId: string, config: Record<string, unknown>) => void;
-  updateNodeLabel: (nodeId: string, label: string) => void;
-  deleteNode: (nodeId: string) => void;
-  deleteSelectedNode: () => void;
-  duplicateNode: (nodeId: string) => void;
-
-  // ── Selection ─────────────────────────────────────────────────────────
-  selectNode: (nodeId: string | null) => void;
-
-  // ── Undo / redo ───────────────────────────────────────────────────────
-  undo: () => void;
-  redo: () => void;
-
-  // ── Save / dirty ──────────────────────────────────────────────────────
-  markDirty: (positionOnly?: boolean) => void;
-  flush: () => Promise<void>;
-  _scheduleSave: (positionOnly?: boolean) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -201,333 +145,361 @@ const MAX_HISTORY = 50;
 const SAVE_DEBOUNCE_MS = 2000;
 const POSITION_SAVE_DEBOUNCE_MS = 3000;
 
-/** Push current state onto the undo stack before a mutation */
-function pushHistory(
-  state: WorkflowCanvasState,
-): Pick<WorkflowCanvasState, "_past" | "_future" | "canUndo" | "canRedo"> {
-  const snapshot: CanvasSnapshot = {
-    nodes: state.nodes,
-    edges: state.edges,
-  };
-  const _past = [...state._past, snapshot].slice(-MAX_HISTORY);
-  return { _past, _future: [], canUndo: true, canRedo: false };
+// ─── History Tracker Class (Single Responsibility) ─────────────────────────
+
+class CanvasHistory {
+  private store: WorkflowCanvasStore;
+  _past: CanvasSnapshot[] = [];
+  _future: CanvasSnapshot[] = [];
+  canUndo = false;
+  canRedo = false;
+
+  constructor(store: WorkflowCanvasStore) {
+    this.store = store;
+    makeAutoObservable(this, {}, { autoBind: true });
+  }
+
+  clear() {
+    this._past = [];
+    this._future = [];
+    this.canUndo = false;
+    this.canRedo = false;
+  }
+
+  pushHistory() {
+    const snapshot: CanvasSnapshot = {
+      nodes: toJS(this.store.nodes),
+      edges: toJS(this.store.edges),
+    };
+    this._past.push(snapshot);
+    if (this._past.length > MAX_HISTORY) {
+      this._past.shift();
+    }
+    this._future = [];
+    this.canUndo = this._past.length > 0;
+    this.canRedo = false;
+  }
+
+  undo() {
+    if (this._past.length === 0) return;
+
+    const previous = this._past[this._past.length - 1];
+    const newPast = this._past.slice(0, -1);
+    const newFuture: CanvasSnapshot[] = [
+      {
+        nodes: toJS(this.store.nodes),
+        edges: toJS(this.store.edges),
+      },
+      ...this._future,
+    ].slice(0, MAX_HISTORY);
+
+    runInAction(() => {
+      this.store.nodes = previous.nodes;
+      this.store.edges = previous.edges;
+      this._past = newPast;
+      this._future = newFuture;
+      this.canUndo = newPast.length > 0;
+      this.canRedo = true;
+      this.store.isDirty = true;
+      this.store.scheduleSave(false);
+    });
+  }
+
+  redo() {
+    if (this._future.length === 0) return;
+
+    const next = this._future[0];
+    const newFuture = this._future.slice(1);
+    const newPast: CanvasSnapshot[] = [
+      ...this._past,
+      {
+        nodes: toJS(this.store.nodes),
+        edges: toJS(this.store.edges),
+      },
+    ].slice(-MAX_HISTORY);
+
+    runInAction(() => {
+      this.store.nodes = next.nodes;
+      this.store.edges = next.edges;
+      this._past = newPast;
+      this._future = newFuture;
+      this.canUndo = true;
+      this.canRedo = newFuture.length > 0;
+      this.store.isDirty = true;
+      this.store.scheduleSave(false);
+    });
+  }
 }
 
-// ─── Store ────────────────────────────────────────────────────────────────
+// ─── Workflow Canvas Store ─────────────────────────────────────────────────
 
-export const useWorkflowCanvasStore = create<WorkflowCanvasState>(
-  (set, get) => ({
-    workflowId: null,
-    nodes: [],
-    edges: [],
-    isDirty: false,
-    isPositionOnlyDirty: false,
-    isSaving: false,
-    _saveTimer: null,
-    selectedNodeId: null,
-    _past: [],
-    _future: [],
-    canUndo: false,
-    canRedo: false,
+class WorkflowCanvasStore {
+  workflowId: string | null = null;
+  nodes: Node[] = [];
+  edges: Edge[] = [];
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────
-    initialize(workflowId, nodes, edges) {
-      set({
-        workflowId,
-        nodes,
-        edges,
-        isDirty: false,
-        isPositionOnlyDirty: false,
-        selectedNodeId: null,
-        _past: [],
-        _future: [],
-        canUndo: false,
-        canRedo: false,
-      });
-    },
+  // Dirty tracking — split so auto-save can use different debounce timers
+  isDirty = false;
+  isPositionOnlyDirty = false;
+  isSaving = false;
+  _saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // ── React Flow event handlers ──────────────────────────────────────────
-    onNodesChange(changes) {
-      // Determine if this is position-only (drag) or a structural change
-      const isPositionOnly = changes.every(
-        (c) =>
-          c.type === "position" ||
-          c.type === "select" ||
-          c.type === "dimensions",
-      );
-      const hasRealChange = changes.some(
-        (c) => c.type !== "select" && c.type !== "dimensions",
-      );
+  // Selection
+  selectedNodeId: string | null = null;
 
-      set((s) => ({ nodes: applyNodeChanges(changes, s.nodes) }));
+  // Encapsulated single-responsibility canvas history tracker
+  history = new CanvasHistory(this);
 
-      if (!hasRealChange) return;
+  constructor() {
+    makeAutoObservable(this, {}, { autoBind: true });
+  }
 
-      if (isPositionOnly) {
-        set({ isPositionOnlyDirty: true });
-        get()._scheduleSave(true);
-      } else {
-        set((s) => ({
-          ...pushHistory(s),
-          isDirty: true,
-          isPositionOnlyDirty: false,
-        }));
-        get()._scheduleSave(false);
-      }
+  // ── Lifecycle ────────────────────────────────────────────────────────────
+  initialize(workflowId: string, nodes: Node[], edges: Edge[]) {
+    this.workflowId = workflowId;
+    this.nodes = nodes;
+    this.edges = edges;
+    this.isDirty = false;
+    this.isPositionOnlyDirty = false;
+    this.selectedNodeId = null;
+    this.history.clear();
+  }
 
-      // Update selectedNodeId from selection changes
-      const selectChange = changes.find((c) => c.type === "select");
-      if (selectChange && "selected" in selectChange && selectChange.selected) {
-        set({ selectedNodeId: selectChange.id });
-      }
-    },
+  // ── React Flow event handlers ────────────────────────────────────────────
+  onNodesChange(changes: any[]) {
+    // Determine if this is position-only (drag) or a structural change
+    const isPositionOnly = changes.every(
+      (c) =>
+        c.type === "position" || c.type === "select" || c.type === "dimensions",
+    );
+    const hasRealChange = changes.some(
+      (c) => c.type !== "select" && c.type !== "dimensions",
+    );
 
-    onEdgesChange(changes) {
-      set((s) => ({
-        ...pushHistory(s),
-        edges: applyEdgeChanges(changes, s.edges),
-        isDirty: true,
-      }));
-      get()._scheduleSave(false);
-    },
+    this.nodes = applyNodeChanges(changes, this.nodes);
 
-    onConnect(connection) {
-      set((s) => ({
-        ...pushHistory(s),
-        edges: addEdge(
-          { ...connection, id: createId(), type: "default" },
-          s.edges,
-        ),
-        isDirty: true,
-      }));
-      get()._scheduleSave(false);
-    },
+    if (!hasRealChange) return;
 
-    // ── Node mutations ─────────────────────────────────────────────────────
-    addNode(type, position, extraConfig) {
-      const id = createId();
-      const defaults = createDefaultNodeData(type);
+    if (isPositionOnly) {
+      this.isPositionOnlyDirty = true;
+      this.scheduleSave(true);
+    } else {
+      this.history.pushHistory();
+      this.isDirty = true;
+      this.isPositionOnlyDirty = false;
+      this.scheduleSave(false);
+    }
 
-      const newNode: Node = {
-        id,
-        type,
-        position,
-        data: {
-          label: defaults.label,
-          config: { ...defaults.config, ...extraConfig },
+    // Update selectedNodeId from selection changes
+    const selectChange = changes.find((c) => c.type === "select");
+    if (selectChange && "selected" in selectChange && selectChange.selected) {
+      this.selectedNodeId = selectChange.id;
+    }
+  }
+
+  onEdgesChange(changes: any[]) {
+    this.history.pushHistory();
+    this.edges = applyEdgeChanges(changes, this.edges);
+    this.isDirty = true;
+    this.scheduleSave(false);
+  }
+
+  onConnect(connection: any) {
+    this.history.pushHistory();
+    this.edges = addEdge(
+      { ...connection, id: createId(), type: "default" },
+      this.edges,
+    );
+    this.isDirty = true;
+    this.scheduleSave(false);
+  }
+
+  // ── Node mutations ───────────────────────────────────────────────────────
+  addNode(
+    type: NodeTypeKey,
+    position: { x: number; y: number },
+    extraConfig?: Record<string, unknown>,
+  ) {
+    const id = createId();
+    const defaults = createDefaultNodeData(type);
+
+    const newNode: Node = {
+      id,
+      type,
+      position,
+      data: {
+        label: defaults.label,
+        config: { ...defaults.config, ...extraConfig },
+      },
+    };
+
+    this.history.pushHistory();
+    this.nodes.push(newNode);
+    this.isDirty = true;
+    this.selectedNodeId = id;
+    this.scheduleSave(false);
+    return id;
+  }
+
+  updateNodeConfig(nodeId: string, config: Record<string, unknown>) {
+    const node = this.nodes.find((n) => n.id === nodeId);
+    if (node) {
+      this.history.pushHistory();
+      node.data = {
+        ...node.data,
+        config: {
+          ...(node.data.config as Record<string, unknown>),
+          ...config,
         },
       };
+      this.isDirty = true;
+      this.scheduleSave(false);
+    }
+  }
 
-      set((s) => ({
-        ...pushHistory(s),
-        nodes: [...s.nodes, newNode],
-        isDirty: true,
-        selectedNodeId: id,
-      }));
-      get()._scheduleSave(false);
-      return id;
-    },
-
-    updateNodeConfig(nodeId, config) {
-      set((s) => ({
-        ...pushHistory(s),
-        nodes: s.nodes.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                data: {
-                  ...n.data,
-                  config: {
-                    ...(n.data.config as Record<string, unknown>),
-                    ...config,
-                  },
-                },
-              }
-            : n,
-        ),
-        isDirty: true,
-      }));
-      get()._scheduleSave(false);
-    },
-
-    updateNodeLabel(nodeId, label) {
-      set((s) => ({
-        ...pushHistory(s),
-        nodes: s.nodes.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, label } } : n,
-        ),
-        isDirty: true,
-      }));
-      get()._scheduleSave(false);
-    },
-
-    deleteNode(nodeId) {
-      set((s) => ({
-        ...pushHistory(s),
-        nodes: s.nodes.filter((n) => n.id !== nodeId),
-        edges: s.edges.filter(
-          (e) => e.source !== nodeId && e.target !== nodeId,
-        ),
-        isDirty: true,
-        selectedNodeId: s.selectedNodeId === nodeId ? null : s.selectedNodeId,
-      }));
-      get()._scheduleSave(false);
-    },
-
-    deleteSelectedNode() {
-      const { selectedNodeId, deleteNode } = get();
-      if (selectedNodeId) deleteNode(selectedNodeId);
-    },
-
-    duplicateNode(nodeId) {
-      const node = get().nodes.find((n) => n.id === nodeId);
-      if (!node) return;
-
-      const newId = createId();
-      const newNode: Node = {
-        ...structuredClone(node),
-        id: newId,
-        position: { x: node.position.x + 40, y: node.position.y + 40 },
-        selected: false,
+  updateNodeLabel(nodeId: string, label: string) {
+    const node = this.nodes.find((n) => n.id === nodeId);
+    if (node) {
+      this.history.pushHistory();
+      node.data = {
+        ...node.data,
+        label,
       };
+      this.isDirty = true;
+      this.scheduleSave(false);
+    }
+  }
 
-      set((s) => ({
-        ...pushHistory(s),
-        nodes: [...s.nodes, newNode],
-        isDirty: true,
-        selectedNodeId: newId,
-      }));
-      get()._scheduleSave(false);
-    },
+  deleteNode(nodeId: string) {
+    this.history.pushHistory();
+    this.nodes = this.nodes.filter((n) => n.id !== nodeId);
+    this.edges = this.edges.filter(
+      (e) => e.source !== nodeId && e.target !== nodeId,
+    );
+    this.isDirty = true;
+    this.selectedNodeId =
+      this.selectedNodeId === nodeId ? null : this.selectedNodeId;
+    this.scheduleSave(false);
+  }
 
-    // ── Selection ──────────────────────────────────────────────────────────
-    selectNode(nodeId) {
-      set({ selectedNodeId: nodeId });
-    },
+  deleteSelectedNode() {
+    if (this.selectedNodeId) {
+      this.deleteNode(this.selectedNodeId);
+    }
+  }
 
-    // ── Undo / redo ────────────────────────────────────────────────────────
-    undo() {
-      const { _past, nodes, edges, _future } = get();
-      if (_past.length === 0) return;
+  duplicateNode(nodeId: string) {
+    const node = this.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
 
-      const previous = _past[_past.length - 1];
-      const newPast = _past.slice(0, -1);
-      const newFuture: CanvasSnapshot[] = [{ nodes, edges }, ..._future].slice(
-        0,
-        MAX_HISTORY,
-      );
+    const newId = createId();
+    const newNode: Node = {
+      ...toJS(node),
+      id: newId,
+      position: { x: node.position.x + 40, y: node.position.y + 40 },
+      selected: false,
+    };
 
-      set({
-        nodes: previous.nodes,
-        edges: previous.edges,
-        _past: newPast,
-        _future: newFuture,
-        canUndo: newPast.length > 0,
-        canRedo: true,
-        isDirty: true,
+    this.history.pushHistory();
+    this.nodes.push(newNode);
+    this.isDirty = true;
+    this.selectedNodeId = newId;
+    this.scheduleSave(false);
+  }
+
+  // ── Selection ────────────────────────────────────────────────────────────
+  selectNode(nodeId: string | null) {
+    this.selectedNodeId = nodeId;
+  }
+
+  // ── Save / dirty ─────────────────────────────────────────────────────────
+  markDirty(positionOnly = false) {
+    if (positionOnly) {
+      this.isPositionOnlyDirty = true;
+    } else {
+      this.isDirty = true;
+      this.isPositionOnlyDirty = false;
+    }
+    this.scheduleSave(positionOnly);
+  }
+
+  scheduleSave(positionOnly = false) {
+    if (this._saveTimer) clearTimeout(this._saveTimer);
+    const delay = positionOnly ? POSITION_SAVE_DEBOUNCE_MS : SAVE_DEBOUNCE_MS;
+    this._saveTimer = setTimeout(() => this.flush(), delay);
+  }
+
+  flushHandler: (() => Promise<void>) | null = null;
+
+  async flush() {
+    if (
+      (!this.isDirty && !this.isPositionOnlyDirty) ||
+      this.isSaving ||
+      !this.workflowId
+    )
+      return;
+
+    if (this.flushHandler) {
+      await this.flushHandler();
+      return;
+    }
+
+    runInAction(() => {
+      this.isSaving = true;
+    });
+
+    try {
+      runInAction(() => {
+        this.isDirty = false;
+        this.isPositionOnlyDirty = false;
+        this.isSaving = false;
       });
-      get()._scheduleSave(false);
-    },
-
-    redo() {
-      const { _past, nodes, edges, _future } = get();
-      if (_future.length === 0) return;
-
-      const next = _future[0];
-      const newFuture = _future.slice(1);
-      const newPast: CanvasSnapshot[] = [..._past, { nodes, edges }].slice(
-        -MAX_HISTORY,
-      );
-
-      set({
-        nodes: next.nodes,
-        edges: next.edges,
-        _past: newPast,
-        _future: newFuture,
-        canUndo: true,
-        canRedo: newFuture.length > 0,
-        isDirty: true,
+    } catch (err) {
+      console.error("Canvas save failed:", err);
+      runInAction(() => {
+        this.isSaving = false;
       });
-      get()._scheduleSave(false);
-    },
+    }
+  }
+}
 
-    // ── Save / dirty ───────────────────────────────────────────────────────
-    markDirty(positionOnly = false) {
-      if (positionOnly) {
-        set({ isPositionOnlyDirty: true });
-      } else {
-        set({ isDirty: true, isPositionOnlyDirty: false });
-      }
-      get()._scheduleSave(positionOnly);
-    },
-
-    _scheduleSave(positionOnly = false) {
-      const timer = get()._saveTimer;
-      if (timer) clearTimeout(timer);
-      const delay = positionOnly ? POSITION_SAVE_DEBOUNCE_MS : SAVE_DEBOUNCE_MS;
-      set({
-        _saveTimer: setTimeout(() => get().flush(), delay),
-      });
-    },
-
-    async flush() {
-      const {
-        isDirty,
-        isPositionOnlyDirty,
-        isSaving,
-        workflowId,
-        nodes,
-        edges,
-      } = get();
-      if ((!isDirty && !isPositionOnlyDirty) || isSaving || !workflowId) return;
-
-      set({ isSaving: true });
-
-      try {
-        // TODO: wire tRPC call here once TRPCProvider is available outside React tree.
-        // The canvas component (workflow-canvas.tsx) should call:
-        //   const saveCanvas = useMutation(trpc.workflow.saveCanvas.mutationOptions(...))
-        // and then call store.flush() which triggers the mutation via a ref.
-        //
-        // For now this just clears dirty flags (dry-run mode):
-        // await trpcClient.workflow.saveCanvas.mutate({ workflowId, nodes, edges });
-
-        set({ isDirty: false, isPositionOnlyDirty: false, isSaving: false });
-      } catch (err) {
-        console.error("Canvas save failed:", err);
-        set({ isSaving: false });
-      }
-    },
-  }),
-);
-
-// ─── Backwards-compatible alias ───────────────────────────────────────────
-// The original canvas.tsx imports `useWorkflowCanvas` — keep that working.
+export const workflowCanvasStore = new WorkflowCanvasStore();
+export const useWorkflowCanvasStore = () => workflowCanvasStore;
 export const useWorkflowCanvas = useWorkflowCanvasStore;
 
-export const useExecutionHighlightStore = create<ExecutionHighlightSlice>(
-  (set) => ({
-    nodeExecutionStatus: {},
-    activeExecutionNodeId: null,
+// ─── Real-Time Node Highlighting Store (Single Responsibility) ─────────────
 
-    setNodeExecutionStatus: (nodeId, status) =>
-      set((s) => ({
-        nodeExecutionStatus: { ...s.nodeExecutionStatus, [nodeId]: status },
-      })),
+class ExecutionHighlightStore {
+  nodeExecutionStatus: Record<string, NodeExecutionStatus> = {};
+  activeExecutionNodeId: string | null = null;
 
-    setActiveExecutionNode: (nodeId) => set({ activeExecutionNodeId: nodeId }),
+  constructor() {
+    makeAutoObservable(this, {}, { autoBind: true });
+  }
 
-    clearExecutionHighlights: () =>
-      set({ nodeExecutionStatus: {}, activeExecutionNodeId: null }),
+  setNodeExecutionStatus(nodeId: string, status: NodeExecutionStatus) {
+    this.nodeExecutionStatus[nodeId] = status;
+  }
 
-    syncExecutionHighlights: (executions) => {
-      set((s) => {
-        const map = { ...s.nodeExecutionStatus };
-        for (const e of executions) {
-          if (e.calcNodeId) map[e.calcNodeId] = e.status;
-        }
-        return { nodeExecutionStatus: map };
-      });
-    },
-  }),
-);
+  setActiveExecutionNode(nodeId: string | null) {
+    this.activeExecutionNodeId = nodeId;
+  }
+
+  clearExecutionHighlights() {
+    this.nodeExecutionStatus = {};
+    this.activeExecutionNodeId = null;
+  }
+
+  syncExecutionHighlights(
+    executions: { calcNodeId: string | null; status: NodeExecutionStatus }[],
+  ) {
+    for (const e of executions) {
+      if (e.calcNodeId) {
+        this.nodeExecutionStatus[e.calcNodeId] = e.status;
+      }
+    }
+  }
+}
+
+export const executionHighlightStore = new ExecutionHighlightStore();
+export const useExecutionHighlightStore = () => executionHighlightStore;

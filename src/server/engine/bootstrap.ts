@@ -28,6 +28,7 @@ import { InputHandler } from "./handlers/InputHandler";
 import { InterpolationHandler } from "./handlers/InterpolationHandler";
 import { LookupTableHandler } from "./handlers/LookupTableHandler";
 import { MultiFormulaHandler } from "./handlers/MultiFormulaHandler";
+import { SubworkflowHandler } from "./handlers/SubworkflowHandler";
 import { UnitConversionHandler } from "./handlers/UnitConversionHandler";
 import { ValidationHandler } from "./handlers/ValidationHandler";
 import { AuditListener } from "./listeners/AuditListener";
@@ -63,6 +64,7 @@ function registerAllHandlers(
   registry.register(new ValidationHandler());
   registry.register(new UnitConversionHandler());
   registry.register(new CustomCodeHandler());
+  registry.register(new SubworkflowHandler());
   return registry;
 }
 

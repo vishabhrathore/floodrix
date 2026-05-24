@@ -20,7 +20,8 @@ interface UseAutoSaveOptions {
  */
 export function useAutoSave({ disabled = false }: UseAutoSaveOptions = {}) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { isDirty, isPositionOnlyDirty, flush } = useWorkflowCanvasStore();
+  const store = useWorkflowCanvasStore();
+  const { isDirty, isPositionOnlyDirty, flush } = store;
 
   const schedule = useCallback(
     (kind: ChangeKind) => {

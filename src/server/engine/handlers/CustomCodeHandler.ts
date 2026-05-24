@@ -9,8 +9,6 @@
 //  All evaluation goes through safeEvaluateMultiLine which has timeout
 //  enforcement and proper line-ending normalization.
 // ═══════════════════════════════════════════════════════════════════════════
-import { safeEvaluateMultiLine } from "@/features/workflow-canvas/engine/formula-validator";
-
 import type { NodeHandler } from "../NodeHandler";
 import { toErroredOutcome } from "../NodeHandler";
 import { WorkerPoolTimeout } from "../WorkerPoolTimeout";

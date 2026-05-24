@@ -28,7 +28,8 @@ interface SelectedNodeInfo {
 export function useNodeConfig(workflowId: string) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { selectedNodeId, selectNode } = useWorkflowCanvasStore();
+  const store = useWorkflowCanvasStore();
+  const { selectedNodeId, selectNode } = store;
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
   const openInspector = useCallback(
@@ -59,7 +60,7 @@ export function useNodeConfig(workflowId: string) {
             nodeId: selectedNodeId!,
           }),
         });
-        useWorkflowCanvasStore.getState().markDirty();
+        store.markDirty();
       },
     }),
   );

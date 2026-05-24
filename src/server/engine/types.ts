@@ -102,6 +102,7 @@ export interface ExecutionContext {
   workflowId: string;
   actorId: string;
   isBackgroundRun: boolean;
+  liveUpdates?: boolean;
 }
 
 // ─── Execution Events ─────────────────────────────────────────────────────
@@ -196,6 +197,8 @@ export interface ExecutionOptions {
   inlineAsync?: boolean;
   asyncPollBaseUrl?: string;
   isBackgroundRun?: boolean;
+  parentSessionId?: string;
+  ancestorWorkflowChain?: string[];
 }
 
 export interface StepOutput {

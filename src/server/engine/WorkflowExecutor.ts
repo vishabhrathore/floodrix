@@ -97,6 +97,21 @@ export class WorkflowExecutor {
       idempotencyKey,
     });
 
+    if (options.parentSessionId || options.ancestorWorkflowChain) {
+      const mergedMetadata = {
+        ...session.metadata,
+        parentSessionId: options.parentSessionId,
+        ancestorWorkflowChain: options.ancestorWorkflowChain,
+      };
+      await this.deps.db.calcSession.update({
+        where: { id: session.id },
+        data: {
+          metadata: mergedMetadata as any,
+        },
+      });
+      session.metadata = mergedMetadata as any;
+    }
+
     if (options.liveUpdates) {
       await this.deps.repo.createPendingNodeExecutions(
         session.id,
@@ -350,7 +365,11 @@ export class WorkflowExecutor {
         continue;
       }
 
-      if (isAsyncNodeType(node.type) && !options.isBackgroundRun) {
+      if (
+        isAsyncNodeType(node.type) &&
+        node.type !== "SUBWORKFLOW" &&
+        !options.isBackgroundRun
+      ) {
         return this.errorOut(
           sessionId,
           session,
@@ -397,6 +416,7 @@ export class WorkflowExecutor {
         workflowId: session.calcWorkflowId,
         actorId: session.actorId,
         isBackgroundRun: options.isBackgroundRun ?? false,
+        liveUpdates: options.liveUpdates ?? false,
       };
 
       const outcome = await this.runHandlerWithTimeout(handler, ctx);

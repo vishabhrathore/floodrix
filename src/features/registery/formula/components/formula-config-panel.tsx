@@ -396,9 +396,6 @@ export default function FormulaConfigPanel({
                 type="formula"
                 value={localConfig.registryId}
                 onChange={handleRegistrySelect}
-                showVersionPin
-                pinnedVersion={localConfig.pinnedVersion}
-                onPinnedVersionChange={(v) => update({ pinnedVersion: v })}
               />
             </Section>
 
@@ -525,17 +522,7 @@ export default function FormulaConfigPanel({
           />
         </div>
 
-        {/* Info box for registry mode */}
-        {localConfig.mode === "registry" && (
-          <div className="flex items-start gap-2 rounded-md border border-blue-200/60 bg-blue-50/40 p-3 text-xs text-blue-700">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>
-              Registry formulas are versioned. Use{" "}
-              <strong>version pinning</strong> to protect this workflow from
-              future formula changes.
-            </p>
-          </div>
-        )}
+
       </div>
     </div>
   );

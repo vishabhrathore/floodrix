@@ -35,7 +35,6 @@ import {
   LibraryStatus,
   NodeExecutionStatus,
   OrgRole,
-  PrismaClient,
   RunMode,
   SessionStatus,
   SubmissionStatus,
@@ -47,12 +46,11 @@ import {
   WorkflowStatus,
   WorkspaceNodeType,
 } from "../../src/generated/prisma";
+import db from "../../src/lib/db";
 
 // ─── Better Auth requires bcrypt-compatible password hashes ──────────────────
 const SEED_PASSWORD_HASH =
   "5e7359a729b35ae4fa9cfaef75b2c9f1:eaf63c0df16524467ec4c61ffc6af14056735741057ef120ed2736f129392b658af14f9f58381bb61e39e947c39d7971f3414cea4c476a9f40c5f5834ea2722e"; // password123
-
-const db = new PrismaClient({ log: ["warn", "error"] });
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  HELPERS
@@ -962,29 +960,10 @@ async function main() {
       sourceStandard: "IRC:SP:13",
       yearIntroduced: 1865,
       region: "India",
-      currentVersion: 1,
       isPublished: true,
       isSystem: true,
       visibility: Visibility.PUBLIC,
       createdBy: adminActor.id,
-    },
-  });
-
-  await db.formulaRegistryVersion.upsert({
-    where: {
-      formulaRegistryId_version: {
-        formulaRegistryId: "freg_dicken",
-        version: 1,
-      },
-    },
-    update: {},
-    create: {
-      id: "fregv_dicken_1",
-      formulaRegistryId: "freg_dicken",
-      version: 1,
-      snapshot: { expressionNotation: "C * M^(3/4)" },
-      changelog: "Initial system formula",
-      changedBy: adminActor.id,
     },
   });
 
@@ -1014,29 +993,10 @@ async function main() {
       reference: "IRC:SP:13-2004 §3.2",
       sourceStandard: "IRC:SP:13",
       region: "South India",
-      currentVersion: 1,
       isPublished: true,
       isSystem: true,
       visibility: Visibility.PUBLIC,
       createdBy: adminActor.id,
-    },
-  });
-
-  await db.formulaRegistryVersion.upsert({
-    where: {
-      formulaRegistryId_version: {
-        formulaRegistryId: "freg_ryves",
-        version: 1,
-      },
-    },
-    update: {},
-    create: {
-      id: "fregv_ryves_1",
-      formulaRegistryId: "freg_ryves",
-      version: 1,
-      snapshot: { expressionNotation: "C * M^(2/3)" },
-      changelog: "Initial system formula",
-      changedBy: adminActor.id,
     },
   });
 
@@ -1070,26 +1030,10 @@ async function main() {
       ],
       reference: "IRC:SP:13-2004 Table 3",
       sourceStandard: "IRC:SP:13",
-      currentVersion: 1,
       isPublished: true,
       isSystem: true,
       visibility: Visibility.PUBLIC,
       createdBy: adminActor.id,
-    },
-  });
-
-  await db.tableRegistryVersion.upsert({
-    where: {
-      tableRegistryId_version: { tableRegistryId: "treg_runoff", version: 1 },
-    },
-    update: {},
-    create: {
-      id: "tregv_runoff_1",
-      tableRegistryId: "treg_runoff",
-      version: 1,
-      snapshot: {},
-      changelog: "Initial system table",
-      changedBy: adminActor.id,
     },
   });
 
@@ -1119,26 +1063,10 @@ async function main() {
       ],
       reference: "IRC:SP:13-2004 Table 2",
       sourceStandard: "IRC:SP:13",
-      currentVersion: 1,
       isPublished: true,
       isSystem: true,
       visibility: Visibility.PUBLIC,
       createdBy: adminActor.id,
-    },
-  });
-
-  await db.tableRegistryVersion.upsert({
-    where: {
-      tableRegistryId_version: { tableRegistryId: "treg_dicken_c", version: 1 },
-    },
-    update: {},
-    create: {
-      id: "tregv_dicken_c_1",
-      tableRegistryId: "treg_dicken_c",
-      version: 1,
-      snapshot: {},
-      changelog: "Initial system table",
-      changedBy: adminActor.id,
     },
   });
 

@@ -8,6 +8,9 @@ CREATE TYPE "GlobalRole" AS ENUM ('USER', 'SUPER_ADMIN');
 CREATE TYPE "Visibility" AS ENUM ('PRIVATE', 'PUBLIC');
 
 -- CreateEnum
+CREATE TYPE "FormulaStability" AS ENUM ('STANDARD', 'EXPERIMENTAL');
+
+-- CreateEnum
 CREATE TYPE "OrgRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
 
 -- CreateEnum
@@ -71,7 +74,7 @@ CREATE TYPE "BillingType" AS ENUM ('SUBSCRIPTION', 'ONE_TIME');
 CREATE TYPE "BillingStatus" AS ENUM ('ACTIVE', 'CANCELED', 'EXPIRED');
 
 -- CreateEnum
-CREATE TYPE "AuditResourceType" AS ENUM ('WORKFLOW', 'NODE', 'EDGE', 'VARIABLE', 'FORMULA_REGISTRY', 'TABLE_REGISTRY', 'WORKSPACE', 'WORKSPACE_NODE', 'BATCH_JOB', 'UPLOADED_DATASET');
+CREATE TYPE "AuditResourceType" AS ENUM ('WORKFLOW', 'NODE', 'EDGE', 'VARIABLE', 'FORMULA_REGISTRY', 'TABLE_REGISTRY', 'WORKSPACE', 'WORKSPACE_NODE', 'BATCH_JOB', 'UPLOADED_DATASET', 'SESSION');
 
 -- CreateEnum
 CREATE TYPE "AuditAction" AS ENUM ('CREATED', 'UPDATED', 'DELETED', 'PUBLISHED', 'ARCHIVED', 'RESTORED', 'DUPLICATED', 'IMPORTED', 'EXPORTED', 'NODE_ADDED', 'NODE_REMOVED', 'NODE_MOVED', 'NODE_CONFIG_CHANGED', 'NODE_TYPE_CHANGED', 'EDGE_CREATED', 'EDGE_DELETED', 'EDGE_RECONNECTED', 'VARIABLE_ADDED', 'VARIABLE_REMOVED', 'VARIABLE_RENAMED', 'VARIABLE_REBOUND', 'REGISTRY_ITEM_CREATED', 'REGISTRY_ITEM_UPDATED', 'REGISTRY_VERSION_PUBLISHED', 'REGISTRY_LINKED', 'REGISTRY_UNLINKED', 'REGISTRY_VERSION_PINNED', 'WORKFLOW_RUN_STARTED', 'WORKFLOW_RUN_COMPLETED', 'WORKFLOW_RUN_ERRORED', 'WORKFLOW_RUN_CANCELLED', 'WORKFLOW_PAUSED', 'WORKFLOW_RESUMED', 'USER_INPUT_SUBMITTED', 'FOLDER_CREATED', 'FOLDER_MOVED', 'FOLDER_DELETED', 'WORKFLOW_LINKED', 'WORKFLOW_UNLINKED', 'COLLABORATOR_ADDED', 'COLLABORATOR_REMOVED', 'PERMISSION_CHANGED');
@@ -426,7 +429,7 @@ CREATE TABLE "formula_registry" (
     "region" TEXT,
     "applicability" TEXT,
     "limitations" TEXT,
-    "currentVersion" INTEGER NOT NULL DEFAULT 1,
+    "stability" "FormulaStability" NOT NULL DEFAULT 'STANDARD',
     "isPublished" BOOLEAN NOT NULL DEFAULT false,
     "isSystem" BOOLEAN NOT NULL DEFAULT false,
     "visibility" "Visibility" NOT NULL DEFAULT 'PRIVATE',
@@ -436,19 +439,6 @@ CREATE TABLE "formula_registry" (
     "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "formula_registry_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "formula_registry_versions" (
-    "id" TEXT NOT NULL,
-    "formulaRegistryId" TEXT NOT NULL,
-    "version" INTEGER NOT NULL,
-    "snapshot" JSONB NOT NULL,
-    "changelog" TEXT,
-    "changedBy" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "formula_registry_versions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -475,7 +465,7 @@ CREATE TABLE "table_registry" (
     "sourceStandard" TEXT,
     "sourcePage" TEXT,
     "sourceImage" TEXT,
-    "currentVersion" INTEGER NOT NULL DEFAULT 1,
+    "stability" "FormulaStability" NOT NULL DEFAULT 'STANDARD',
     "isPublished" BOOLEAN NOT NULL DEFAULT false,
     "isSystem" BOOLEAN NOT NULL DEFAULT false,
     "visibility" "Visibility" NOT NULL DEFAULT 'PRIVATE',
@@ -488,25 +478,11 @@ CREATE TABLE "table_registry" (
 );
 
 -- CreateTable
-CREATE TABLE "table_registry_versions" (
-    "id" TEXT NOT NULL,
-    "tableRegistryId" TEXT NOT NULL,
-    "version" INTEGER NOT NULL,
-    "snapshot" JSONB NOT NULL,
-    "changelog" TEXT,
-    "changedBy" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "table_registry_versions_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "formula_registry_usages" (
     "id" TEXT NOT NULL,
     "formulaRegistryId" TEXT NOT NULL,
     "calcWorkflowId" TEXT NOT NULL,
     "calcNodeId" TEXT NOT NULL,
-    "pinnedVersion" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -519,7 +495,6 @@ CREATE TABLE "table_registry_usages" (
     "tableRegistryId" TEXT NOT NULL,
     "calcWorkflowId" TEXT NOT NULL,
     "calcNodeId" TEXT NOT NULL,
-    "pinnedVersion" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -888,9 +863,6 @@ CREATE INDEX "formula_registry_organizationId_deletedAt_idx" ON "formula_registr
 CREATE UNIQUE INDEX "formula_registry_organizationId_slug_key" ON "formula_registry"("organizationId", "slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "formula_registry_versions_formulaRegistryId_version_key" ON "formula_registry_versions"("formulaRegistryId", "version");
-
--- CreateIndex
 CREATE INDEX "table_registry_organizationId_idx" ON "table_registry"("organizationId");
 
 -- CreateIndex
@@ -901,9 +873,6 @@ CREATE INDEX "table_registry_organizationId_deletedAt_idx" ON "table_registry"("
 
 -- CreateIndex
 CREATE UNIQUE INDEX "table_registry_organizationId_slug_key" ON "table_registry"("organizationId", "slug");
-
--- CreateIndex
-CREATE UNIQUE INDEX "table_registry_versions_tableRegistryId_version_key" ON "table_registry_versions"("tableRegistryId", "version");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "formula_registry_usages_calcNodeId_formulaRegistryId_key" ON "formula_registry_usages"("calcNodeId", "formulaRegistryId");
@@ -1092,22 +1061,10 @@ ALTER TABLE "formula_registry" ADD CONSTRAINT "formula_registry_createdBy_fkey" 
 ALTER TABLE "formula_registry" ADD CONSTRAINT "formula_registry_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "formula_registry_versions" ADD CONSTRAINT "formula_registry_versions_changedBy_fkey" FOREIGN KEY ("changedBy") REFERENCES "calc_actors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "formula_registry_versions" ADD CONSTRAINT "formula_registry_versions_formulaRegistryId_fkey" FOREIGN KEY ("formulaRegistryId") REFERENCES "formula_registry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "table_registry" ADD CONSTRAINT "table_registry_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "calc_actors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "table_registry" ADD CONSTRAINT "table_registry_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "table_registry_versions" ADD CONSTRAINT "table_registry_versions_changedBy_fkey" FOREIGN KEY ("changedBy") REFERENCES "calc_actors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "table_registry_versions" ADD CONSTRAINT "table_registry_versions_tableRegistryId_fkey" FOREIGN KEY ("tableRegistryId") REFERENCES "table_registry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "formula_registry_usages" ADD CONSTRAINT "formula_registry_usages_calcNodeId_fkey" FOREIGN KEY ("calcNodeId") REFERENCES "calc_nodes"("id") ON DELETE CASCADE ON UPDATE CASCADE;

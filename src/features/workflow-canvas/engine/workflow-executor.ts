@@ -872,7 +872,6 @@ export class WorkflowExecutor {
       const registry = await registryResolver.resolveFormula(
         this.db,
         config.registry_id,
-        config.registry_version ?? null,
       );
 
       const bindings = config.variable_bindings ?? {};
@@ -950,7 +949,6 @@ export class WorkflowExecutor {
       const registry = await registryResolver.resolveTable(
         this.db,
         config.registry_id,
-        config.registry_version ?? null,
       );
 
       const bindings = config.variable_bindings ?? {};
@@ -1057,7 +1055,6 @@ export class WorkflowExecutor {
       const registry = await registryResolver.resolveTable(
         this.db,
         config.registry_id,
-        config.registry_version ?? null,
       );
 
       const bindings = config.variable_bindings ?? {};

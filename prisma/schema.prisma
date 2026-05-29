@@ -126,11 +126,9 @@ model CalcActor {
   calcSessions      CalcSession[]
   calcVersions      CalcVersion[]
   createdFormulas   FormulaRegistryItem[]    @relation("FormulaCreator")
-  formulaVersions   FormulaRegistryVersion[] @relation("FormulaChanger")
   reviews           LibrarySubmission[]      @relation("ReviewedBy")
   submissions       LibrarySubmission[]      @relation("SubmittedBy")
   createdTables     TableRegistryItem[]      @relation("TableCreator")
-  tableVersions     TableRegistryVersion[]   @relation("TableChanger")
   uploadedDatasets  UploadedDataset[]
   workspaceSessions WorkspaceSession[]
 
@@ -449,7 +447,7 @@ model FormulaRegistryItem {
   region             String?
   applicability      String?
   limitations        String?
-  currentVersion     Int                      @default(1)
+  stability          FormulaStability         @default(STANDARD)
   isPublished        Boolean                  @default(false)
   isSystem           Boolean                  @default(false)
   visibility         Visibility               @default(PRIVATE)
@@ -460,28 +458,12 @@ model FormulaRegistryItem {
   creator            CalcActor?               @relation("FormulaCreator", fields: [createdBy], references: [id])
   organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   registryUsages     FormulaRegistryUsage[]
-  versions           FormulaRegistryVersion[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([isPublished, visibility])
   @@index([organizationId, deletedAt])
   @@map("formula_registry")
-}
-
-model FormulaRegistryVersion {
-  id                String              @id @default(cuid())
-  formulaRegistryId String
-  version           Int
-  snapshot          Json
-  changelog         String?
-  changedBy         String?
-  createdAt         DateTime            @default(now())
-  changer           CalcActor?          @relation("FormulaChanger", fields: [changedBy], references: [id])
-  formulaRegistry   FormulaRegistryItem @relation(fields: [formulaRegistryId], references: [id], onDelete: Cascade)
-
-  @@unique([formulaRegistryId, version])
-  @@map("formula_registry_versions")
 }
 
 model TableRegistryItem {
@@ -507,7 +489,7 @@ model TableRegistryItem {
   sourceStandard      String?
   sourcePage          String?
   sourceImage         String?
-  currentVersion      Int                    @default(1)
+  stability           FormulaStability       @default(STANDARD)
   isPublished         Boolean                @default(false)
   isSystem            Boolean                @default(false)
   visibility          Visibility             @default(PRIVATE)
@@ -518,7 +500,6 @@ model TableRegistryItem {
   creator             CalcActor?             @relation("TableCreator", fields: [createdBy], references: [id])
   organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   registryUsages      TableRegistryUsage[]
-  versions            TableRegistryVersion[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -527,27 +508,11 @@ model TableRegistryItem {
   @@map("table_registry")
 }
 
-model TableRegistryVersion {
-  id              String            @id @default(cuid())
-  tableRegistryId String
-  version         Int
-  snapshot        Json
-  changelog       String?
-  changedBy       String?
-  createdAt       DateTime          @default(now())
-  changer         CalcActor?        @relation("TableChanger", fields: [changedBy], references: [id])
-  tableRegistry   TableRegistryItem @relation(fields: [tableRegistryId], references: [id], onDelete: Cascade)
-
-  @@unique([tableRegistryId, version])
-  @@map("table_registry_versions")
-}
-
 model FormulaRegistryUsage {
   id                String              @id @default(cuid())
   formulaRegistryId String
   calcWorkflowId    String
   calcNodeId        String
-  pinnedVersion     Int?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @default(now()) @updatedAt
   calcNode          CalcNode            @relation(fields: [calcNodeId], references: [id], onDelete: Cascade)
@@ -563,7 +528,6 @@ model TableRegistryUsage {
   tableRegistryId String
   calcWorkflowId  String
   calcNodeId      String
-  pinnedVersion   Int?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   calcNode        CalcNode          @relation(fields: [calcNodeId], references: [id], onDelete: Cascade)
@@ -890,6 +854,11 @@ enum GlobalRole {
 enum Visibility {
   PRIVATE
   PUBLIC
+}
+
+enum FormulaStability {
+  STANDARD
+  EXPERIMENTAL
 }
 
 enum OrgRole {

@@ -3,7 +3,10 @@ procs:
     cmd: ["npm", "run", "ngrok:dev"]
 
   redis:
-    cmd: ["docker-compose", "up"]
+    cmd: ["docker", "compose", "up"]
 
   next:
     cmd: ["npm", "run", "dev"]
+
+  studio:
+    cmd: ["sh", "-c", "npx prisma studio 2>/dev/null"]

@@ -11,19 +11,21 @@ import {
 interface TableDataEditorProps {
   type: string;
   data: any[];
-  columns: any[];
-  onTypeChange: (type: string) => void;
-  onDataChange: (data: any[]) => void;
-  onColumnsChange: (columns: any[]) => void; // FIX: was never wired in original
+  columns?: any[];
+  onTypeChange?: (type: string) => void;
+  onDataChange?: (data: any[]) => void;
+  onColumnsChange?: (columns: any[]) => void;
+  readOnly?: boolean;
 }
 
 export function TableDataEditor({
   type,
   data,
-  columns,
-  onTypeChange,
-  onDataChange,
-  onColumnsChange,
+  columns = [],
+  onTypeChange = () => {},
+  onDataChange = () => {},
+  onColumnsChange = () => {},
+  readOnly = false,
 }: TableDataEditorProps) {
   return (
     <div className="space-y-4">

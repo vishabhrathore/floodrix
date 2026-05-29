@@ -45,7 +45,6 @@ export class InterpolationHandler implements NodeHandler {
           (await ctx.registry.resolveTable(
             ctx.db,
             config.registry_id,
-            config.registry_version ?? null,
           ));
         const bindings = config.variable_bindings ?? {};
         const inputDef = registry.inputKeys[0];

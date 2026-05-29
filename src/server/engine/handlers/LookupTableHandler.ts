@@ -64,7 +64,6 @@ export class LookupTableHandler implements NodeHandler {
           (await ctx.registry.resolveTable(
             ctx.db,
             config.registry_id,
-            config.registry_version ?? null,
           ));
         const bindings = config.variable_bindings ?? {};
         inputKeys = registry.inputKeys.map(

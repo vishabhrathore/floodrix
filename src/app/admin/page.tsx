@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -13,10 +14,26 @@ import {
   prefetchSystemAlerts,
 } from "@/features/admin/dashboard/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
+import db from "@/lib/db";
 import { HydrateClient } from "@/trpc/server";
 
-const Page = async () => {
-  await requireAuth();
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const Page = async ({ searchParams }: PageProps) => {
+  const session = await requireAuth();
+  const resolvedParams = await searchParams;
+
+  if (!resolvedParams.organizationId) {
+    const membership = await db.organizationMember.findFirst({
+      where: { userId: session.user.id },
+      select: { organizationId: true },
+    });
+    if (membership?.organizationId) {
+      redirect(`/admin?organizationId=${membership.organizationId}`);
+    }
+  }
 
   // Prefetch data for the dashboard
   prefetchSuperAdminStats();

@@ -28,12 +28,12 @@ import { useWorkflowCanvasStore } from "@/features/workflow-canvas/store/workflo
 
 interface WorkflowToolbarProps {
   workflowId: string;
-  workflowName: string;
-  status: string;
-  saveState: "saved" | "unsaved" | "saving" | "error";
-  onRun: (opts: { stepMode: boolean }) => void;
-  onPublish: () => void;
-  onSave: () => void;
+  workflowName?: string;
+  status?: string;
+  saveState?: "saved" | "unsaved" | "saving" | "error";
+  onRun?: (opts: { stepMode: boolean }) => void;
+  onPublish?: () => void;
+  onSave?: () => void;
   onRename?: (name: string) => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
@@ -43,21 +43,23 @@ interface WorkflowToolbarProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  onOpenRunner?: (opts: { stepMode: boolean }) => void;
 }
 
 export function WorkflowToolbar({
   workflowId,
-  workflowName,
-  status,
-  saveState,
+  workflowName = "Workflow",
+  status = "DRAFT",
+  saveState = "saved",
   onRun,
-  onPublish,
-  onSave,
+  onPublish = () => {},
+  onSave = () => {},
   isRunning = false,
   canUndo = false,
   canRedo = false,
   onUndo,
   onRedo,
+  onOpenRunner,
 }: WorkflowToolbarProps) {
   const [stepMode, setStepMode] = useState(false);
 
@@ -184,7 +186,13 @@ export function WorkflowToolbar({
                 ? "bg-amber-500 hover:bg-amber-600"
                 : "bg-emerald-600 hover:bg-emerald-700"
             }`}
-            onClick={() => onRun({ stepMode })}
+            onClick={() => {
+              if (onRun) {
+                onRun({ stepMode });
+              } else if (onOpenRunner) {
+                onOpenRunner({ stepMode });
+              }
+            }}
             disabled={isRunning}
           >
             {isRunning ? (

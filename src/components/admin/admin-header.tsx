@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { ChevronRight, PanelLeft, Search } from "lucide-react";
 
@@ -59,6 +59,8 @@ export function AdminHeader() {
     return crumbs;
   };
 
+  const searchParams = useSearchParams();
+  const organizationId = searchParams.get("organizationId");
   const breadcrumbs = getBreadcrumbs();
   const { toggleSidebar } = useSidebar();
 
@@ -73,23 +75,29 @@ export function AdminHeader() {
           <PanelLeft size={16} />
         </button>
         <nav className="flex items-center gap-1.5 text-[13px]">
-          {breadcrumbs.map((crumb, i) => (
-            <React.Fragment key={crumb.href}>
-              {i > 0 && <ChevronRight size={14} className="text-[#d4d4d4]" />}
-              {i === breadcrumbs.length - 1 ? (
-                <span className="font-medium text-[#0a0a0a]">
-                  {crumb.label}
-                </span>
-              ) : (
-                <Link
-                  href={crumb.href}
-                  className="text-[#a1a1a1] hover:text-[#0a0a0a] transition-colors"
-                >
-                  {crumb.label}
-                </Link>
-              )}
-            </React.Fragment>
-          ))}
+          {breadcrumbs.map((crumb, i) => {
+            const linkUrl = organizationId
+              ? `${crumb.href}?organizationId=${organizationId}`
+              : crumb.href;
+
+            return (
+              <React.Fragment key={crumb.href}>
+                {i > 0 && <ChevronRight size={14} className="text-[#d4d4d4]" />}
+                {i === breadcrumbs.length - 1 ? (
+                  <span className="font-medium text-[#0a0a0a]">
+                    {crumb.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={linkUrl}
+                    className="text-[#a1a1a1] hover:text-[#0a0a0a] transition-colors"
+                  >
+                    {crumb.label}
+                  </Link>
+                )}
+              </React.Fragment>
+            );
+          })}
         </nav>
       </div>
 

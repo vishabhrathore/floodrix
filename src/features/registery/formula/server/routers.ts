@@ -142,6 +142,28 @@ export const formulasRouter = createTRPCRouter({
       const { organizationId, ...formulaData } = input;
       const finalOrgId = organizationId || reqCtx.organization?.id;
 
+      if (!finalOrgId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Organization ID is required.",
+        });
+      }
+
+      const existing = await ctx.db.formulaRegistryItem.findFirst({
+        where: {
+          organizationId: finalOrgId,
+          slug: input.slug,
+          deletedAt: null,
+        },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `A formula with slug "${input.slug}" already exists in this organization.`,
+        });
+      }
+
       return ctx.db.formulaRegistryItem.create({
         data: {
           ...formulaData,
@@ -234,7 +256,10 @@ export const formulasRouter = createTRPCRouter({
 
       return ctx.db.formulaRegistryItem.update({
         where: { id: input.id },
-        data: { deletedAt: new Date() },
+        data: {
+          deletedAt: new Date(),
+          slug: `${reqCtx.formulaItem.slug}__deleted__${Date.now()}`,
+        },
       });
     }),
 

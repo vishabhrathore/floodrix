@@ -42,7 +42,7 @@ import {
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { type EditorParsed, MathEditor } from "@/components/core/MathEditor";
+import { type EditorParsed, MathEditor, type MathEditorRef } from "@/components/core/MathEditor";
 import { Badge } from "@/components/ui/badge";
 // ── Shadcn/ui — swap for your own if needed ───────────────────────────────────
 import { Button } from "@/components/ui/button";

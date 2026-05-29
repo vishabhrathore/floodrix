@@ -360,9 +360,6 @@ export default function LookupConfigPanel({
                   type="table"
                   value={localConfig.registryId}
                   onChange={handleRegistrySelect}
-                  showVersionPin
-                  pinnedVersion={localConfig.pinnedVersion}
-                  onPinnedVersionChange={(v) => update({ pinnedVersion: v })}
                 />
               </div>
             </Section>

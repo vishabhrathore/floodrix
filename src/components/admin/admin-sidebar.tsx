@@ -3,7 +3,7 @@
 import React from "react";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   Building2Icon,
@@ -135,6 +135,8 @@ const adminGroups: AdminSidebarGroup[] = [
 export function AdminSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const organizationId = searchParams.get("organizationId");
 
   return (
     <Sidebar
@@ -174,6 +176,10 @@ export function AdminSidebar() {
                       ? pathname === "/admin"
                       : pathname.startsWith(item.url);
 
+                  const linkUrl = organizationId
+                    ? `${item.url}?organizationId=${organizationId}`
+                    : item.url;
+
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
@@ -182,7 +188,7 @@ export function AdminSidebar() {
                         className="transition-all"
                       >
                         <Link
-                          href={item.url}
+                          href={linkUrl}
                           prefetch
                           className="w-full flex items-center"
                         >

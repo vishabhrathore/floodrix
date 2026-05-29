@@ -147,11 +147,34 @@ export const tablesRouter = createTRPCRouter({
         });
 
       const { organizationId, ...tableData } = input;
+      const finalOrgId = organizationId || reqCtx.organization?.id;
+
+      if (!finalOrgId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Organization ID is required.",
+        });
+      }
+
+      const existing = await ctx.db.tableRegistryItem.findFirst({
+        where: {
+          organizationId: finalOrgId,
+          slug: input.slug,
+          deletedAt: null,
+        },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `A table with slug "${input.slug}" already exists in this organization.`,
+        });
+      }
 
       return ctx.db.tableRegistryItem.create({
         data: {
           ...tableData,
-          organizationId: organizationId || reqCtx.organization?.id,
+          organizationId: finalOrgId,
           createdBy: reqCtx.actor.id,
           isSystem: false, // Strongly enforced
           isPublished: false,
@@ -227,7 +250,10 @@ export const tablesRouter = createTRPCRouter({
 
       return ctx.db.tableRegistryItem.update({
         where: { id: input.id },
-        data: { deletedAt: new Date() },
+        data: {
+          deletedAt: new Date(),
+          slug: `${reqCtx.tableItem.slug}__deleted__${Date.now()}`,
+        },
       });
     }),
 

@@ -2,9 +2,8 @@
 //  prisma/seed/seed-calc-workflows.ts
 //  Run: npx tsx prisma/seed/seed-calc-workflows.ts
 // ═══════════════════════════════════════════════════════════════════════════
-import { PrismaClient } from "../../src/generated/prisma";
-
-const prisma = new PrismaClient();
+import { VariableDataType, VariableSourceType, VariableScope } from "../../src/generated/prisma";
+import prisma from "../../src/lib/db";
 
 // ─── Formula definitions ─────────────────────────────────────────────────
 
@@ -496,12 +495,12 @@ async function main() {
             contextKey: f.key,
             displayLabel: f.label,
             notation: f.key,
-            dataType: "NUMBER" as const,
+            dataType: VariableDataType.NUMBER,
             unit: f.unit === "—" ? null : f.unit,
             defaultValue: f.default,
             sourceNodeId: inputNode.id,
-            sourceType: "USER_INPUT" as const,
-            scope: "GLOBAL" as const,
+            sourceType: VariableSourceType.USER_INPUT,
+            scope: VariableScope.GLOBAL,
             sortOrder: i,
           });
         }
@@ -513,12 +512,12 @@ async function main() {
             contextKey: formula.lookupTable.resultVar,
             displayLabel: formula.lookupTable.name,
             notation: formula.lookupTable.resultVar,
-            dataType: "NUMBER" as const,
+            dataType: VariableDataType.NUMBER,
             unit: null,
             defaultValue: null,
             sourceNodeId: lookupNodeId,
-            sourceType: "LOOKUP_RESULT" as const,
-            scope: "GLOBAL" as const,
+            sourceType: VariableSourceType.LOOKUP_RESULT,
+            scope: VariableScope.GLOBAL,
             sortOrder: 100,
           });
         }
@@ -529,12 +528,12 @@ async function main() {
           contextKey: formula.resultVariable,
           displayLabel: `${formula.name} Result`,
           notation: formula.resultVariable,
-          dataType: "NUMBER" as const,
+          dataType: VariableDataType.NUMBER,
           unit: formula.resultUnit,
           defaultValue: null,
           sourceNodeId: formulaNode.id,
-          sourceType: "FORMULA_OUTPUT" as const,
-          scope: "GLOBAL" as const,
+          sourceType: VariableSourceType.FORMULA_OUTPUT,
+          scope: VariableScope.GLOBAL,
           sortOrder: 200,
         });
 
@@ -544,12 +543,12 @@ async function main() {
           contextKey: "Qd",
           displayLabel: "Design Discharge",
           notation: "Qd",
-          dataType: "NUMBER" as const,
+          dataType: VariableDataType.NUMBER,
           unit: "Cumecs",
           defaultValue: null,
           sourceNodeId: displayNode.id,
-          sourceType: "COMPUTED" as const,
-          scope: "GLOBAL" as const,
+          sourceType: VariableSourceType.COMPUTED,
+          scope: VariableScope.GLOBAL,
           sortOrder: 300,
         });
 

@@ -50,7 +50,6 @@ export interface RegistryItem {
   isSystem: boolean;
   isPublished: boolean;
   visibility: string;
-  currentVersion: number;
   // Formula-specific
   expressionNotation?: string;
   displayExpression?: string;
@@ -70,9 +69,6 @@ interface RegistryPickerProps {
   onChange: (id: string | null, item: RegistryItem | null) => void;
   placeholder?: string;
   disabled?: boolean;
-  showVersionPin?: boolean;
-  pinnedVersion?: number | null;
-  onPinnedVersionChange?: (version: number | null) => void;
 }
 
 // ── Preview card ──────────────────────────────────────────────────────────
@@ -236,9 +232,6 @@ export default function RegistryPicker({
   onChange,
   placeholder,
   disabled = false,
-  showVersionPin = false,
-  pinnedVersion,
-  onPinnedVersionChange,
 }: RegistryPickerProps) {
   const trpc = useTRPC();
   const [open, setOpen] = useState(false);
@@ -270,7 +263,7 @@ export default function RegistryPicker({
         ),
   );
 
-  const items: RegistryItem[] = data?.items ?? [];
+  const items: RegistryItem[] = (data as any)?.items ?? [];
   const selectedItem = selectedData as any as RegistryItem | undefined;
 
   // Group by category
@@ -298,7 +291,6 @@ export default function RegistryPicker({
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange(null, null);
-    onPinnedVersionChange?.(null);
   };
 
   const Icon = type === "formula" ? FunctionSquare : Table2;
@@ -433,55 +425,7 @@ export default function RegistryPicker({
         </PopoverContent>
       </Popover>
 
-      {/* Version pin */}
-      {showVersionPin && value && selectedItem && onPinnedVersionChange && (
-        <div className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/20 p-2.5">
-          <div className="flex-1">
-            <p className="text-xs font-medium">Version pinning</p>
-            <p className="text-[10px] text-muted-foreground">
-              {pinnedVersion != null
-                ? `Pinned to v${pinnedVersion} — updates won't affect this workflow`
-                : `Floating — always uses the latest published version (currently v${selectedItem.currentVersion})`}
-            </p>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() =>
-                    onPinnedVersionChange(
-                      pinnedVersion != null
-                        ? null
-                        : selectedItem.currentVersion,
-                    )
-                  }
-                >
-                  {pinnedVersion != null ? (
-                    <>
-                      <Globe className="mr-1 h-3.5 w-3.5" />
-                      Float
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="mr-1 h-3.5 w-3.5" />
-                      Pin
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[200px] text-xs">
-                {pinnedVersion != null
-                  ? "Switch to floating — auto-receive future updates"
-                  : `Pin to v${selectedItem.currentVersion} — protect against future changes`}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
+
 
       {/* Selected item quick preview */}
       {value && selectedItem && !open && (

@@ -10,6 +10,7 @@
 //  this into FormulaHandler / LookupTableHandler via the executor.
 // ═══════════════════════════════════════════════════════════════════════════
 import type { PrismaClient } from "@/generated/prisma";
+import { redisConnection } from "@/lib/bullmq";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -214,133 +215,172 @@ export function createRegistryResolver() {
     },
 
     async prefetchForWorkflow(db: PrismaClient, workflowId: string) {
-      const [formulaUsages, tableUsages] = await Promise.all([
-        db.formulaRegistryUsage.findMany({
-          where: { calcWorkflowId: workflowId },
-          select: { formulaRegistryId: true, pinnedVersion: true },
-        }),
-        db.tableRegistryUsage.findMany({
-          where: { calcWorkflowId: workflowId },
-          select: { tableRegistryId: true, pinnedVersion: true },
-        }),
-      ]);
+      const cacheKey = `wf:${workflowId}:registry-prefetch`;
 
-      const formulaIds = formulaUsages.map((u) => u.formulaRegistryId);
-      const tableIds = tableUsages.map((u) => u.tableRegistryId);
+      let payload: {
+        formulas: any[];
+        tables: any[];
+        formulaVersions: any[];
+        tableVersions: any[];
+      } | null = null;
 
-      const [formulas, tables] = await Promise.all([
-        formulaIds.length > 0
-          ? db.formulaRegistryItem.findMany({
-              where: { id: { in: formulaIds } },
-              select: {
-                id: true,
-                name: true,
-                currentVersion: true,
-                expressionNotation: true,
-                displayExpression: true,
-                inputVariables: true,
-                outputVariable: true,
-                intermediateSteps: true,
-                reference: true,
-              },
-            })
-          : [],
-        tableIds.length > 0
-          ? db.tableRegistryItem.findMany({
-              where: { id: { in: tableIds } },
-              select: {
-                id: true,
-                name: true,
-                currentVersion: true,
-                tableType: true,
-                inputKeys: true,
-                outputKey: true,
-                columns: true,
-                data: true,
-                interpolationConfig: true,
-                fallbackMode: true,
-                fallbackValue: true,
-                reference: true,
-              },
-            })
-          : [],
-      ]);
-
-      for (const f of formulas) {
-        const resolved = mapFormulaRecord(f);
-        formulaCache.set(`f:${f.id}:latest`, resolved);
-        formulaCache.set(`f:${f.id}:${f.currentVersion}`, resolved);
+      if (redisConnection) {
+        try {
+          const cached = await redisConnection.get(cacheKey);
+          if (cached) {
+            payload = JSON.parse(cached);
+          }
+        } catch {}
       }
 
-      for (const t of tables) {
-        const resolved = mapTableRecord(t);
-        tableCache.set(`t:${t.id}:latest`, resolved);
-        tableCache.set(`t:${t.id}:${t.currentVersion}`, resolved);
-      }
+      if (!payload) {
+        const [formulaUsages, tableUsages] = await Promise.all([
+          db.formulaRegistryUsage.findMany({
+            where: { calcWorkflowId: workflowId },
+            select: { formulaRegistryId: true, pinnedVersion: true },
+          }),
+          db.tableRegistryUsage.findMany({
+            where: { calcWorkflowId: workflowId },
+            select: { tableRegistryId: true, pinnedVersion: true },
+          }),
+        ]);
 
-      const pinnedFormulas = formulaUsages.filter(
-        (u) => u.pinnedVersion !== null,
-      );
-      const pinnedTables = tableUsages.filter((u) => u.pinnedVersion !== null);
+        const formulaIds = formulaUsages.map((u) => u.formulaRegistryId);
+        const tableIds = tableUsages.map((u) => u.tableRegistryId);
 
-      if (pinnedFormulas.length > 0 || pinnedTables.length > 0) {
-        const [formulaVersions, tableVersions] = await Promise.all([
-          pinnedFormulas.length > 0
-            ? db.formulaRegistryVersion.findMany({
-                where: {
-                  OR: pinnedFormulas.map((u) => ({
-                    formulaRegistryId: u.formulaRegistryId,
-                    version: u.pinnedVersion!,
-                  })),
-                },
+        const [formulas, tables] = await Promise.all([
+          formulaIds.length > 0
+            ? db.formulaRegistryItem.findMany({
+                where: { id: { in: formulaIds } },
                 select: {
-                  formulaRegistryId: true,
-                  version: true,
-                  snapshot: true,
+                  id: true,
+                  name: true,
+                  currentVersion: true,
+                  expressionNotation: true,
+                  displayExpression: true,
+                  inputVariables: true,
+                  outputVariable: true,
+                  intermediateSteps: true,
+                  reference: true,
                 },
               })
             : [],
-          pinnedTables.length > 0
-            ? db.tableRegistryVersion.findMany({
-                where: {
-                  OR: pinnedTables.map((u) => ({
-                    tableRegistryId: u.tableRegistryId,
-                    version: u.pinnedVersion!,
-                  })),
-                },
+          tableIds.length > 0
+            ? db.tableRegistryItem.findMany({
+                where: { id: { in: tableIds } },
                 select: {
-                  tableRegistryId: true,
-                  version: true,
-                  snapshot: true,
+                  id: true,
+                  name: true,
+                  currentVersion: true,
+                  tableType: true,
+                  inputKeys: true,
+                  outputKey: true,
+                  columns: true,
+                  data: true,
+                  interpolationConfig: true,
+                  fallbackMode: true,
+                  fallbackValue: true,
+                  reference: true,
                 },
               })
             : [],
         ]);
 
-        for (const vr of formulaVersions) {
-          const snap = vr.snapshot as Record<string, unknown>;
-          const resolved = mapFormulaSnapshot(
-            vr.formulaRegistryId,
-            vr.version,
-            snap,
-          );
-          formulaCache.set(`f:${vr.formulaRegistryId}:${vr.version}`, resolved);
+        const pinnedFormulas = formulaUsages.filter(
+          (u) => u.pinnedVersion !== null,
+        );
+        const pinnedTables = tableUsages.filter((u) => u.pinnedVersion !== null);
+
+        let formulaVersions: any[] = [];
+        let tableVersions: any[] = [];
+
+        if (pinnedFormulas.length > 0 || pinnedTables.length > 0) {
+          const [fv, tv] = await Promise.all([
+            pinnedFormulas.length > 0
+              ? db.formulaRegistryVersion.findMany({
+                  where: {
+                    OR: pinnedFormulas.map((u) => ({
+                      formulaRegistryId: u.formulaRegistryId,
+                      version: u.pinnedVersion!,
+                    })),
+                  },
+                  select: {
+                    formulaRegistryId: true,
+                    version: true,
+                    snapshot: true,
+                  },
+                })
+              : [],
+            pinnedTables.length > 0
+              ? db.tableRegistryVersion.findMany({
+                  where: {
+                    OR: pinnedTables.map((u) => ({
+                      tableRegistryId: u.tableRegistryId,
+                      version: u.pinnedVersion!,
+                    })),
+                  },
+                  select: {
+                    tableRegistryId: true,
+                    version: true,
+                    snapshot: true,
+                  },
+                })
+              : [],
+          ]);
+          formulaVersions = fv;
+          tableVersions = tv;
         }
-        for (const vr of tableVersions) {
-          const snap = vr.snapshot as Record<string, unknown>;
-          const resolved = mapTableSnapshot(
-            vr.tableRegistryId,
-            vr.version,
-            snap,
-          );
-          tableCache.set(`t:${vr.tableRegistryId}:${vr.version}`, resolved);
+
+        payload = {
+          formulas,
+          tables,
+          formulaVersions,
+          tableVersions,
+        };
+
+        if (redisConnection) {
+          try {
+            await redisConnection.setex(cacheKey, 3600, JSON.stringify(payload));
+          } catch {}
         }
       }
 
+      for (const f of payload.formulas) {
+        const resolved = mapFormulaRecord(f);
+        formulaCache.set(`f:${f.id}:latest`, resolved);
+        formulaCache.set(`f:${f.id}:${f.currentVersion}`, resolved);
+      }
+
+      for (const t of payload.tables) {
+        const resolved = mapTableRecord(t);
+        tableCache.set(`t:${t.id}:latest`, resolved);
+        tableCache.set(`t:${t.id}:${t.currentVersion}`, resolved);
+      }
+
+      for (const vr of payload.formulaVersions) {
+        const snap = vr.snapshot as Record<string, unknown>;
+        const resolved = mapFormulaSnapshot(
+          vr.formulaRegistryId,
+          vr.version,
+          snap,
+        );
+        formulaCache.set(`f:${vr.formulaRegistryId}:${vr.version}`, resolved);
+      }
+
+      for (const vr of payload.tableVersions) {
+        const snap = vr.snapshot as Record<string, unknown>;
+        const resolved = mapTableSnapshot(
+          vr.tableRegistryId,
+          vr.version,
+          snap,
+        );
+        tableCache.set(`t:${vr.tableRegistryId}:${vr.version}`, resolved);
+      }
+
       return {
-        formulasCached: formulas.length,
-        tablesCached: tables.length,
-        pinnedVersionsCached: pinnedFormulas.length + pinnedTables.length,
+        formulasCached: payload.formulas.length,
+        tablesCached: payload.tables.length,
+        pinnedVersionsCached: payload.formulaVersions.length + payload.tableVersions.length,
       };
     },
   };

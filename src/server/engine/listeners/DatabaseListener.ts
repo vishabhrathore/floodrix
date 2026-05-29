@@ -27,6 +27,7 @@ import type { NodeExecutionStatus } from "@/generated/prisma";
 
 import type { SessionRepository } from "../SessionRepository";
 import type { ExecutionEvent, VariableMap } from "../types";
+import { redisConnection } from "@/lib/bullmq";
 
 interface BufferedEntry {
   calcNodeId: string;
@@ -147,6 +148,21 @@ export class DatabaseListener {
           nodeId: event.nodeId,
           stepNumber: -1, // we don't track step here; row may already exist with the right number
         });
+
+        if (redisConnection) {
+          try {
+            const cacheKey = `sess:${event.sessionId}:executions`;
+            const existingCached = await redisConnection.get(cacheKey);
+            const currentExecs = existingCached ? JSON.parse(existingCached) : [];
+            const existingNode = currentExecs.find((n: any) => n.calcNodeId === event.nodeId);
+            if (existingNode) {
+              existingNode.status = "WAITING";
+            } else {
+              currentExecs.push({ calcNodeId: event.nodeId, status: "WAITING" });
+            }
+            await redisConnection.setex(cacheKey, 30, JSON.stringify(currentExecs));
+          } catch {}
+        }
         return;
       }
 
@@ -201,6 +217,24 @@ export class DatabaseListener {
     }
 
     await this.repo.insertNodeExecutionLog(sessionId, fresh);
+
+    // Also write to redis cache for buildResult to load instantly!
+    if (redisConnection) {
+      try {
+        const cacheKey = `sess:${sessionId}:executions`;
+        const existingCached = await redisConnection.get(cacheKey);
+        const currentExecs = existingCached ? JSON.parse(existingCached) : [];
+        for (const e of fresh) {
+          const existingNode = currentExecs.find((n: any) => n.calcNodeId === e.calcNodeId);
+          if (existingNode) {
+            existingNode.status = e.status;
+          } else {
+            currentExecs.push({ calcNodeId: e.calcNodeId, status: e.status });
+          }
+        }
+        await redisConnection.setex(cacheKey, 30, JSON.stringify(currentExecs));
+      } catch {}
+    }
 
     for (const e of fresh) flushedIds.add(e.calcNodeId);
     this.buffers.set(sessionId, []);

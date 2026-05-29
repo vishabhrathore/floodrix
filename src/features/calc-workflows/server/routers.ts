@@ -133,6 +133,7 @@ export const calcWorkflowsRouter = createTRPCRouter({
         totalPages,
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
+        organizationId,
       };
     }),
 

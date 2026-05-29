@@ -45,3 +45,18 @@ export function assertCanRunWorkflow(ctx: RequestContext) {
 
   assertPolicy(ctx, "run", "workflow");
 }
+
+export function assertSessionAccess(ctx: RequestContext) {
+  if (ctx.session === null) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have access to this session",
+    });
+  }
+  if (ctx.session === undefined) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Session context not loaded",
+    });
+  }
+}

@@ -27,6 +27,7 @@ import type {
   VariableSnapshot,
 } from "./types";
 import { METADATA_VERSION, emptySessionMetadata } from "./types";
+import { redisConnection } from "@/lib/bullmq";
 
 // ─── Result types ─────────────────────────────────────────────────────────
 
@@ -75,9 +76,27 @@ export class SessionRepository {
     private readonly clock: Clock,
   ) {}
 
+  private async cacheStatus(sessionId: string, status: SessionStatus): Promise<void> {
+    if (redisConnection) {
+      try {
+        await redisConnection.setex(`session:${sessionId}:status`, 3600, status);
+      } catch (err) {
+        console.warn(`[REDIS] Failed to write status for session ${sessionId}:`, err);
+      }
+    }
+  }
+
   // ── Workflow loading ──────────────────────────────────────────────────
 
   async loadWorkflow(workflowId: string): Promise<LoadedWorkflow> {
+    const cacheKey = `wf:${workflowId}:loaded-workflow`;
+    if (redisConnection) {
+      try {
+        const cached = await redisConnection.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+
     const workflow = await this.db.calcWorkflow.findUniqueOrThrow({
       where: { id: workflowId },
       select: {
@@ -120,7 +139,7 @@ export class SessionRepository {
       },
     });
 
-    return {
+    const result = {
       workflow: {
         id: workflow.id,
         name: workflow.name,
@@ -131,6 +150,14 @@ export class SessionRepository {
       edges: workflow.edges,
       variables: workflow.variables,
     };
+
+    if (redisConnection) {
+      try {
+        await redisConnection.setex(cacheKey, 3600, JSON.stringify(result));
+      } catch {}
+    }
+
+    return result;
   }
 
   // ── Session lifecycle ─────────────────────────────────────────────────
@@ -163,14 +190,15 @@ export class SessionRepository {
     initialVariables: VariableMap;
     stepMode: boolean;
     idempotencyKey?: string;
+    parentSessionId?: string;
+    ancestorWorkflowChain?: string[];
   }): Promise<LoadedSession> {
     const metadata: SessionMetadata = {
       ...emptySessionMetadata(),
       stepMode: input.stepMode,
-      // Mirror the key in metadata too — convenient for clients reading
-      // session state without joining anything. The column is the
-      // source of truth for lookups.
       idempotencyKey: input.idempotencyKey,
+      parentSessionId: input.parentSessionId,
+      ancestorWorkflowChain: input.ancestorWorkflowChain,
     };
 
     const row = await this.db.calcSession.create({
@@ -188,14 +216,54 @@ export class SessionRepository {
       },
     });
 
+    await this.cacheStatus(row.id, "RUNNING");
+
+    const wf = await this.loadWorkflow(input.calcWorkflowId);
+    if (redisConnection && wf.workflow.organizationId) {
+      try {
+        await redisConnection.setex(`map:session:${row.id}:orgId`, 3600, wf.workflow.organizationId);
+      } catch {}
+    }
+
     return this.hydrateSession(row);
   }
 
   async loadSession(sessionId: string): Promise<LoadedSession> {
+    const cacheKey = `sess:${sessionId}:loaded`;
+    if (redisConnection) {
+      try {
+        const cached = await redisConnection.get(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.startedAt) parsed.startedAt = new Date(parsed.startedAt);
+          if (parsed.completedAt) parsed.completedAt = new Date(parsed.completedAt);
+          return parsed;
+        }
+      } catch {}
+    }
+
     const row = await this.db.calcSession.findUniqueOrThrow({
       where: { id: sessionId },
     });
-    return this.hydrateSession(row);
+    const result = this.hydrateSession(row);
+
+    if (redisConnection) {
+      try {
+        await redisConnection.setex(cacheKey, 3600, JSON.stringify(result));
+      } catch {}
+    }
+    return result;
+  }
+
+  private async invalidateSessionCache(sessionId: string): Promise<void> {
+    if (redisConnection) {
+      try {
+        await Promise.all([
+          redisConnection.del(`sess:${sessionId}:loaded`),
+          redisConnection.del(`res:session:${sessionId}`),
+        ]);
+      } catch {}
+    }
   }
 
   async updateProgress(
@@ -203,13 +271,36 @@ export class SessionRepository {
     variables: VariableSnapshot,
     currentIndex: number,
   ): Promise<void> {
-    await this.db.calcSession.update({
-      where: { id: sessionId },
+    const res = await this.db.calcSession.updateMany({
+      where: { id: sessionId, status: "RUNNING" },
       data: {
         variables: variables as unknown as Prisma.InputJsonValue,
         currentIndex,
       },
     });
+
+    if (res.count === 0) return;
+
+    if (redisConnection) {
+      try {
+        const cacheKey = `sess:${sessionId}:loaded`;
+        const resKey = `res:session:${sessionId}`;
+        const cached = await redisConnection.get(cacheKey);
+        if (cached) {
+          const session = JSON.parse(cached) as LoadedSession;
+          session.variables = variables;
+          session.currentIndex = currentIndex;
+          await Promise.all([
+            redisConnection.setex(cacheKey, 3600, JSON.stringify(session)),
+            redisConnection.setex(resKey, 3600, JSON.stringify(session)),
+          ]);
+        } else {
+          await this.invalidateSessionCache(sessionId);
+        }
+      } catch {
+        await this.invalidateSessionCache(sessionId);
+      }
+    }
   }
 
   async pauseSession(input: {
@@ -231,8 +322,8 @@ export class SessionRepository {
       currentIndex: input.currentIndex,
     };
 
-    await this.db.calcSession.update({
-      where: { id: input.sessionId },
+    const res = await this.db.calcSession.updateMany({
+      where: { id: input.sessionId, status: "RUNNING" },
       data: {
         status: "PAUSED",
         currentNodeId: input.nodeId,
@@ -243,6 +334,30 @@ export class SessionRepository {
         metadata: metadata as unknown as Prisma.InputJsonValue,
       },
     });
+
+    if (res.count === 0) return;
+
+    await this.cacheStatus(input.sessionId, "PAUSED");
+
+    if (redisConnection) {
+      try {
+        const session: LoadedSession = {
+          ...existing,
+          status: "PAUSED",
+          currentNodeId: input.nodeId,
+          currentIndex: input.currentIndex,
+          variables: input.variables,
+          pauseReason: input.pauseReason,
+          metadata,
+        };
+        await Promise.all([
+          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
+          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
+        ]);
+      } catch {
+        await this.invalidateSessionCache(input.sessionId);
+      }
+    }
   }
 
   async resumeSession(input: {
@@ -252,8 +367,12 @@ export class SessionRepository {
     variables: VariableSnapshot;
   }): Promise<void> {
     const existing = await this.loadSession(input.sessionId);
-    await this.db.calcSession.update({
-      where: { id: input.sessionId },
+    const inputSnapshot = existing.inputSnapshot
+      ? { ...existing.inputSnapshot, ...input.userInput }
+      : input.userInput;
+
+    const res = await this.db.calcSession.updateMany({
+      where: { id: input.sessionId, status: "PAUSED" },
       data: {
         status: "RUNNING",
         variables: input.variables as unknown as Prisma.InputJsonValue,
@@ -261,11 +380,33 @@ export class SessionRepository {
         currentIndex: input.nextIndex,
         pausedAt: null,
         pauseReason: null,
-        inputSnapshot: (existing.inputSnapshot
-          ? { ...existing.inputSnapshot, ...input.userInput }
-          : input.userInput) as Prisma.InputJsonValue,
+        inputSnapshot: inputSnapshot as Prisma.InputJsonValue,
       },
     });
+
+    if (res.count === 0) return;
+
+    await this.cacheStatus(input.sessionId, "RUNNING");
+
+    if (redisConnection) {
+      try {
+        const session: LoadedSession = {
+          ...existing,
+          status: "RUNNING",
+          currentNodeId: null,
+          currentIndex: input.nextIndex,
+          variables: input.variables,
+          pauseReason: null,
+          inputSnapshot,
+        };
+        await Promise.all([
+          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
+          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
+        ]);
+      } catch {
+        await this.invalidateSessionCache(input.sessionId);
+      }
+    }
   }
 
   async completeSession(input: {
@@ -278,8 +419,8 @@ export class SessionRepository {
       ? completedAt.getTime() - existing.startedAt.getTime()
       : 0;
 
-    await this.db.calcSession.update({
-      where: { id: input.sessionId },
+    const res = await this.db.calcSession.updateMany({
+      where: { id: input.sessionId, status: { in: ["RUNNING", "PAUSED"] } },
       data: {
         status: "COMPLETED",
         variables: input.variables as unknown as Prisma.InputJsonValue,
@@ -288,6 +429,27 @@ export class SessionRepository {
         duration: durationMs,
       },
     });
+
+    if (res.count === 0) return { durationMs };
+
+    await this.cacheStatus(input.sessionId, "COMPLETED");
+
+    if (redisConnection) {
+      try {
+        const session: LoadedSession = {
+          ...existing,
+          status: "COMPLETED",
+          currentNodeId: null,
+          variables: input.variables,
+        };
+        await Promise.all([
+          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
+          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
+        ]);
+      } catch {
+        await this.invalidateSessionCache(input.sessionId);
+      }
+    }
 
     return { durationMs };
   }
@@ -306,8 +468,8 @@ export class SessionRepository {
       ? completedAt.getTime() - existing.startedAt.getTime()
       : 0;
 
-    await this.db.calcSession.update({
-      where: { id: input.sessionId },
+    const res = await this.db.calcSession.updateMany({
+      where: { id: input.sessionId, status: { in: ["RUNNING", "PAUSED"] } },
       data: {
         status: "ERRORED",
         variables: input.variables as unknown as Prisma.InputJsonValue,
@@ -322,6 +484,27 @@ export class SessionRepository {
         } as Prisma.InputJsonValue,
       },
     });
+
+    if (res.count === 0) return;
+
+    await this.cacheStatus(input.sessionId, "ERRORED");
+
+    if (redisConnection) {
+      try {
+        const session: LoadedSession = {
+          ...existing,
+          status: "ERRORED",
+          currentNodeId: input.nodeId,
+          variables: input.variables,
+        };
+        await Promise.all([
+          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
+          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
+        ]);
+      } catch {
+        await this.invalidateSessionCache(input.sessionId);
+      }
+    }
   }
 
   async cancelSession(sessionId: string): Promise<void> {
@@ -331,23 +514,61 @@ export class SessionRepository {
       ? completedAt.getTime() - existing.startedAt.getTime()
       : 0;
 
-    await this.db.$transaction([
-      this.db.calcSession.update({
-        where: { id: sessionId },
-        data: { status: "CANCELLED", completedAt, duration },
-      }),
-      this.db.calcNodeExecution.updateMany({
-        where: { sessionId, status: { in: ["PENDING", "WAITING", "RUNNING"] } },
-        data: { status: "SKIPPED", completedAt },
-      }),
-    ]);
+    const res = await this.db.calcSession.updateMany({
+      where: { id: sessionId, status: { in: ["RUNNING", "PAUSED"] } },
+      data: { status: "CANCELLED", completedAt, duration },
+    });
+
+    if (res.count === 0) return;
+
+    await this.db.calcNodeExecution.updateMany({
+      where: { sessionId, status: { in: ["PENDING", "WAITING", "RUNNING"] } },
+      data: { status: "SKIPPED", completedAt },
+    });
+
+    await this.cacheStatus(sessionId, "CANCELLED");
+
+    if (redisConnection) {
+      try {
+        const session: LoadedSession = {
+          ...existing,
+          status: "CANCELLED",
+        };
+        await Promise.all([
+          redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(session)),
+          redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(session)),
+        ]);
+      } catch {
+        await this.invalidateSessionCache(sessionId);
+      }
+    }
   }
 
   async getStatus(sessionId: string): Promise<SessionStatus> {
+    if (redisConnection) {
+      try {
+        const cached = await redisConnection.get(`session:${sessionId}:status`);
+        if (cached) {
+          return cached as SessionStatus;
+        }
+      } catch (err) {
+        console.warn(`[REDIS] Failed to read status for session ${sessionId}:`, err);
+      }
+    }
+
     const row = await this.db.calcSession.findUniqueOrThrow({
       where: { id: sessionId },
       select: { status: true },
     });
+
+    if (redisConnection) {
+      try {
+        await redisConnection.setex(`session:${sessionId}:status`, 3600, row.status);
+      } catch (err) {
+        /* noop */
+      }
+    }
+
     return row.status;
   }
 

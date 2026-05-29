@@ -245,6 +245,8 @@ export interface SessionMetadata {
   stepMode: boolean;
   currentIndex: number;
   idempotencyKey?: string;
+  parentSessionId?: string;
+  ancestorWorkflowChain?: string[];
   /** CHUNK 4: which strategy was picked for this session's background runs. */
   runStrategy?: RunStrategy;
 }

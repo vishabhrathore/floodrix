@@ -1,0 +1,167 @@
+%-------------------------
+% Resume - Vishabh Rathore (Single Page)
+%------------------------
+
+\documentclass[letterpaper,10.5pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{textcomp}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.55in}
+\addtolength{\evensidemargin}{-0.55in}
+\addtolength{\textwidth}{1.1in}
+\addtolength{\topmargin}{-.65in}
+\addtolength{\textheight}{1.3in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-5pt}\scshape\bfseries\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+\newcommand{\resumeItem}[1]{\item\small{{#1 \vspace{-2pt}}}}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+  \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+    \textbf{\small#1} & \textit{\small#2} \\
+    \small#3 & \small#4 \\
+  \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+  \item \vspace{1pt}
+  \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+    \textbf{\textit{\small#1}} & \textit{\small#2} \\
+  \end{tabular*}\vspace{-4pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+  \item
+  \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+    \textbf{\textit{\small#1}} & \textit{\small#2} \\
+  \end{tabular*}\vspace{2pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+
+% Spacing adjustments preserved
+\newcommand{\resumeItemListStart}{\begin{itemize}[itemsep=1pt, topsep=2pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{1pt}}
+
+%-------------------------------------------
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape Vishabh Rathore} \\ \vspace{2pt}
+    \small Frontend Developer $|$ React.js \textperiodcentered{} Next.js \textperiodcentered{} React Native \textperiodcentered{} TypeScript \\ \vspace{2pt}
+    \small
+    +91 8923300160 \textperiodcentered{}
+    \href{mailto:vishabhrathore1995@gmail.com}{\underline{vishabhrathore1995@gmail.com}} \textperiodcentered{}
+    \href{https://www.linkedin.com/in/vishabh-rathore/}{\underline{linkedin.com/in/vishabh-rathore}} \textperiodcentered{}
+    \href{https://github.com/vishabhrathore/}{\underline{github.com/vishabhrathore}}
+\end{center}
+
+%-----------PROFILE SUMMARY-----------
+\section{Profile Summary}
+\small{
+Frontend Developer with \textbf{2.5 years} of experience engineering scalable SPAs and mobile interfaces using \textbf{React, Next.js,} and \textbf{React Native}. Deep expertise in high-performance state management (\textbf{MobX}), custom canvas architectures, and complex data synchronization. A highly collaborative ``T-shaped'' engineer with strong foundational knowledge of backend systems (\textbf{tRPC, PostgreSQL}) and AI integrations, enabling seamless full-stack communication and delivery of data-dense, zero-latency user experiences.
+}
+
+%-----------TECHNICAL SKILLS-----------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.15in, label={}, itemsep=0.25pt]
+  \item \small{\textbf{Web Technologies}{: HTML5, CSS3, JavaScript (ES6+), TypeScript, React.js, Next.js (App Router), SPA, Responsive Web Design}}
+  \item \small{\textbf{State Management \& UI}{: MobX, Context API, Material-UI (MUI), Tailwind CSS, shadcn/ui, React Flow, DOM Manipulation}}
+  \item \small{\textbf{Mobile Development}{: React Native, Expo, Push Notifications (FCM/APNS), Native Module Bridge, Cross-Platform UI}}
+  \item \small{\textbf{Backend \& AI}{: RESTful APIs, tRPC, PostgreSQL, Prisma, Redis, BullMQ, Flask, Firebase, ML Kit, NLP Models}}
+  \item \small{\textbf{Tools \& Testing}{: Git, GitHub, Playwright, Jest, Vitest, Cypress, Vite, Webpack, Figma, CI/CD, Postman}}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{Experience}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+      {Lead Frontend Developer (Freelance)}{Mar 2026 -- Present}
+      {FloodRix}{Remote}
+
+      \resumeSubSubheading{FloodRix -- No-Code Hydraulics Calculation Platform}{}
+        \resumeItemListStart
+          \resumeItem{Engineered an interactive calculation workflow creator using \textbf{React Flow v12} and \textbf{MobX}, functioning as a dynamic visual calculator to solve complex civil engineering hydraulics problems compliant with Indian Roads Congress standards.}
+          \resumeItem{Developed \textbf{10+ strictly typed interactive React Flow nodes} from scratch with a custom overlapping layout via \textbf{Next.js 15} and \textbf{Tailwind CSS v4}, utilizing shared field components to maximize data density.}
+          \resumeItem{Architected an in-memory canvas diffing and state synchronization engine leveraging debounced optimistic saves, slashing API network requests by over \textbf{82\%} to maintain a frictionless, zero-latency editing experience.}
+          \resumeItem{Constructed a modular node architecture featuring dynamic execution state indicators and color-coded, strictly typed connection handles to visually enforce valid data flows across complex mathematical models.}
+        \resumeItemListEnd
+
+    \resumeSubheading
+      {Frontend Developer}{Nov 2023 -- Present}
+      {Sigroo Technologies Pvt. Ltd}{Delhi, India}
+
+      \resumeSubSubheading{BTS -- Multi-Tenant Food Chain Suite (5 Apps)}{}
+        \resumeItemListStart
+          \resumeItem{Spearheaded frontend architecture for an enterprise-grade \textbf{5-app SaaS ecosystem} (ePOS, Kitchen Display, Storefront, Mobile, Packaging), unifying the UI via a shared component library and strict design system.}
+          \resumeItem{Built a high-performance \textbf{React ePOS} supporting split-billing, dynamic KOT routing, table management, and \textbf{offline-first} capabilities, handling thousands of daily transactions reliably.}
+          \resumeItem{Orchestrated \textbf{real-time state synchronization} across ePOS, Kitchen Display, and Packaging apps, ensuring zero-latency DOM updates for live order queues, inventory deductions, and database rollback handling.}
+          \resumeItem{Crafted the companion mobile app entirely from scratch using bare \textbf{React Native} to seamlessly integrate custom native modules and bridge complex Android APIs.}
+        \resumeItemListEnd
+
+      \resumeSubSubheading{Industry Machine Monitoring System (React / Web)}{}
+        \resumeItemListStart
+          \resumeItem{Created a real-time \textbf{Industry 4.0} factory monitoring dashboard with responsive design and fullscreen kiosk mode; leveraged \textbf{reactive state management} to reduce UI latency by \textbf{40\%} via selective DOM re-rendering and data batching.}
+          \resumeItem{Programmed a custom \textbf{SVG Label Editor} for overlaying live sensor API data onto interactive machine diagrams.}
+        \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+%-----------PERSONAL PROJECTS-----------
+\section{Personal Projects}
+\resumeSubHeadingListStart
+
+  \resumeProjectHeading
+    {Secure Kids -- Parental Control \& Screen Time Manager $|$ React Native, Firebase}{2024 -- Present}
+    \resumeItemListStart
+      \resumeItem{Developed a cross-platform \textbf{React Native} app monitoring video application usage and utilizing background services to process real-time screen time analytics dashboards.}
+      \resumeItem{Integrated \textbf{ML Kit} for on-device content classification, syncing background session data via \textbf{Firestore}, and configured an automated \textbf{push notification service} to dispatch immediate risk alerts to linked parent devices.}
+    \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------EDUCATION-----------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Master of Computer Applications (MCA)}{2024 -- 2026 (Pursuing)}
+      {Manipal University}{Jaipur, India}
+    \resumeSubheading
+      {Bachelor of Technology in Civil Engineering}{2018 -- 2022}
+      {Dayalbagh Educational Institute}{Agra, India}
+  \resumeSubHeadingListEnd
+
+\end{document}

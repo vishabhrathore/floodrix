@@ -2,6 +2,7 @@
 
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatDistanceToNow } from "date-fns";
@@ -50,6 +51,13 @@ export const CalcWorkflowsSearch = () => {
 
 export const CalcWorkflowsList = () => {
   const calcWorkflows = useSuspenseCalcWorkflows();
+  const [params, setParams] = useCalcWorkflowsParams();
+
+  useEffect(() => {
+    if (!params.organizationId && calcWorkflows.data.organizationId) {
+      setParams({ organizationId: calcWorkflows.data.organizationId });
+    }
+  }, [params.organizationId, calcWorkflows.data.organizationId, setParams]);
 
   return (
     <EntityList

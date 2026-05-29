@@ -12,6 +12,7 @@ if (redisConnection) {
     "batch-process",
     async (job: Job) => {
       const { batchJobId } = job.data;
+      console.log(`[batchWorker] 📦 Batch job started: batchJobId="${batchJobId}"`);
 
       const jobData = await prisma.batchJob.findUnique({
         where: { id: batchJobId },

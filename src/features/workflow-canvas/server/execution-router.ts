@@ -1,20 +1,10 @@
-// ═══════════════════════════════════════════════════════════════════════════
-//  src/features/workflow-canvas/server/execution-router.ts
-//
-//  CHUNK 4 CHANGES vs Chunk 3:
-//    1. startRun now goes through RunOrchestrator instead of the executor
-//       directly. The orchestrator picks strategy and handles INLINE_ASYNC
-//       / BACKGROUND_BATCH handoffs to Inngest.
-//    2. New `poll` query — used by the client while a session is running
-//       async. Returns PollResult with adaptive backoff hint.
-//    3. getSession is kept (used by the step-mode UI); poll is a new,
-//       purpose-built endpoint for async polling.
-// ═══════════════════════════════════════════════════════════════════════════
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 
 import { Prisma } from "@/generated/prisma";
 import prisma from "@/lib/db";
+import { loadContext } from "@/server/context/context.loader";
+import { assertCanRunWorkflow, assertSessionAccess } from "@/server/context/guards";
 import {
   CalcContext,
   createRunOrchestrator,
@@ -23,73 +13,50 @@ import {
 } from "@/server/engine";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Telemetry and Profiling Helper
+// ─────────────────────────────────────────────
 
-async function resolveActorId(userId: string, orgId: string): Promise<string> {
-  const [user, actor] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { globalRole: true },
-    }),
-    prisma.calcActor.findFirst({
-      where: { userId, organizationId: orgId },
-      select: { id: true },
-    }),
-  ]);
+class TimeTracker {
+  private startTime: number;
+  private laps: { label: string; durationMs: number }[] = [];
 
-  if (actor) return actor.id;
+  constructor(private procedureName: string) {
+    this.startTime = performance.now();
+    console.log(`\n🚀 [TELEMETRY] Starting execution procedure: "${procedureName}"`);
+  }
 
-  if (user?.globalRole === "SUPER_ADMIN") {
-    // Fallback for Super Admin: use their seeded actor_superadmin or any actor they have
-    const fallbackActor = await prisma.calcActor.findFirst({
-      where: { userId },
-      select: { id: true },
+  async track<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
+    try {
+      const result = await fn();
+      const durationMs = Math.round(performance.now() - start);
+      this.laps.push({ label, durationMs });
+      console.log(`⏱️ [TELEMETRY] [${this.procedureName}] "${label}" took ${durationMs}ms`);
+      return result;
+    } catch (error) {
+      const durationMs = Math.round(performance.now() - start);
+      this.laps.push({ label: `${label} (FAILED)`, durationMs });
+      console.log(`❌ [TELEMETRY] [${this.procedureName}] "${label}" FAILED after ${durationMs}ms`);
+      throw error;
+    }
+  }
+
+  end() {
+    const totalDuration = Math.round(performance.now() - this.startTime);
+    console.log(`\n📊 [TELEMETRY_SUMMARY] "${this.procedureName}" Finished.`);
+    console.log(`┌────────────────────────────────────────────────────────┐`);
+    this.laps.forEach((lap) => {
+      const paddedLabel = lap.label.padEnd(35, ".");
+      const paddedDuration = `${lap.durationMs}ms`.padStart(8, " ");
+      console.log(`│  ${paddedLabel}${paddedDuration}  │`);
     });
-    return fallbackActor?.id ?? "actor_superadmin";
+    const paddedTotalLabel = "Total Duration".padEnd(35, ".");
+    const paddedTotalDuration = `${totalDuration}ms`.padStart(8, " ");
+    console.log(`├────────────────────────────────────────────────────────┤`);
+    console.log(`│  ${paddedTotalLabel}${paddedTotalDuration}  │`);
+    console.log(`└────────────────────────────────────────────────────────┘\n`);
   }
-
-  throw new TRPCError({
-    code: "FORBIDDEN",
-    message: "Actor not found for this organization",
-  });
-}
-
-async function getWorkflowOrgId(workflowId: string): Promise<string> {
-  const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-    where: { id: workflowId },
-    select: { organizationId: true },
-  });
-  return wf.organizationId;
-}
-
-async function assertSessionAccess(sessionId: string, userId: string) {
-  const session = await prisma.calcSession.findUniqueOrThrow({
-    where: { id: sessionId },
-    select: {
-      id: true,
-      actorId: true,
-      calcWorkflowId: true,
-      currentNodeId: true,
-      status: true,
-    },
-  });
-
-  const [user, actor] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { globalRole: true },
-    }),
-    prisma.calcActor.findFirst({
-      where: { id: session.actorId, userId },
-      select: { id: true },
-    }),
-  ]);
-
-  if (user?.globalRole === "SUPER_ADMIN") return session;
-  if (!actor) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Not your session" });
-  }
-  return session;
 }
 
 // ─── Router ────────────────────────────────────────────────────────────────
@@ -107,47 +74,77 @@ export const calcExecutionRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const orgId = await getWorkflowOrgId(input.workflowId);
-      const actorId = await resolveActorId(ctx.auth.user.id, orgId);
+      const tracker = new TimeTracker("startRun");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            workflowId: input.workflowId,
+          })
+        );
 
-      // CHUNK 4: go through the orchestrator. It picks strategy and
-      // handles INLINE_ASYNC / BACKGROUND_BATCH handoffs automatically.
-      const calcCtx = new CalcContext(prisma, actorId, orgId);
-      const orchestrator = createRunOrchestrator(calcCtx);
+        await tracker.track("assertCanRunWorkflow", async () => {
+          assertCanRunWorkflow(reqCtx);
+        });
 
-      return orchestrator.start({
-        calcWorkflowId: input.workflowId,
-        actorId,
-        initialValues: (input.initialValues as Record<string, never>) ?? {},
-        stepMode: input.stepMode ?? false,
-        idempotencyKey: input.idempotencyKey,
-        batchSize: input.batchSize ?? 1,
-      });
+        const actorId = reqCtx.actor?.id;
+        const orgId = reqCtx.organization?.id;
+
+        if (!actorId || !orgId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Actor or Organization context not loaded",
+          });
+        }
+
+        const calcCtx = new CalcContext(prisma, actorId, orgId);
+        const orchestrator = createRunOrchestrator(calcCtx);
+
+        return await tracker.track("orchestrator.start", () =>
+          orchestrator.start({
+            calcWorkflowId: input.workflowId,
+            actorId,
+            initialValues: (input.initialValues as Record<string, never>) ?? {},
+            stepMode: input.stepMode ?? false,
+            idempotencyKey: input.idempotencyKey,
+            batchSize: input.batchSize ?? 1,
+          })
+        );
+      } finally {
+        tracker.end();
+      }
     }),
-
-  // ── CHUNK 4: async polling ────────────────────────────────────────────
 
   poll: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const session = await assertSessionAccess(
-        input.sessionId,
-        ctx.auth.user.id,
-      );
-      const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: session.calcWorkflowId },
-        select: { organizationId: true },
-      });
-      const calcCtx = new CalcContext(
-        prisma,
-        session.actorId,
-        wf.organizationId,
-      );
-      const poller = createSessionPoller(calcCtx);
-      return poller.poll(input.sessionId);
-    }),
+      const tracker = new TimeTracker("poll");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            sessionId: input.sessionId,
+          })
+        );
+        
+        await tracker.track("assertSessionAccess", async () => {
+          assertSessionAccess(reqCtx);
+        });
 
-  // ── Existing endpoints (unchanged from Chunk 3) ───────────────────────
+        const session = reqCtx.session!;
+        const orgId = reqCtx.organization!.id;
+
+        const calcCtx = new CalcContext(
+          prisma,
+          session.actorId,
+          orgId,
+        );
+        const poller = createSessionPoller(calcCtx);
+        return await tracker.track("poller.poll", () =>
+          poller.poll(input.sessionId)
+        );
+      } finally {
+        tracker.end();
+      }
+    }),
 
   submitInput: protectedProcedure
     .input(
@@ -157,60 +154,82 @@ export const calcExecutionRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const session = await assertSessionAccess(
-        input.sessionId,
-        ctx.auth.user.id,
-      );
-
-      if (session.status !== "PAUSED") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Session is not paused (status: ${session.status})`,
+      const tracker = new TimeTracker("submitInput");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            sessionId: input.sessionId,
+          })
+        );
+        
+        await tracker.track("assertSessionAccess", async () => {
+          assertSessionAccess(reqCtx);
         });
-      }
-      if (!session.currentNodeId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Session has no current node to resume from",
-        });
-      }
 
-      const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: session.calcWorkflowId },
-        select: { organizationId: true },
-      });
+        const session = reqCtx.session!;
 
-      const calcCtx = new CalcContext(
-        prisma,
-        session.actorId,
-        wf.organizationId,
-      );
-      const executor = createWorkflowExecutor(calcCtx);
-      return executor.resumeWithInput(
-        input.sessionId,
-        session.currentNodeId,
-        input.values as Record<string, unknown>,
-      );
+        if (session.status !== "PAUSED") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Session is not paused (status: ${session.status})`,
+          });
+        }
+        if (!session.currentNodeId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Session has no current node to resume from",
+          });
+        }
+
+        const orgId = reqCtx.organization!.id;
+        const calcCtx = new CalcContext(
+          prisma,
+          session.actorId,
+          orgId,
+        );
+        const executor = createWorkflowExecutor(calcCtx);
+        return await tracker.track("executor.resumeWithInput", () =>
+          executor.resumeWithInput(
+            input.sessionId,
+            session.currentNodeId!,
+            input.values as Record<string, unknown>,
+          )
+        );
+      } finally {
+        tracker.end();
+      }
     }),
 
   stepForward: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const session = await assertSessionAccess(
-        input.sessionId,
-        ctx.auth.user.id,
-      );
-      const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: session.calcWorkflowId },
-        select: { organizationId: true },
-      });
-      const calcCtx = new CalcContext(
-        prisma,
-        session.actorId,
-        wf.organizationId,
-      );
-      const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
-      return executor.stepForward(input.sessionId);
+      const tracker = new TimeTracker("stepForward");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            sessionId: input.sessionId,
+          })
+        );
+        
+        await tracker.track("assertSessionAccess", async () => {
+          assertSessionAccess(reqCtx);
+        });
+
+        const session = reqCtx.session!;
+        const orgId = reqCtx.organization!.id;
+
+        const calcCtx = new CalcContext(
+          prisma,
+          session.actorId,
+          orgId,
+        );
+        const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
+        return await tracker.track("executor.stepForward", () =>
+          executor.stepForward(input.sessionId)
+        );
+      } finally {
+        tracker.end();
+      }
     }),
 
   stepBack: protectedProcedure
@@ -221,48 +240,75 @@ export const calcExecutionRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const session = await assertSessionAccess(
-        input.sessionId,
-        ctx.auth.user.id,
-      );
-      const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: session.calcWorkflowId },
-        select: { organizationId: true },
-      });
-      const calcCtx = new CalcContext(
-        prisma,
-        session.actorId,
-        wf.organizationId,
-      );
-      const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
-      return executor.stepBack(input.sessionId, input.targetNodeId);
+      const tracker = new TimeTracker("stepBack");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            sessionId: input.sessionId,
+          })
+        );
+        
+        await tracker.track("assertSessionAccess", async () => {
+          assertSessionAccess(reqCtx);
+        });
+
+        const session = reqCtx.session!;
+        const orgId = reqCtx.organization!.id;
+
+        const calcCtx = new CalcContext(
+          prisma,
+          session.actorId,
+          orgId,
+        );
+        const executor = createWorkflowExecutor(calcCtx, { liveUpdates: true });
+        return await tracker.track("executor.stepBack", () =>
+          executor.stepBack(input.sessionId, input.targetNodeId)
+        );
+      } finally {
+        tracker.end();
+      }
     }),
 
   cancelRun: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const session = await assertSessionAccess(
-        input.sessionId,
-        ctx.auth.user.id,
-      );
-      const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: session.calcWorkflowId },
-        select: { organizationId: true },
-      });
-      const calcCtx = new CalcContext(
-        prisma,
-        session.actorId,
-        wf.organizationId,
-      );
-      const executor = createWorkflowExecutor(calcCtx);
-      await executor.cancelExecution(input.sessionId, session.actorId);
-      return { success: true };
+      const tracker = new TimeTracker("cancelRun");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            sessionId: input.sessionId,
+          })
+        );
+        
+        await tracker.track("assertSessionAccess", async () => {
+          assertSessionAccess(reqCtx);
+        });
+
+        const session = reqCtx.session!;
+        const orgId = reqCtx.organization!.id;
+
+        const calcCtx = new CalcContext(
+          prisma,
+          session.actorId,
+          orgId,
+        );
+        const executor = createWorkflowExecutor(calcCtx);
+        await tracker.track("executor.cancelExecution", () =>
+          executor.cancelExecution(input.sessionId, session.actorId)
+        );
+        return { success: true };
+      } finally {
+        tracker.end();
+      }
     }),
 
   getSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ ctx, input }) => {
-      await assertSessionAccess(input.sessionId, ctx.auth.user.id);
+      const reqCtx = await loadContext(prisma, ctx.userId, {
+        sessionId: input.sessionId,
+      });
+      assertSessionAccess(reqCtx);
 
       const session = await prisma.calcSession.findUniqueOrThrow({
         where: { id: input.sessionId },
@@ -384,24 +430,33 @@ export const calcExecutionRouter = createTRPCRouter({
   rerun: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const session = await assertSessionAccess(
-        input.sessionId,
-        ctx.auth.user.id,
-      );
-      const old = await prisma.calcSession.findUniqueOrThrow({
-        where: { id: input.sessionId },
-        select: { calcWorkflowId: true, actorId: true, inputSnapshot: true },
-      });
-      const wf = await prisma.calcWorkflow.findUniqueOrThrow({
-        where: { id: old.calcWorkflowId },
-        select: { organizationId: true },
-      });
-      const calcCtx = new CalcContext(prisma, old.actorId, wf.organizationId);
-      const orchestrator = createRunOrchestrator(calcCtx);
-      return orchestrator.start({
-        calcWorkflowId: old.calcWorkflowId,
-        actorId: old.actorId,
-        initialValues: (old.inputSnapshot as Record<string, never>) ?? {},
-      });
+      const tracker = new TimeTracker("rerun");
+      try {
+        const reqCtx = await tracker.track("loadContext", () =>
+          loadContext(prisma, ctx.userId, {
+            sessionId: input.sessionId,
+          })
+        );
+        
+        await tracker.track("assertSessionAccess", async () => {
+          assertSessionAccess(reqCtx);
+        });
+
+        const session = reqCtx.session!;
+        const orgId = reqCtx.organization!.id;
+
+        const calcCtx = new CalcContext(prisma, session.actorId, orgId);
+        const orchestrator = createRunOrchestrator(calcCtx);
+
+        return await tracker.track("orchestrator.start", () =>
+          orchestrator.start({
+            calcWorkflowId: session.calcWorkflowId,
+            actorId: session.actorId,
+            initialValues: (session.inputSnapshot as Record<string, never>) ?? {},
+          })
+        );
+      } finally {
+        tracker.end();
+      }
     }),
 });

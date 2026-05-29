@@ -51,21 +51,23 @@ export class ExecutionEventEmitter {
    * executor dropping this promise, swallowing DB errors.
    */
   async emit(event: ExecutionEvent): Promise<void> {
-    const errors: Error[] = [];
+    const results = await Promise.allSettled(
+      this.listeners.map(async (listener) => {
+        try {
+          await listener.fn(event);
+        } catch (err) {
+          const wrapped = err instanceof Error ? err : new Error(String(err));
+          wrapped.message = `[listener:${listener.name}] ${wrapped.message}`;
+          throw wrapped;
+        }
+      })
+    );
 
-    for (const listener of this.listeners) {
-      try {
-        await listener.fn(event);
-      } catch (err) {
-        const wrapped = err instanceof Error ? err : new Error(String(err));
-        // Annotate so we can tell which listener failed
-        wrapped.message = `[listener:${listener.name}] ${wrapped.message}`;
-        errors.push(wrapped);
-      }
-    }
+    const errors = results
+      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+      .map((r) => r.reason as Error);
 
     if (errors.length > 0) {
-      // Surface the first error; log the rest so they're not silently lost
       if (errors.length > 1) {
         for (let i = 1; i < errors.length; i++) {
           console.error("Additional listener error:", errors[i]);

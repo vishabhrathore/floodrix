@@ -12,7 +12,7 @@ if (redisConnection) {
       const { sessionId, reason, type } = job.data;
 
       if (type === "calc/session.start-background") {
-        console.log(`Starting background session ${sessionId}`);
+        console.log(`[calcWorker] 📬 Job: "calc/session.start-background" received for sessionId="${sessionId}"`);
         await addJob(calcQueue, "resume", {
           sessionId,
           reason: "background_batch",
@@ -23,7 +23,7 @@ if (redisConnection) {
 
       if (type === "calc/session.resume") {
         console.log(
-          `Resuming session ${sessionId} (reason: ${reason ?? "unspecified"})`,
+          `[calcWorker] 📬 Job: "calc/session.resume" received for sessionId="${sessionId}" (reason="${reason ?? "unspecified"}")`,
         );
 
         // Load session status

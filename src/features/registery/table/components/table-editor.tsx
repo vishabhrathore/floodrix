@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -119,6 +119,8 @@ function toSlug(name: string): string {
 
 export default function TableEditor({ tableId }: TableEditorProps) {
   const router = useRouter();
+  const routeParams = useParams();
+  const orgId = routeParams?.orgId as string;
   const { data: existing, isLoading } = useTable(tableId);
   const { mutate: create, isPending: isCreating } = useCreateTable();
   const { mutate: update, isPending: isUpdating } = useUpdateTable();
@@ -196,12 +198,12 @@ export default function TableEditor({ tableId }: TableEditorProps) {
       update(
         { id: tableId, ...values },
         {
-          onSuccess: () => router.push(`/admin/registery/tables/${tableId}`),
+          onSuccess: () => router.push(`/admin/${orgId}/registery/tables/${tableId}`),
         },
       );
     } else {
       create(values as any, {
-        onSuccess: (data) => router.push(`/admin/registery/tables/${data.id}`),
+        onSuccess: (data) => router.push(`/admin/${orgId}/registery/tables/${data.id}`),
       });
     }
   };
@@ -211,7 +213,7 @@ export default function TableEditor({ tableId }: TableEditorProps) {
     deleteMutation.mutate(
       { id: tableId },
       {
-        onSuccess: () => router.push("/admin/registery/tables"),
+        onSuccess: () => router.push(`/admin/${orgId}/registery/tables`),
       },
     );
   };
@@ -230,7 +232,7 @@ export default function TableEditor({ tableId }: TableEditorProps) {
         <div className="flex items-center justify-between border-b px-6 py-4 bg-background z-10 sticky top-0">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-              <Link href="/admin/registery/tables">
+              <Link href={`/admin/${orgId}/registery/tables`}>
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>

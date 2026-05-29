@@ -156,7 +156,7 @@ export const tablesRouter = createTRPCRouter({
         });
       }
 
-      const existing = await ctx.db.tableRegistryItem.findFirst({
+      const activeExisting = await ctx.db.tableRegistryItem.findFirst({
         where: {
           organizationId: finalOrgId,
           slug: input.slug,
@@ -164,10 +164,29 @@ export const tablesRouter = createTRPCRouter({
         },
       });
 
-      if (existing) {
+      if (activeExisting) {
         throw new TRPCError({
           code: "CONFLICT",
           message: `A table with slug "${input.slug}" already exists in this organization.`,
+        });
+      }
+
+      const deletedExisting = await ctx.db.tableRegistryItem.findFirst({
+        where: {
+          organizationId: finalOrgId,
+          slug: input.slug,
+          NOT: {
+            deletedAt: null,
+          },
+        },
+      });
+
+      if (deletedExisting) {
+        await ctx.db.tableRegistryItem.update({
+          where: { id: deletedExisting.id },
+          data: {
+            slug: `${deletedExisting.slug}__deleted__${Date.now()}`,
+          },
         });
       }
 

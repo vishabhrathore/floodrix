@@ -59,7 +59,8 @@ export class FormulaHandler implements NodeHandler {
         // we feed them values pulled from the bound context keys.
         evalScope = {};
         for (const inputVar of registry.inputVariables) {
-          const contextKey = bindings[inputVar.notation] ?? inputVar.key;
+          const contextKey =
+            bindings[inputVar.notation] ?? bindings["undefined"] ?? inputVar.key;
           const value = ctx.variables.get(contextKey);
           if (value === undefined) {
             return toErroredOutcome(
@@ -83,6 +84,7 @@ export class FormulaHandler implements NodeHandler {
         outputKey =
           config.result_variable ??
           bindings[registry.outputVariable.notation] ??
+          bindings["undefined"] ??
           registry.outputVariable.key ??
           "result";
       } else {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useParams } from "next/navigation";
 
 import {
   EmptyView,
@@ -23,6 +24,8 @@ export const TableRegistryContainer = ({
   children: React.ReactNode;
 }) => {
   const [params, setParams] = useTablesParams();
+  const routeParams = useParams();
+  const orgId = routeParams?.orgId as string;
 
   return (
     <EntityContainer
@@ -31,7 +34,7 @@ export const TableRegistryContainer = ({
           title="Table Registry"
           description="Manage IRC standard lookup tables and digitised charts."
           newButtonLabel="New Table"
-          newButtonHref="/admin/registery/tables/new"
+          newButtonHref={`/admin/${orgId}/registery/tables/new`}
         />
       }
       search={
@@ -59,6 +62,8 @@ export const TableRegistryList = () => {
   const { data } = useSuspenseTables();
   const [params, setParams] = useTablesParams();
   const [isPending, startTransition] = useTransition();
+  const routeParams = useParams();
+  const orgId = routeParams?.orgId as string;
 
   const items = data?.items ?? [];
   const totalPages = data?.totalPages ?? 0;
@@ -71,7 +76,7 @@ export const TableRegistryList = () => {
             ? `No tables match "${params.search}"`
             : "The table registry is empty."
         }
-        onNew={() => (window.location.href = "/admin/registery/tables/new")}
+        onNew={() => (window.location.href = `/admin/${orgId}/registery/tables/new`)}
       />
     );
   }
@@ -114,7 +119,7 @@ export const TableRegistryList = () => {
             key={table.id}
             table={table}
             index={index}
-            href={`/admin/registery/tables/${table.id}`}
+            href={`/admin/${orgId}/registery/tables/${table.id}`}
             actionLabel="Configure"
           />
         ))}

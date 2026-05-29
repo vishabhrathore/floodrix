@@ -228,13 +228,31 @@ function mapFormulaRecord(r: {
   intermediateSteps: unknown;
   reference: string | null;
 }): ResolvedFormula {
+  const inputVarsRaw = (r.inputVariables || []) as any[];
+  const inputVariables = inputVarsRaw.map((v) => ({
+    key: v.key || "",
+    notation: v.notation || v.key || "",
+    label: v.label || "",
+    unit: v.unit || "",
+    required: v.required !== false,
+  }));
+
+  const outVarRaw = (r.outputVariable || {}) as any;
+  const outputVariable = {
+    key: outVarRaw.key || "",
+    notation: outVarRaw.notation || outVarRaw.key || "",
+    label: outVarRaw.label || "",
+    unit: outVarRaw.unit || "",
+    precision: outVarRaw.precision ?? 3,
+  };
+
   return {
     id: r.id,
     name: r.name,
     expressionNotation: r.expressionNotation,
     displayExpression: r.displayExpression,
-    inputVariables: r.inputVariables as ResolvedFormula["inputVariables"],
-    outputVariable: r.outputVariable as ResolvedFormula["outputVariable"],
+    inputVariables,
+    outputVariable,
     intermediateSteps: (r.intermediateSteps ||
       []) as ResolvedFormula["intermediateSteps"],
     reference: r.reference,
@@ -254,12 +272,28 @@ function mapTableRecord(r: {
   fallbackValue: unknown;
   reference: string | null;
 }): ResolvedTable {
+  const inputKeysRaw = (r.inputKeys || []) as any[];
+  const inputKeys = inputKeysRaw.map((k) => ({
+    key: k.key || "",
+    notation: k.notation || k.key || "",
+    label: k.label || "",
+    unit: k.unit || "",
+  }));
+
+  const outKeyRaw = (r.outputKey || {}) as any;
+  const outputKey = {
+    key: outKeyRaw.key || "",
+    notation: outKeyRaw.notation || outKeyRaw.key || "",
+    label: outKeyRaw.label || "",
+    unit: outKeyRaw.unit || "",
+  };
+
   return {
     id: r.id,
     name: r.name,
     tableType: r.tableType,
-    inputKeys: r.inputKeys as ResolvedTable["inputKeys"],
-    outputKey: r.outputKey as ResolvedTable["outputKey"],
+    inputKeys,
+    outputKey,
     columns: r.columns as string[],
     data: r.data as unknown[],
     interpolationConfig: (r.interpolationConfig || null) as Record<

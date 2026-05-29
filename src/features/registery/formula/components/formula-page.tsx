@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useParams } from "next/navigation";
 
 import {
   EmptyView,
@@ -23,6 +24,8 @@ export const FormulaRegistryContainer = ({
   children: React.ReactNode;
 }) => {
   const [params, setParams] = useFormulasParams();
+  const routeParams = useParams();
+  const orgId = routeParams?.orgId as string;
 
   return (
     <EntityContainer
@@ -31,7 +34,7 @@ export const FormulaRegistryContainer = ({
           title="Formula Registry"
           description="Standardize and manage hydraulic formulas used across the system."
           newButtonLabel="New Formula"
-          newButtonHref="/admin/registery/formulas/new"
+          newButtonHref={`/admin/${orgId}/registery/formulas/new`}
         />
       }
       search={
@@ -59,6 +62,8 @@ export const FormulaRegistryList = () => {
   const { data } = useSuspenseFormulas();
   const [params, setParams] = useFormulasParams();
   const [isPending, startTransition] = useTransition();
+  const routeParams = useParams();
+  const orgId = routeParams?.orgId as string;
 
   const items = data?.items ?? [];
   const totalPages = data?.totalPages ?? 0;
@@ -71,7 +76,7 @@ export const FormulaRegistryList = () => {
             ? `No formulas match "${params.search}"`
             : "The formula registry is empty."
         }
-        onNew={() => {}} // Placeholder or redirect to new
+        onNew={() => (window.location.href = `/admin/${orgId}/registery/formulas/new`)}
       />
     );
   }
@@ -114,7 +119,7 @@ export const FormulaRegistryList = () => {
             key={formula.id}
             calc={formula}
             index={index}
-            href={`/admin/registery/formulas/${formula.id}`}
+            href={`/admin/${orgId}/registery/formulas/${formula.id}`}
             actionLabel="Configure"
           />
         ))}

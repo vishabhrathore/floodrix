@@ -15,7 +15,7 @@ import {
 
 import { auditService } from "./audit-service";
 import { interpolate } from "./interpolation";
-import { registryResolver } from "./registry-resolver";
+import { createRegistryResolver, type RegistryResolver } from "./registry-resolver";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -368,6 +368,13 @@ export class WorkflowExecutor {
       },
     });
 
+    const registryResolver = createRegistryResolver();
+    try {
+      await registryResolver.prefetchForWorkflow(this.db, session.calcWorkflowId);
+    } catch {
+      // prefetch is optional
+    }
+
     const executionOrder = session.executionOrder as string[];
     let currentIndex = session.currentIndex;
     const variables = { ...(session.variables as VariableContext) };
@@ -379,7 +386,7 @@ export class WorkflowExecutor {
 
     while (currentIndex < executionOrder.length) {
       const nodeId = executionOrder[currentIndex];
-      const node = nodeMap.get(nodeId);
+      const node = nodeMap.get(nodeId) as any;
 
       if (!node) {
         currentIndex++;
@@ -495,7 +502,7 @@ export class WorkflowExecutor {
 
         // ── FORMULA ───────────────────────────────────────────────
         else if (node.type === "FORMULA") {
-          const res = await this.executeFormula(node, config, variables);
+          const res = await this.executeFormula(node, config, variables, registryResolver);
           variables[res.outputKey] = res.value;
 
           await this.db.calcNodeExecution.updateMany({
@@ -543,7 +550,7 @@ export class WorkflowExecutor {
 
         // ── LOOKUP_TABLE ──────────────────────────────────────────
         else if (node.type === "LOOKUP_TABLE") {
-          const res = await this.executeLookup(node, config, variables);
+          const res = await this.executeLookup(node, config, variables, registryResolver);
           variables[res.outputKey] = res.value;
 
           await this.db.calcNodeExecution.updateMany({
@@ -562,7 +569,7 @@ export class WorkflowExecutor {
 
         // ── GRAPH_INTERPOLATION ───────────────────────────────────
         else if (node.type === "GRAPH_INTERPOLATION") {
-          const res = await this.executeInterpolation(node, config, variables);
+          const res = await this.executeInterpolation(node, config, variables, registryResolver);
           variables[res.outputKey] = res.value;
 
           await this.db.calcNodeExecution.updateMany({
@@ -862,6 +869,7 @@ export class WorkflowExecutor {
     node: { id: string },
     config: NodeConfig,
     variables: VariableContext,
+    registryResolver: RegistryResolver,
   ) {
     let expression: string;
     let outputKey: string;
@@ -883,7 +891,8 @@ export class WorkflowExecutor {
         notation: string;
         key: string;
       }[]) {
-        const contextKey = bindings[inputVar.notation] ?? inputVar.key;
+        const contextKey =
+          bindings[inputVar.notation] ?? bindings["undefined"] ?? inputVar.key;
         const value = variables[contextKey];
         if (value === undefined) {
           throw new Error(
@@ -899,7 +908,7 @@ export class WorkflowExecutor {
         notation: string;
         key: string;
       };
-      outputKey = bindings[outVar.notation] ?? outVar.key;
+      outputKey = bindings[outVar.notation] ?? bindings["undefined"] ?? outVar.key;
 
       if (config.overrides?.result_variable) {
         outputKey = config.overrides.result_variable as string;
@@ -940,6 +949,7 @@ export class WorkflowExecutor {
     node: { id: string },
     config: NodeConfig,
     variables: VariableContext,
+    registryResolver: RegistryResolver,
   ) {
     let data: unknown[];
     let outputKey: string;
@@ -955,9 +965,10 @@ export class WorkflowExecutor {
       const inputDef = (
         registry.inputKeys as { notation: string; key: string }[]
       )[0];
-      lookupKey = bindings[inputDef.notation] ?? inputDef.key;
+      lookupKey = bindings[inputDef.notation] ?? bindings["undefined"] ?? inputDef.key;
       outputKey =
         bindings[(registry.outputKey as { notation: string }).notation] ??
+        bindings["undefined"] ??
         (registry.outputKey as { key: string }).key;
       data = registry.data as unknown[];
     } else {
@@ -1044,6 +1055,7 @@ export class WorkflowExecutor {
     node: { id: string },
     config: NodeConfig,
     variables: VariableContext,
+    registryResolver: RegistryResolver,
   ) {
     let points: { x: number; y: number }[];
     let inputVar: string;
@@ -1061,9 +1073,10 @@ export class WorkflowExecutor {
       const inputDef = (
         registry.inputKeys as { notation: string; key: string }[]
       )[0];
-      inputVar = bindings[inputDef.notation] ?? inputDef.key;
+      inputVar = bindings[inputDef.notation] ?? bindings["undefined"] ?? inputDef.key;
       outputKey =
         bindings[(registry.outputKey as { notation: string }).notation] ??
+        bindings["undefined"] ??
         (registry.outputKey as { key: string }).key;
       points = registry.data as { x: number; y: number }[];
       const interpConfig = registry.interpolationConfig as {

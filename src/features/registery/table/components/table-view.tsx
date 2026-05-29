@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   Activity,
@@ -60,6 +60,8 @@ export default function TableView({ tableId }: TableViewProps) {
   const { data: table, isLoading, isError } = useTable(tableId);
   const deleteMutation = useDeleteTable();
   const router = useRouter();
+  const routeParams = useParams();
+  const orgId = routeParams?.orgId as string;
   const { data: session } = authClient.useSession();
   const isSuperAdminUser = (session?.user as any)?.globalRole === "SUPER_ADMIN";
 
@@ -69,7 +71,7 @@ export default function TableView({ tableId }: TableViewProps) {
 
   const handleDelete = async () => {
     await deleteMutation.mutateAsync({ id: table.id });
-    router.push("/admin/registery/tables");
+    router.push(`/admin/${orgId}/registery/tables`);
   };
 
   const data = (table.data as any[]) ?? [];
@@ -121,13 +123,13 @@ export default function TableView({ tableId }: TableViewProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/admin/registery/tables`}>
+            <Link href={`/admin/${orgId}/registery/tables`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Registry
             </Link>
           </Button>
           <Button size="sm" className="bg-blue-600 hover:bg-blue-700" asChild>
-            <Link href={`/admin/registery/tables/${table.id}/edit`}>
+            <Link href={`/admin/${orgId}/registery/tables/${table.id}/edit`}>
               <Edit3 className="mr-2 h-4 w-4" />
               Edit Table
             </Link>

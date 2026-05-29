@@ -48,9 +48,9 @@ export class InterpolationHandler implements NodeHandler {
           ));
         const bindings = config.variable_bindings ?? {};
         const inputDef = registry.inputKeys[0];
-        inputVar = bindings[inputDef.notation] ?? inputDef.key;
+        inputVar = bindings[inputDef.notation] ?? bindings["undefined"] ?? inputDef.key;
         outputKey =
-          bindings[registry.outputKey.notation] ?? registry.outputKey.key;
+          bindings[registry.outputKey.notation] ?? bindings["undefined"] ?? registry.outputKey.key;
         points = registry.data as { x: number; y: number }[];
         const interpConfig = registry.interpolationConfig as {
           method?: string;

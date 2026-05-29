@@ -67,10 +67,10 @@ export class LookupTableHandler implements NodeHandler {
           ));
         const bindings = config.variable_bindings ?? {};
         inputKeys = registry.inputKeys.map(
-          (k) => bindings[k.notation] ?? k.key,
+          (k) => bindings[k.notation] ?? bindings["undefined"] ?? k.key,
         );
         outputKey =
-          bindings[registry.outputKey.notation] ?? registry.outputKey.key;
+          bindings[registry.outputKey.notation] ?? bindings["undefined"] ?? registry.outputKey.key;
         rows = registry.data as RangeRow[];
         matchMode = config.match_mode ?? "range";
       } else {

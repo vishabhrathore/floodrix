@@ -3,7 +3,7 @@
 import React from "react";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   Building2Icon,
@@ -136,7 +136,9 @@ export function AdminSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const organizationId = searchParams.get("organizationId");
+  const routeParams = useParams();
+  
+  const organizationId = (routeParams?.orgId as string) || searchParams.get("organizationId") || "";
 
   return (
     <Sidebar
@@ -171,14 +173,13 @@ export function AdminSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const isActive =
-                    item.url === "/admin"
-                      ? pathname === "/admin"
-                      : pathname.startsWith(item.url);
-
-                  const linkUrl = organizationId
-                    ? `${item.url}?organizationId=${organizationId}`
+                  const targetUrl = organizationId
+                    ? (item.url === "/admin" ? `/admin/${organizationId}` : item.url.replace("/admin/", `/admin/${organizationId}/`))
                     : item.url;
+
+                  const isActive = organizationId
+                    ? (item.url === "/admin" ? pathname === `/admin/${organizationId}` : pathname.startsWith(targetUrl))
+                    : (item.url === "/admin" ? pathname === "/admin" : pathname.startsWith(item.url));
 
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -188,7 +189,7 @@ export function AdminSidebar() {
                         className="transition-all"
                       >
                         <Link
-                          href={linkUrl}
+                          href={targetUrl}
                           prefetch
                           className="w-full flex items-center"
                         >

@@ -149,7 +149,7 @@ export const formulasRouter = createTRPCRouter({
         });
       }
 
-      const existing = await ctx.db.formulaRegistryItem.findFirst({
+      const activeExisting = await ctx.db.formulaRegistryItem.findFirst({
         where: {
           organizationId: finalOrgId,
           slug: input.slug,
@@ -157,10 +157,29 @@ export const formulasRouter = createTRPCRouter({
         },
       });
 
-      if (existing) {
+      if (activeExisting) {
         throw new TRPCError({
           code: "CONFLICT",
           message: `A formula with slug "${input.slug}" already exists in this organization.`,
+        });
+      }
+
+      const deletedExisting = await ctx.db.formulaRegistryItem.findFirst({
+        where: {
+          organizationId: finalOrgId,
+          slug: input.slug,
+          NOT: {
+            deletedAt: null,
+          },
+        },
+      });
+
+      if (deletedExisting) {
+        await ctx.db.formulaRegistryItem.update({
+          where: { id: deletedExisting.id },
+          data: {
+            slug: `${deletedExisting.slug}__deleted__${Date.now()}`,
+          },
         });
       }
 

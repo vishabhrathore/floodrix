@@ -29,7 +29,7 @@ import { addJob, calcQueue, workflowQueue } from "@/lib/bullmq";
 
 import { RunStrategyResolver } from "./RunStrategyResolver";
 import { SessionRepository } from "./SessionRepository";
-import { WorkflowExecutor } from "./WorkflowExecutor";
+import { WorkflowExecutor, resolveExecutionOrder } from "./WorkflowExecutor";
 import type { Clock, ExecutionResult, VariableMap } from "./types";
 import { RunStrategy } from "./types";
 
@@ -116,6 +116,7 @@ export class RunOrchestrator {
       {
         stepMode: input.stepMode ?? false,
         liveUpdates: input.stepMode ?? false,
+        runStrategy: RunStrategy.INLINE_SYNC,
       },
       input.idempotencyKey,
     );
@@ -138,8 +139,9 @@ export class RunOrchestrator {
       input.initialValues ?? {},
       {
         stepMode: false,
-        liveUpdates: true, // INLINE_ASYNC always live — client polls
+        liveUpdates: false, // Async inline doesn't need real-time DB highlights
         inlineAsync: true,
+        runStrategy: RunStrategy.INLINE_ASYNC,
       },
       input.idempotencyKey,
     );
@@ -178,9 +180,7 @@ export class RunOrchestrator {
     input: StartRunInput,
     reason: string,
   ): Promise<ExecutionResult> {
-    // We don't actually call the executor here — we just create the
-    // session shell so the client has an id to poll. Inngest does
-    // all the work.
+    // Load the workflow topology
     const wf = await this.deps.repo.loadWorkflow(input.calcWorkflowId);
 
     // Build initial variables from workflow defaults + caller input
@@ -191,41 +191,43 @@ export class RunOrchestrator {
     }
     Object.assign(variables, input.initialValues ?? {});
 
-    // We need the executor's topological sort, but we don't want to
-    // actually execute anything. Reach into startExecution and then
-    // immediately send the start-background event. This does trigger
-    // an unnecessary "session:started" emit but nothing actually runs
-    // because the executor pauses on first async (which BACKGROUND_BATCH
-    // is guaranteed to have, by construction at batchSize >= threshold
-    // — OR we force it via inlineAsync=false isBackgroundRun).
-    //
-    // Simpler approach: just use executor.startExecution with isBackgroundRun
-    // and it handles everything. The background flag prevents it from
-    // treating async nodes as errors.
-    const result = await this.deps.executor.startExecution(
-      input.calcWorkflowId,
-      input.actorId,
-      input.initialValues ?? {},
-      {
-        stepMode: false,
-        liveUpdates: true,
-        isBackgroundRun: false, // We want it to pause at first async, not execute through
-        inlineAsync: true,
-      },
-      input.idempotencyKey,
-    );
+    const executionOrder = resolveExecutionOrder(wf);
+
+    // Create session completely bypassing executor for zero request-thread execution overhead
+    const session = await this.deps.repo.createSession({
+      calcWorkflowId: input.calcWorkflowId,
+      actorId: input.actorId,
+      executionOrder,
+      initialVariables: variables,
+      stepMode: false,
+      idempotencyKey: input.idempotencyKey,
+      liveUpdates: false,
+      runStrategy: RunStrategy.BACKGROUND_BATCH,
+    });
+
+    // Emit session:started and await to ensure listener is fully ready
+    await this.deps.executor.emitter.emit({
+      type: "session:started",
+      sessionId: session.id,
+      workflowId: input.calcWorkflowId,
+      actorId: input.actorId,
+      nodeCount: executionOrder.length,
+      executionOrder,
+    }).catch(() => {});
 
     // Always hand off to Inngest for background batch
     await addJob(calcQueue, "start-background", {
-      sessionId: result.sessionId,
+      sessionId: session.id,
       type: "calc/session.start-background",
     });
 
     return {
-      ...result,
+      sessionId: session.id,
       status: "RUNNING", // Force RUNNING so the UI polls
+      variables: session.variables,
+      nodeExecutions: [],
       asyncPending: {
-        pollUrl: this.buildPollUrl(result.sessionId),
+        pollUrl: this.buildPollUrl(session.id),
         pollIntervalMs: 1000,
         strategy: RunStrategy.BACKGROUND_BATCH,
       },

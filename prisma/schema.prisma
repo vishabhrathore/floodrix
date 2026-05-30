@@ -613,6 +613,7 @@ model CalcSession {
   idempotencyKey String?
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
+  lockVersion    Int                   @default(1)
   nodeExecutions CalcNodeExecution[]
   actor          CalcActor             @relation(fields: [actorId], references: [id], onDelete: Cascade)
   calcWorkflow   CalcWorkflow          @relation(fields: [calcWorkflowId], references: [id], onDelete: Cascade)

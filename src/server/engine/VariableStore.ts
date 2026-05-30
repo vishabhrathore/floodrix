@@ -119,17 +119,38 @@ export class DefaultVariableStore implements VariableStore {
       );
     }
 
-    const projectedTotal = this.sizeBytes() + outputBytes;
-    if (projectedTotal > MAX_STORE_BYTES) {
-      throw new Error(
-        `Tracking output of "${nodeLabel}" would exceed store size ` +
-          `(${projectedTotal} > ${MAX_STORE_BYTES}).`,
-      );
-    }
+    // Save old values for potential rollback
+    const oldNodeOutput = this.nodeOutputs[nodeId];
+    const oldLabelOutput = this.labelOutputs[nodeLabel];
 
+    // Tentatively apply the update
     this.nodeOutputs[nodeId] = { ...outputs };
     this.labelOutputs[nodeLabel] = { ...outputs };
     this.cachedSizeBytes = null;
+
+    // Check the new total size
+    const newTotal = this.sizeBytes();
+    if (newTotal > MAX_STORE_BYTES) {
+      // Rollback the tentative changes
+      if (oldNodeOutput !== undefined) {
+        this.nodeOutputs[nodeId] = oldNodeOutput;
+      } else {
+        delete this.nodeOutputs[nodeId];
+      }
+
+      if (oldLabelOutput !== undefined) {
+        this.labelOutputs[nodeLabel] = oldLabelOutput;
+      } else {
+        delete this.labelOutputs[nodeLabel];
+      }
+
+      this.cachedSizeBytes = null;
+
+      throw new Error(
+        `Tracking output of "${nodeLabel}" would exceed store size limit ` +
+          `(${newTotal} bytes > ${MAX_STORE_BYTES}).`,
+      );
+    }
   }
 
   sizeBytes(): number {

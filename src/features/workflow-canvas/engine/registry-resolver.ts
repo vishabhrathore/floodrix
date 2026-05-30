@@ -49,6 +49,19 @@ interface ResolvedTable {
 
 export type RegistryResolver = ReturnType<typeof createRegistryResolver>;
 
+const GLOBAL_FORMULA_CACHE = new Map<string, { resolved: ResolvedFormula; expiresAt: number }>();
+const GLOBAL_TABLE_CACHE = new Map<string, { resolved: ResolvedTable; expiresAt: number }>();
+const CACHE_TTL_MS = 600000; // 10 minutes
+
+function deepFreeze(obj: any) {
+  if (obj === null || typeof obj !== "object") return obj;
+  Object.freeze(obj);
+  for (const key of Object.keys(obj)) {
+    deepFreeze(obj[key]);
+  }
+  return obj;
+}
+
 export function createRegistryResolver() {
   // Cache scoped to THIS execution — garbage collected when execution ends
   const formulaCache = new Map<string, ResolvedFormula>();
@@ -62,6 +75,13 @@ export function createRegistryResolver() {
       const cacheKey = `f:${registryId}`;
       const cached = formulaCache.get(cacheKey);
       if (cached) return cached;
+
+      const now = Date.now();
+      const globalCached = GLOBAL_FORMULA_CACHE.get(cacheKey);
+      if (globalCached && globalCached.expiresAt > now) {
+        formulaCache.set(cacheKey, globalCached.resolved);
+        return globalCached.resolved;
+      }
 
       const record = await db.formulaRegistryItem.findUnique({
         where: { id: registryId },
@@ -83,6 +103,8 @@ export function createRegistryResolver() {
         throw new Error(`Formula "${record.name}" is not published`);
 
       const resolved = mapFormulaRecord(record);
+      deepFreeze(resolved);
+      GLOBAL_FORMULA_CACHE.set(cacheKey, { resolved, expiresAt: Date.now() + CACHE_TTL_MS });
       formulaCache.set(cacheKey, resolved);
       return resolved;
     },
@@ -94,6 +116,13 @@ export function createRegistryResolver() {
       const cacheKey = `t:${registryId}`;
       const cached = tableCache.get(cacheKey);
       if (cached) return cached;
+
+      const now = Date.now();
+      const globalCached = GLOBAL_TABLE_CACHE.get(cacheKey);
+      if (globalCached && globalCached.expiresAt > now) {
+        tableCache.set(cacheKey, globalCached.resolved);
+        return globalCached.resolved;
+      }
 
       const record = await db.tableRegistryItem.findUnique({
         where: { id: registryId },
@@ -114,6 +143,8 @@ export function createRegistryResolver() {
 
       if (!record) throw new Error(`Table ${registryId} not found`);
       const resolved = mapTableRecord(record);
+      deepFreeze(resolved);
+      GLOBAL_TABLE_CACHE.set(cacheKey, { resolved, expiresAt: Date.now() + CACHE_TTL_MS });
       tableCache.set(cacheKey, resolved);
       return resolved;
     },
@@ -199,13 +230,33 @@ export function createRegistryResolver() {
       }
 
       for (const f of payload.formulas) {
-        const resolved = mapFormulaRecord(f);
-        formulaCache.set(`f:${f.id}`, resolved);
+        const resolvedKey = `f:${f.id}`;
+        const cached = GLOBAL_FORMULA_CACHE.get(resolvedKey);
+        const now = Date.now();
+        let resolved: ResolvedFormula;
+        if (cached && cached.expiresAt > now) {
+          resolved = cached.resolved;
+        } else {
+          resolved = mapFormulaRecord(f);
+          deepFreeze(resolved);
+          GLOBAL_FORMULA_CACHE.set(resolvedKey, { resolved, expiresAt: now + CACHE_TTL_MS });
+        }
+        formulaCache.set(resolvedKey, resolved);
       }
 
       for (const t of payload.tables) {
-        const resolved = mapTableRecord(t);
-        tableCache.set(`t:${t.id}`, resolved);
+        const resolvedKey = `t:${t.id}`;
+        const cached = GLOBAL_TABLE_CACHE.get(resolvedKey);
+        const now = Date.now();
+        let resolved: ResolvedTable;
+        if (cached && cached.expiresAt > now) {
+          resolved = cached.resolved;
+        } else {
+          resolved = mapTableRecord(t);
+          deepFreeze(resolved);
+          GLOBAL_TABLE_CACHE.set(resolvedKey, { resolved, expiresAt: now + CACHE_TTL_MS });
+        }
+        tableCache.set(resolvedKey, resolved);
       }
 
       return {

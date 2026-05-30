@@ -11,6 +11,7 @@ import {
   createSessionPoller,
   createWorkflowExecutor,
 } from "@/server/engine";
+import { logger } from "@/server/engine/logger";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 // ─────────────────────────────────────────────
@@ -23,7 +24,7 @@ class TimeTracker {
 
   constructor(private procedureName: string) {
     this.startTime = performance.now();
-    console.log(`\n🚀 [TELEMETRY] Starting execution procedure: "${procedureName}"`);
+    logger.info({ procedure: this.procedureName }, `🚀 Starting execution procedure`);
   }
 
   async track<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -32,30 +33,34 @@ class TimeTracker {
       const result = await fn();
       const durationMs = Math.round(performance.now() - start);
       this.laps.push({ label, durationMs });
-      console.log(`⏱️ [TELEMETRY] [${this.procedureName}] "${label}" took ${durationMs}ms`);
+      if (durationMs >= 10) {
+        logger.debug(
+          { procedure: this.procedureName, label, durationMs },
+          `⏱️ Telemetry tracking step completed`
+        );
+      }
       return result;
     } catch (error) {
       const durationMs = Math.round(performance.now() - start);
       this.laps.push({ label: `${label} (FAILED)`, durationMs });
-      console.log(`❌ [TELEMETRY] [${this.procedureName}] "${label}" FAILED after ${durationMs}ms`);
+      logger.error(
+        { procedure: this.procedureName, label, durationMs, error: error instanceof Error ? error.message : String(error) },
+        `❌ Telemetry tracking step failed`
+      );
       throw error;
     }
   }
 
   end() {
     const totalDuration = Math.round(performance.now() - this.startTime);
-    console.log(`\n📊 [TELEMETRY_SUMMARY] "${this.procedureName}" Finished.`);
-    console.log(`┌────────────────────────────────────────────────────────┐`);
-    this.laps.forEach((lap) => {
-      const paddedLabel = lap.label.padEnd(35, ".");
-      const paddedDuration = `${lap.durationMs}ms`.padStart(8, " ");
-      console.log(`│  ${paddedLabel}${paddedDuration}  │`);
-    });
-    const paddedTotalLabel = "Total Duration".padEnd(35, ".");
-    const paddedTotalDuration = `${totalDuration}ms`.padStart(8, " ");
-    console.log(`├────────────────────────────────────────────────────────┤`);
-    console.log(`│  ${paddedTotalLabel}${paddedTotalDuration}  │`);
-    console.log(`└────────────────────────────────────────────────────────┘\n`);
+    logger.info(
+      {
+        procedure: this.procedureName,
+        totalDurationMs: totalDuration,
+        steps: this.laps,
+      },
+      `📊 Telemetry execution summary finished`
+    );
   }
 }
 
@@ -82,9 +87,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
 
-        await tracker.track("assertCanRunWorkflow", async () => {
-          assertCanRunWorkflow(reqCtx);
-        });
+        assertCanRunWorkflow(reqCtx);
 
         const actorId = reqCtx.actor?.id;
         const orgId = reqCtx.organization?.id;
@@ -97,7 +100,9 @@ export const calcExecutionRouter = createTRPCRouter({
         }
 
         const calcCtx = new CalcContext(prisma, actorId, orgId);
-        const orchestrator = createRunOrchestrator(calcCtx);
+        const orchestrator = createRunOrchestrator(calcCtx, {
+          liveUpdates: input.stepMode ?? false,
+        });
 
         return await tracker.track("orchestrator.start", () =>
           orchestrator.start({
@@ -125,9 +130,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
         
-        await tracker.track("assertSessionAccess", async () => {
-          assertSessionAccess(reqCtx);
-        });
+        assertSessionAccess(reqCtx);
 
         const session = reqCtx.session!;
         const orgId = reqCtx.organization!.id;
@@ -162,9 +165,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
         
-        await tracker.track("assertSessionAccess", async () => {
-          assertSessionAccess(reqCtx);
-        });
+        assertSessionAccess(reqCtx);
 
         const session = reqCtx.session!;
 
@@ -187,12 +188,16 @@ export const calcExecutionRouter = createTRPCRouter({
           session.actorId,
           orgId,
         );
-        const executor = createWorkflowExecutor(calcCtx);
+        const metadata = (session.metadata ?? {}) as any;
+        const isStepMode = metadata.stepMode ?? false;
+
+        const executor = createWorkflowExecutor(calcCtx, { liveUpdates: isStepMode });
         return await tracker.track("executor.resumeWithInput", () =>
           executor.resumeWithInput(
             input.sessionId,
             session.currentNodeId!,
             input.values as Record<string, unknown>,
+            { stepMode: isStepMode, liveUpdates: isStepMode }
           )
         );
       } finally {
@@ -211,9 +216,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
         
-        await tracker.track("assertSessionAccess", async () => {
-          assertSessionAccess(reqCtx);
-        });
+        assertSessionAccess(reqCtx);
 
         const session = reqCtx.session!;
         const orgId = reqCtx.organization!.id;
@@ -248,9 +251,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
         
-        await tracker.track("assertSessionAccess", async () => {
-          assertSessionAccess(reqCtx);
-        });
+        assertSessionAccess(reqCtx);
 
         const session = reqCtx.session!;
         const orgId = reqCtx.organization!.id;
@@ -280,9 +281,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
         
-        await tracker.track("assertSessionAccess", async () => {
-          assertSessionAccess(reqCtx);
-        });
+        assertSessionAccess(reqCtx);
 
         const session = reqCtx.session!;
         const orgId = reqCtx.organization!.id;
@@ -438,9 +437,7 @@ export const calcExecutionRouter = createTRPCRouter({
           })
         );
         
-        await tracker.track("assertSessionAccess", async () => {
-          assertSessionAccess(reqCtx);
-        });
+        assertSessionAccess(reqCtx);
 
         const session = reqCtx.session!;
         const orgId = reqCtx.organization!.id;

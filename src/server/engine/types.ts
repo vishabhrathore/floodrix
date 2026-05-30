@@ -28,13 +28,15 @@ export type VariableValue =
   | boolean
   | number[]
   | Record<string, unknown>
+  | Record<string, Record<string, any>>
+  | Record<string, any>
   | null;
 export type VariableMap = Record<string, VariableValue>;
 
-export interface VariableSnapshot extends VariableMap {
+export type VariableSnapshot = VariableMap & {
   $nodes?: Record<string, VariableMap>;
   $results?: Record<string, VariableMap>;
-}
+};
 
 export interface VariableStore {
   get(key: string): VariableValue | undefined;
@@ -156,6 +158,7 @@ export type ExecutionEvent =
       nodeId: string;
       nodeLabel: string;
       pauseReason: PauseReason;
+      stepNumber: number;
     }
   | {
       type: "session:paused";
@@ -199,6 +202,7 @@ export interface ExecutionOptions {
   isBackgroundRun?: boolean;
   parentSessionId?: string;
   ancestorWorkflowChain?: string[];
+  runStrategy?: RunStrategy;
 }
 
 export interface StepOutput {

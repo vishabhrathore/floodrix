@@ -26,7 +26,7 @@ import type {
   VariableMap,
   VariableSnapshot,
 } from "./types";
-import { METADATA_VERSION, emptySessionMetadata } from "./types";
+import { METADATA_VERSION, RunStrategy, emptySessionMetadata } from "./types";
 import { redisConnection } from "@/lib/bullmq";
 
 // ─── Result types ─────────────────────────────────────────────────────────
@@ -66,6 +66,7 @@ export interface LoadedSession {
   metadata: SessionMetadata;
   inputSnapshot: Record<string, unknown> | null;
   idempotencyKey: string | null;
+  lockVersion: number;
 }
 
 // ─── Repository ───────────────────────────────────────────────────────────
@@ -192,6 +193,8 @@ export class SessionRepository {
     idempotencyKey?: string;
     parentSessionId?: string;
     ancestorWorkflowChain?: string[];
+    liveUpdates?: boolean;
+    runStrategy?: RunStrategy;
   }): Promise<LoadedSession> {
     const metadata: SessionMetadata = {
       ...emptySessionMetadata(),
@@ -199,33 +202,50 @@ export class SessionRepository {
       idempotencyKey: input.idempotencyKey,
       parentSessionId: input.parentSessionId,
       ancestorWorkflowChain: input.ancestorWorkflowChain,
+      runStrategy: input.runStrategy,
     };
 
-    const row = await this.db.calcSession.create({
-      data: {
-        calcWorkflowId: input.calcWorkflowId,
-        actorId: input.actorId,
-        status: "RUNNING",
-        variables: input.initialVariables as Prisma.InputJsonValue,
-        executionOrder: input.executionOrder as Prisma.InputJsonValue,
-        currentIndex: 0,
-        startedAt: this.clock.nowDate(),
-        runMode: "SINGLE",
-        metadata: metadata as unknown as Prisma.InputJsonValue,
-        idempotencyKey: input.idempotencyKey ?? null,
-      },
+    return await this.db.$transaction(async (tx) => {
+      const row = await tx.calcSession.create({
+        data: {
+          calcWorkflowId: input.calcWorkflowId,
+          actorId: input.actorId,
+          status: "PENDING",
+          variables: input.initialVariables as Prisma.InputJsonValue,
+          executionOrder: input.executionOrder as Prisma.InputJsonValue,
+          currentIndex: 0,
+          startedAt: this.clock.nowDate(),
+          runMode: "SINGLE",
+          metadata: metadata as unknown as Prisma.InputJsonValue,
+          idempotencyKey: input.idempotencyKey ?? null,
+        },
+      });
+
+      if (input.liveUpdates && input.executionOrder.length > 0) {
+        await tx.calcNodeExecution.createMany({
+          data: input.executionOrder.map((nodeId, idx) => ({
+            sessionId: row.id,
+            calcNodeId: nodeId,
+            stepNumber: idx,
+            status: "PENDING" as const,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      await this.cacheStatus(row.id, "PENDING");
+
+      const wf = await this.loadWorkflow(input.calcWorkflowId);
+      if (redisConnection && wf.workflow.organizationId) {
+        try {
+          await redisConnection.setex(`map:session:${row.id}:orgId`, 3600, wf.workflow.organizationId);
+        } catch {}
+      }
+
+      return this.hydrateSession(row);
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
     });
-
-    await this.cacheStatus(row.id, "RUNNING");
-
-    const wf = await this.loadWorkflow(input.calcWorkflowId);
-    if (redisConnection && wf.workflow.organizationId) {
-      try {
-        await redisConnection.setex(`map:session:${row.id}:orgId`, 3600, wf.workflow.organizationId);
-      } catch {}
-    }
-
-    return this.hydrateSession(row);
   }
 
   async loadSession(sessionId: string): Promise<LoadedSession> {
@@ -332,32 +352,20 @@ export class SessionRepository {
         pausedAt: this.clock.nowDate(),
         pauseReason: input.pauseReason,
         metadata: metadata as unknown as Prisma.InputJsonValue,
+        lockVersion: { increment: 1 },
       },
     });
 
     if (res.count === 0) return;
 
-    await this.cacheStatus(input.sessionId, "PAUSED");
+    await this.upsertNodeWaiting({
+      sessionId: input.sessionId,
+      nodeId: input.nodeId,
+      stepNumber: input.currentIndex,
+    });
 
-    if (redisConnection) {
-      try {
-        const session: LoadedSession = {
-          ...existing,
-          status: "PAUSED",
-          currentNodeId: input.nodeId,
-          currentIndex: input.currentIndex,
-          variables: input.variables,
-          pauseReason: input.pauseReason,
-          metadata,
-        };
-        await Promise.all([
-          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
-          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
-        ]);
-      } catch {
-        await this.invalidateSessionCache(input.sessionId);
-      }
-    }
+    await this.cacheStatus(input.sessionId, "PAUSED");
+    await this.invalidateSessionCache(input.sessionId);
   }
 
   async resumeSession(input: {
@@ -374,39 +382,21 @@ export class SessionRepository {
     const res = await this.db.calcSession.updateMany({
       where: { id: input.sessionId, status: "PAUSED" },
       data: {
-        status: "RUNNING",
+        status: "PENDING",
         variables: input.variables as unknown as Prisma.InputJsonValue,
         currentNodeId: null,
         currentIndex: input.nextIndex,
         pausedAt: null,
         pauseReason: null,
         inputSnapshot: inputSnapshot as Prisma.InputJsonValue,
+        lockVersion: { increment: 1 },
       },
     });
 
     if (res.count === 0) return;
 
-    await this.cacheStatus(input.sessionId, "RUNNING");
-
-    if (redisConnection) {
-      try {
-        const session: LoadedSession = {
-          ...existing,
-          status: "RUNNING",
-          currentNodeId: null,
-          currentIndex: input.nextIndex,
-          variables: input.variables,
-          pauseReason: null,
-          inputSnapshot,
-        };
-        await Promise.all([
-          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
-          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
-        ]);
-      } catch {
-        await this.invalidateSessionCache(input.sessionId);
-      }
-    }
+    await this.cacheStatus(input.sessionId, "PENDING");
+    await this.invalidateSessionCache(input.sessionId);
   }
 
   async completeSession(input: {
@@ -427,29 +417,14 @@ export class SessionRepository {
         currentNodeId: null,
         completedAt,
         duration: durationMs,
+        lockVersion: { increment: 1 },
       },
     });
 
     if (res.count === 0) return { durationMs };
 
     await this.cacheStatus(input.sessionId, "COMPLETED");
-
-    if (redisConnection) {
-      try {
-        const session: LoadedSession = {
-          ...existing,
-          status: "COMPLETED",
-          currentNodeId: null,
-          variables: input.variables,
-        };
-        await Promise.all([
-          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
-          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
-        ]);
-      } catch {
-        await this.invalidateSessionCache(input.sessionId);
-      }
-    }
+    await this.invalidateSessionCache(input.sessionId);
 
     return { durationMs };
   }
@@ -482,29 +457,14 @@ export class SessionRepository {
           message: input.message,
           type: input.errorType,
         } as Prisma.InputJsonValue,
+        lockVersion: { increment: 1 },
       },
     });
 
     if (res.count === 0) return;
 
     await this.cacheStatus(input.sessionId, "ERRORED");
-
-    if (redisConnection) {
-      try {
-        const session: LoadedSession = {
-          ...existing,
-          status: "ERRORED",
-          currentNodeId: input.nodeId,
-          variables: input.variables,
-        };
-        await Promise.all([
-          redisConnection.setex(`sess:${input.sessionId}:loaded`, 3600, JSON.stringify(session)),
-          redisConnection.setex(`res:session:${input.sessionId}`, 3600, JSON.stringify(session)),
-        ]);
-      } catch {
-        await this.invalidateSessionCache(input.sessionId);
-      }
-    }
+    await this.invalidateSessionCache(input.sessionId);
   }
 
   async cancelSession(sessionId: string): Promise<void> {
@@ -516,7 +476,12 @@ export class SessionRepository {
 
     const res = await this.db.calcSession.updateMany({
       where: { id: sessionId, status: { in: ["RUNNING", "PAUSED"] } },
-      data: { status: "CANCELLED", completedAt, duration },
+      data: { 
+        status: "CANCELLED", 
+        completedAt, 
+        duration,
+        lockVersion: { increment: 1 },
+      },
     });
 
     if (res.count === 0) return;
@@ -527,21 +492,74 @@ export class SessionRepository {
     });
 
     await this.cacheStatus(sessionId, "CANCELLED");
+    await this.invalidateSessionCache(sessionId);
+  }
 
-    if (redisConnection) {
-      try {
-        const session: LoadedSession = {
-          ...existing,
-          status: "CANCELLED",
-        };
-        await Promise.all([
-          redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(session)),
-          redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(session)),
-        ]);
-      } catch {
-        await this.invalidateSessionCache(sessionId);
-      }
+  async acquireExecutionLock(sessionId: string, currentVersion: number): Promise<boolean> {
+    const res = await this.db.calcSession.updateMany({
+      where: {
+        id: sessionId,
+        lockVersion: currentVersion,
+        status: { in: ["PENDING", "PAUSED"] },
+      },
+      data: {
+        status: "RUNNING",
+        lockVersion: { increment: 1 },
+        updatedAt: this.clock.nowDate(),
+      },
+    });
+    const success = res.count > 0;
+    if (success) {
+      await this.cacheStatus(sessionId, "RUNNING");
     }
+    return success;
+  }
+
+  async recoverStuckSessions(maxExecutionDurationMs = 300000): Promise<number> {
+    const threshold = new Date(Date.now() - maxExecutionDurationMs);
+
+    // 1. Identify stuck sessions
+    const stuckSessions = await this.db.calcSession.findMany({
+      where: {
+        status: "RUNNING",
+        updatedAt: { lt: threshold },
+      },
+      select: { id: true },
+    });
+
+    if (stuckSessions.length === 0) return 0;
+    const sessionIds = stuckSessions.map((s) => s.id);
+
+    await this.db.$transaction(async (tx) => {
+      // 2. Reset sessions back to PAUSED and increment lockVersion
+      await tx.calcSession.updateMany({
+        where: { id: { in: sessionIds } },
+        data: {
+          status: "PAUSED",
+          pauseReason: "stuck_execution_timeout",
+          lockVersion: { increment: 1 },
+        },
+      });
+
+      // 3. Reset any node executions stuck in RUNNING to PENDING
+      await tx.calcNodeExecution.updateMany({
+        where: {
+          sessionId: { in: sessionIds },
+          status: "RUNNING",
+        },
+        data: {
+          status: "PENDING",
+        },
+      });
+    });
+
+    // 4. Evict caches for these sessions to clear cached RUNNING statuses
+    for (const sessionId of sessionIds) {
+      await this.cacheStatus(sessionId, "PAUSED");
+      await this.invalidateSessionCache(sessionId);
+    }
+
+    return sessionIds.length;
   }
 
   async getStatus(sessionId: string): Promise<SessionStatus> {
@@ -627,7 +645,7 @@ export class SessionRepository {
       where: {
         sessionId: input.sessionId,
         calcNodeId: input.nodeId,
-        status: "RUNNING",
+        status: { in: ["RUNNING", "WAITING"] },
       },
       data: {
         status: "COMPLETED",
@@ -650,6 +668,26 @@ export class SessionRepository {
       data: {
         status: "SKIPPED",
         completedAt: this.clock.nowDate(),
+      },
+    });
+  }
+
+  async resetNodeExecutions(sessionId: string, nodeIds: string[]): Promise<void> {
+    await this.db.calcNodeExecution.updateMany({
+      where: {
+        sessionId,
+        calcNodeId: { in: nodeIds },
+      },
+      data: {
+        status: "PENDING",
+        startedAt: null,
+        completedAt: null,
+        durationMs: null,
+        error: null,
+        errorType: null,
+        inputVars: Prisma.DbNull,
+        outputVars: Prisma.DbNull,
+        result: Prisma.DbNull,
       },
     });
   }
@@ -782,6 +820,7 @@ export class SessionRepository {
     metadata: unknown;
     inputSnapshot: unknown;
     idempotencyKey: string | null;
+    lockVersion: number;
   }): LoadedSession {
     const metadata = hydrateMetadata(row.metadata);
     return {
@@ -802,6 +841,7 @@ export class SessionRepository {
       > | null,
       // Column is source of truth; metadata copy is fallback for old rows.
       idempotencyKey: row.idempotencyKey ?? metadata.idempotencyKey ?? null,
+      lockVersion: row.lockVersion,
     };
   }
 }

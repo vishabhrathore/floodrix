@@ -24,6 +24,18 @@ export class SubworkflowHandler implements NodeHandler {
   readonly type = "SUBWORKFLOW" as const;
 
   async execute(ctx: ExecutionContext): Promise<NodeOutcome> {
+    // ═════════════════════════════════════════════════════════════════════════
+    //  CRITICAL LIMITATION: SUBWORKFLOW INLINE RESUMPTION
+    //
+    //  If the child workflow contains an INPUT node or any node that pauses
+    //  execution (e.g. background transition on async nodes), the parent session
+    //  will pause. Currently, completing the paused child via resumeWithInput
+    //  will NOT automatically propagate completion and resume the parent.
+    //
+    //  Therefore, SUBWORKFLOW nodes are currently ONLY safe for fully synchronous
+    //  child workflows (no INPUT nodes, no async nodes, etc.). Use background
+    //  or separate tasks if child workflow pauses are required.
+    // ═════════════════════════════════════════════════════════════════════════
     try {
       const config = (ctx.node.config ?? {}) as SubworkflowNodeConfig;
 

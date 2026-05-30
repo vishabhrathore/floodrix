@@ -57,13 +57,11 @@ export class DatabaseListener {
   async handle(event: ExecutionEvent): Promise<void> {
     switch (event.type) {
       case "session:started":
-        if (this.liveUpdates) {
-          // PENDING rows for the entire workflow up front
-          // (executor passes node ids via the order it sets up)
-          // We don't have executionOrder in this event yet —
-          // bootstrap supplies it via repo.createPendingNodeExecutions
-          // BEFORE emitting session:started. See WorkflowExecutor.
-        }
+        // PENDING rows for the entire workflow up front
+        // (executor passes node ids via the order it sets up)
+        // We don't have executionOrder in this event yet —
+        // bootstrap supplies it via repo.createPendingNodeExecutions
+        // BEFORE emitting session:started. See WorkflowExecutor.
         this.buffers.set(event.sessionId, []);
         this.flushedNodeIds.set(event.sessionId, new Set());
         return;
@@ -146,7 +144,7 @@ export class DatabaseListener {
         await this.repo.upsertNodeWaiting({
           sessionId: event.sessionId,
           nodeId: event.nodeId,
-          stepNumber: -1, // we don't track step here; row may already exist with the right number
+          stepNumber: event.stepNumber,
         });
 
         if (redisConnection) {

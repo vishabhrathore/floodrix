@@ -12,6 +12,7 @@
 //    4. errorOut helper simplified — avoids redundant loadSession round-trip.
 // ═══════════════════════════════════════════════════════════════════════════
 import toposort from "toposort";
+import { logger } from "./logger";
 
 import { renderMarkdown, DEFAULT_TEMPLATES } from "./markdown/MarkdownRenderer";
 
@@ -51,7 +52,7 @@ export class WriteSerializer {
   static enqueue<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
     const existing = this.queues.get(sessionId) || Promise.resolve();
     const next = existing.then(task).catch((err) => {
-      console.error(`[WriteSerializer] Task failed for session ${sessionId}:`, err);
+      logger.error({ sessionId, err }, `[WriteSerializer] Task failed for session`);
     });
     this.queues.set(sessionId, next);
 
@@ -81,21 +82,144 @@ const IRREVERSIBLE_NODE_TYPES = new Set<CalcNodeType>([
   "PDF_REPORT",
 ]);
 
+export class WriteBufferManager {
+  private static buffer = new Map<
+    string,
+    {
+      variables: any;
+      currentIndex: number;
+      pendingCount: number;
+      lastFlushTime: number;
+    }
+  >();
+
+  static register(sessionId: string, initialIndex: number, initialVars: any) {
+    this.buffer.set(sessionId, {
+      variables: initialVars,
+      currentIndex: initialIndex,
+      pendingCount: 0,
+      lastFlushTime: Date.now(),
+    });
+  }
+
+  static update(sessionId: string, variables: any, currentIndex: number) {
+    let entry = this.buffer.get(sessionId);
+    if (!entry) {
+      entry = {
+        variables,
+        currentIndex,
+        pendingCount: 0,
+        lastFlushTime: Date.now(),
+      };
+      this.buffer.set(sessionId, entry);
+    }
+    entry.variables = variables;
+    entry.currentIndex = currentIndex;
+    entry.pendingCount += 1;
+  }
+
+  static shouldFlush(sessionId: string, batchSize = 10, intervalMs = 500): boolean {
+    const entry = this.buffer.get(sessionId);
+    if (!entry || entry.pendingCount === 0) return false;
+    return entry.pendingCount >= batchSize || (Date.now() - entry.lastFlushTime) >= intervalMs;
+  }
+
+  static get(sessionId: string) {
+    return this.buffer.get(sessionId);
+  }
+
+  static markFlushed(sessionId: string) {
+    const entry = this.buffer.get(sessionId);
+    if (entry) {
+      entry.pendingCount = 0;
+      entry.lastFlushTime = Date.now();
+    }
+  }
+
+  static remove(sessionId: string) {
+    this.buffer.delete(sessionId);
+  }
+
+  static getAllPending() {
+    return Array.from(this.buffer.entries()).filter(([_, entry]) => entry.pendingCount > 0);
+  }
+}
+
+const GLOBAL_SHUTDOWN_KEY = Symbol.for("nodebase.shutdown_hook_registered");
+
+function registerShutdownHook(repo: SessionRepository) {
+  // Use Node.js global scope to persist the registration state across Next.js HMR reloads,
+  // preventing memory leaks and duplicate process event listeners.
+  if ((global as any)[GLOBAL_SHUTDOWN_KEY]) return;
+  (global as any)[GLOBAL_SHUTDOWN_KEY] = true;
+
+  const flushAll = async () => {
+    const pending = WriteBufferManager.getAllPending();
+    if (pending.length === 0) return;
+
+    logger.info("[ShutdownHook] 🛑 Process received termination signal. Flushing pending buffered writes...");
+
+    const promises = pending.map(([sessId, data]) => {
+      logger.info({ sessId, currentIndex: data.currentIndex }, `[ShutdownHook] Flushing session`);
+      return repo.updateProgress(sessId, data.variables, data.currentIndex)
+        .catch((err) => logger.error({ sessId, err }, `[ShutdownHook] Failed to flush session`));
+    });
+
+    await Promise.all(promises);
+    logger.info("[ShutdownHook] All pending buffered writes flushed successfully.");
+  };
+
+  process.on("SIGTERM", async () => {
+    try {
+      await Promise.race([
+        flushAll(),
+        new Promise((resolve) => setTimeout(resolve, 20000)), // 20 seconds timeout
+      ]);
+    } finally {
+      process.exit(0);
+    }
+  });
+
+  process.on("SIGINT", async () => {
+    try {
+      await Promise.race([
+        flushAll(),
+        new Promise((resolve) => setTimeout(resolve, 5000)), // 5 seconds timeout
+      ]);
+    } finally {
+      process.exit(0);
+    }
+  });
+}
+
 export class WorkflowExecutor {
-  constructor(private readonly deps: WorkflowExecutorDeps) {}
+  constructor(private readonly deps: WorkflowExecutorDeps) {
+    registerShutdownHook(this.deps.repo);
+  }
+
+  get emitter(): ExecutionEventEmitter {
+    return this.deps.emitter;
+  }
 
   // ══════════════════════════════════════════════════════════════════════
   //  PUBLIC ENTRY POINTS
   // ══════════════════════════════════════════════════════════════════════
 
   async startExecution(
-    calcWorkflowId: string,
+    calcWorkflowIdOrWf: string | LoadedWorkflow,
     actorId: string,
     initialValues: VariableMap = {},
     options: ExecutionOptions = {},
     idempotencyKey?: string,
   ): Promise<ExecutionResult> {
-    console.log(`[WorkflowExecutor.startExecution] 🌐 Triggered: workflowId="${calcWorkflowId}" actorId="${actorId}" stepMode=${options.stepMode ?? false} idempotencyKey="${idempotencyKey ?? "none"}"`);
+    const wf = typeof calcWorkflowIdOrWf === "string"
+      ? await this.deps.repo.loadWorkflow(calcWorkflowIdOrWf)
+      : calcWorkflowIdOrWf;
+    const calcWorkflowId = wf.workflow.id;
+    logger.info(
+      { calcWorkflowId, actorId, stepMode: options.stepMode ?? false, idempotencyKey: idempotencyKey ?? "none" },
+      `[WorkflowExecutor.startExecution] 🌐 Triggered execution`
+    );
     if (idempotencyKey) {
       if (redisConnection) {
         try {
@@ -121,11 +245,10 @@ export class WorkflowExecutor {
             )
             .catch(() => {});
         }
-        return this.continueExecution(existing.id, options);
+        return this._continueExecutionWithSession(existing, options);
       }
     }
 
-    const wf = await this.deps.repo.loadWorkflow(calcWorkflowId);
     const executionOrder = resolveExecutionOrder(wf);
 
     const variables: VariableMap = {};
@@ -144,6 +267,8 @@ export class WorkflowExecutor {
       idempotencyKey,
       parentSessionId: options.parentSessionId,
       ancestorWorkflowChain: options.ancestorWorkflowChain,
+      liveUpdates: options.liveUpdates ?? false,
+      runStrategy: options.runStrategy,
     });
 
     if (idempotencyKey && redisConnection) {
@@ -152,15 +277,8 @@ export class WorkflowExecutor {
         .catch(() => {});
     }
 
-    if (options.liveUpdates) {
-      await this.deps.repo.createPendingNodeExecutions(
-        session.id,
-        executionOrder,
-      );
-    }
-
-    // Emit session:started in background without awaiting
-    this.deps.emitter.emit({
+    // Emit session:started and await to ensure listener is fully ready
+    await this.deps.emitter.emit({
       type: "session:started",
       sessionId: session.id,
       workflowId: calcWorkflowId,
@@ -169,7 +287,7 @@ export class WorkflowExecutor {
       executionOrder,
     }).catch(() => {});
 
-    return this.continueExecution(session.id, options);
+    return this._continueExecutionWithSession(session, options);
   }
 
   async resumeWithInput(
@@ -178,7 +296,10 @@ export class WorkflowExecutor {
     userInput: Record<string, unknown>,
     options: ExecutionOptions = {},
   ): Promise<ExecutionResult> {
-    console.log(`[WorkflowExecutor.resumeWithInput] ⚡ Resuming: sessionId="${sessionId}" nodeId="${nodeId}" inputKeys=${JSON.stringify(Object.keys(userInput))}`);
+    logger.info(
+      { sessionId, nodeId, inputKeys: Object.keys(userInput) },
+      `[WorkflowExecutor.resumeWithInput] ⚡ Resuming session`
+    );
     const session = await this.deps.repo.loadSession(sessionId);
     if (session.status !== "PAUSED") {
       throw new Error(
@@ -203,25 +324,22 @@ export class WorkflowExecutor {
       );
     }
 
-    // Synchronously update Redis cache in 0ms
+    const inputSnapshot = session.inputSnapshot
+      ? { ...session.inputSnapshot, ...userInput }
+      : userInput;
+    const updatedSession: LoadedSession = {
+      ...session,
+      status: "RUNNING",
+      currentNodeId: null,
+      currentIndex: currentIdx + 1,
+      variables,
+      pauseReason: null,
+      inputSnapshot,
+    };
+
+    // Synchronously update Redis cache in 0ms for instant polling response
     if (redisConnection) {
       try {
-        const inputSnapshot = session.inputSnapshot
-          ? { ...session.inputSnapshot, ...userInput }
-          : userInput;
-        const updatedSession: LoadedSession = {
-          ...session,
-          status: "RUNNING",
-          currentNodeId: null,
-          currentIndex: currentIdx + 1,
-          variables,
-          pauseReason: null,
-          inputSnapshot,
-        };
-        redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`session:${sessionId}:status`, 3600, "RUNNING").catch(() => {});
-        
         // Also update executions cache to mark this node COMPLETED in Redis
         let nodeExecs: any[] = [];
         const cached = await redisConnection.get(`sess:${sessionId}:executions`);
@@ -233,29 +351,27 @@ export class WorkflowExecutor {
       } catch {}
     }
 
-    // Run slow database updates fully asynchronously in the background
-    WriteSerializer.enqueue(sessionId, () =>
-      Promise.all([
-        this.deps.repo.updateNodeCompleted({
-          sessionId,
-          nodeId,
-          outputs: userInput as VariableMap,
-          result: {
-            userInput,
-            providedAt: this.deps.clock.nowDate().toISOString(),
-          },
-          durationMs: 0,
-        }),
-        this.deps.repo.resumeSession({
-          sessionId,
-          userInput,
-          nextIndex: currentIdx + 1,
-          variables,
-        }),
-      ])
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] resumeWithInput failed:`, err));
+    // Synchronously execute DB updates before calling _continueExecutionWithSession
+    // to prevent race conditions during execution lock acquisition.
+    await this.deps.repo.updateNodeCompleted({
+      sessionId,
+      nodeId,
+      outputs: userInput as VariableMap,
+      result: {
+        userInput,
+        providedAt: this.deps.clock.nowDate().toISOString(),
+      },
+      durationMs: 0,
+    });
+    await this.deps.repo.resumeSession({
+      sessionId,
+      userInput,
+      nextIndex: currentIdx + 1,
+      variables,
+    });
 
-    return this.continueExecution(sessionId, options);
+    const reloadedSession = await this.deps.repo.loadSession(sessionId);
+    return this._continueExecutionWithSession(reloadedSession, options);
   }
 
   /**
@@ -267,7 +383,7 @@ export class WorkflowExecutor {
     sessionId: string,
     options: ExecutionOptions = {},
   ): Promise<ExecutionResult> {
-    console.log(`[WorkflowExecutor.stepForward] ➡️ Advancing: sessionId="${sessionId}"`);
+    logger.info({ sessionId }, `[WorkflowExecutor.stepForward] ➡️ Advancing session`);
     const session = await this.deps.repo.loadSession(sessionId);
     if (session.status !== "PAUSED") {
       throw new Error(
@@ -281,34 +397,28 @@ export class WorkflowExecutor {
       );
     }
 
-    // Synchronously update Redis cache in 0ms
-    if (redisConnection) {
-      try {
-        const updatedSession: LoadedSession = {
-          ...session,
-          status: "RUNNING",
-          currentNodeId: null,
-          currentIndex: session.currentIndex + 1,
-          variables: session.variables,
-          pauseReason: null,
-        };
-        redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`session:${sessionId}:status`, 3600, "RUNNING").catch(() => {});
-      } catch {}
-    }
+    const updatedSession: LoadedSession = {
+      ...session,
+      status: "RUNNING",
+      currentNodeId: null,
+      currentIndex: session.currentIndex + 1,
+      variables: session.variables,
+      pauseReason: null,
+    };
 
-    // Run slow database updates fully asynchronously in the background
-    WriteSerializer.enqueue(sessionId, () =>
-      this.deps.repo.resumeSession({
-        sessionId,
-        userInput: {},
-        nextIndex: session.currentIndex + 1,
-        variables: session.variables,
-      })
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] stepForward failed:`, err));
 
-    return this.continueExecution(sessionId, { ...options, stepMode: true });
+
+    // Synchronously execute DB updates before calling _continueExecutionWithSession
+    // to prevent race conditions during execution lock acquisition.
+    await this.deps.repo.resumeSession({
+      sessionId,
+      userInput: {},
+      nextIndex: session.currentIndex + 1,
+      variables: session.variables,
+    });
+
+    const reloadedSession = await this.deps.repo.loadSession(sessionId);
+    return this._continueExecutionWithSession(reloadedSession, { ...options, stepMode: true });
   }
 
   /**
@@ -328,7 +438,7 @@ export class WorkflowExecutor {
     sessionId: string,
     targetNodeId: string,
   ): Promise<ExecutionResult> {
-    console.log(`[WorkflowExecutor.stepBack] ↩️ Rewinding: sessionId="${sessionId}" targetNodeId="${targetNodeId}"`);
+    logger.info({ sessionId, targetNodeId }, `[WorkflowExecutor.stepBack] ↩️ Rewinding session`);
     const session = await this.deps.repo.loadSession(sessionId);
     if (session.status !== "PAUSED") {
       throw new Error(
@@ -360,16 +470,28 @@ export class WorkflowExecutor {
       }
     }
 
-    // Mark all node executions from target onwards as invalidated — we re-run them.
-    // We do this by marking them as "PENDING" again (overwriting COMPLETED status),
-    // but only in liveUpdates mode. In batch mode, the node execution log will
-    // have duplicate entries; the UI should show the latest.
+    // Reset all node executions from target onwards back to PENDING.
     const nodesToReset = session.executionOrder.slice(targetIndex);
-    for (const nid of nodesToReset) {
-      await this.deps.repo.updateNodeSkipped(sessionId, nid);
+    await this.deps.repo.resetNodeExecutions(sessionId, nodesToReset);
+
+    // Synchronize the node executions cache in Redis to keep the UI in sync immediately
+    if (redisConnection) {
+      try {
+        const cacheKey = `sess:${sessionId}:executions`;
+        const cached = await redisConnection.get(cacheKey);
+        if (cached) {
+          const currentExecs = JSON.parse(cached);
+          for (const e of currentExecs) {
+            if (nodesToReset.includes(e.calcNodeId)) {
+              e.status = "PENDING";
+            }
+          }
+          await redisConnection.setex(cacheKey, 3600, JSON.stringify(currentExecs));
+        }
+      } catch {}
     }
 
-    // Resume session at target index
+    // Resume session at target index synchronously to prevent execution lock race
     await this.deps.repo.resumeSession({
       sessionId,
       userInput: {},
@@ -402,9 +524,33 @@ export class WorkflowExecutor {
     sessionId: string,
     options: ExecutionOptions = {},
   ): Promise<ExecutionResult> {
-    console.log(`[WorkflowExecutor.continueExecution] 🚀 Execution loop entered: sessionId="${sessionId}"`);
     const session = await this.deps.repo.loadSession(sessionId);
-    const wf = await this.deps.repo.loadWorkflow(session.calcWorkflowId);
+    return this._continueExecutionWithSession(session, options);
+  }
+
+  private async _continueExecutionWithSession(
+    session: LoadedSession,
+    options: ExecutionOptions = {},
+  ): Promise<ExecutionResult> {
+    const sessionId = session.id;
+    const locked = await this.deps.repo.acquireExecutionLock(session.id, session.lockVersion);
+    if (!locked) {
+      throw new Error(
+        `Concurrency Lock Conflict: Session ${session.id} is already being executed by another process.`
+      );
+    }
+
+    if (options.liveUpdates) {
+      WriteBufferManager.register(sessionId, session.currentIndex, session.variables);
+    }
+
+    try {
+      const wf = await this.deps.repo.loadWorkflow(session.calcWorkflowId);
+    
+    // Immutability protection (shallow freeze on core structures)
+    Object.freeze(wf);
+    Object.freeze(wf.nodes);
+    wf.nodes.forEach((n) => Object.freeze(n));
 
     const skipSet = new Set(session.metadata.skippedNodes);
     const stepMode = session.metadata.stepMode || (options.stepMode ?? false);
@@ -455,7 +601,10 @@ export class WorkflowExecutor {
       const nodeId = session.executionOrder[currentIndex];
       const node = nodeMap.get(nodeId);
       if (node) {
-        console.log(`[WorkflowExecutor.continueExecution] 📝 [Node ${currentIndex + 1}/${totalSteps}] Evaluating: nodeId="${nodeId}" type="${node.type}" label="${node.label}"`);
+        logger.info(
+          { sessionId, nodeId, type: node.type, label: node.label, currentIndex, totalSteps },
+          `[WorkflowExecutor.continueExecution] 📝 Evaluating node`
+        );
       }
 
       if (!node) {
@@ -468,12 +617,17 @@ export class WorkflowExecutor {
         if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
 
-        this.deps.emitter.emit({
+        await this.deps.emitter.emit({
           type: "node:skipped",
           sessionId,
           nodeId,
           reason: "decision_branch",
         }).catch(() => {});
+
+        if (options.liveUpdates) {
+          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+        }
+
         currentIndex++;
         continue;
       }
@@ -483,12 +637,17 @@ export class WorkflowExecutor {
         if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
 
-        this.deps.emitter.emit({
+        await this.deps.emitter.emit({
           type: "node:skipped",
           sessionId,
           nodeId,
           reason: "structural",
         }).catch(() => {});
+
+        if (options.liveUpdates) {
+          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+        }
+
         currentIndex++;
         continue;
       }
@@ -498,6 +657,64 @@ export class WorkflowExecutor {
         node.type !== "SUBWORKFLOW" &&
         !options.isBackgroundRun
       ) {
+        if (options.inlineAsync) {
+          logger.info(
+            { sessionId, nodeId, type: node.type },
+            `[WorkflowExecutor.continueExecution] 🚀 Hitting async node in inlineAsync mode, initiating background transition`
+          );
+
+          await syncNodeExecsToRedis();
+
+          // Synchronously update Redis cache state in 0ms for instant API polling
+          if (redisConnection) {
+            try {
+              const updatedSession: LoadedSession = {
+                ...session,
+                status: "PAUSED",
+                currentNodeId: nodeId,
+                currentIndex,
+                variables: variableStore.snapshot(),
+                pauseReason: "background_transition",
+              };
+              redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
+              redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
+              redisConnection.setex(`session:${sessionId}:status`, 3600, "PAUSED").catch(() => {});
+            } catch {}
+          }
+
+          // Schedule slow database updates fully asynchronously in the background
+          WriteSerializer.enqueue(sessionId, () =>
+            Promise.all([
+              this.deps.emitter.emit({
+                type: "session:paused",
+                sessionId,
+                workflowId: session.calcWorkflowId,
+                nodeId,
+                pauseReason: "background_transition",
+                skippedNodes: [...skipSet],
+                stepMode: false,
+              }),
+              this.deps.repo.pauseSession({
+                sessionId,
+                nodeId,
+                currentIndex,
+                variables: variableStore.snapshot(),
+                pauseReason: "background_transition",
+                skippedNodes: [...skipSet],
+                stepMode: false,
+              }),
+            ])
+          ).catch((err) => console.error(`[BACKGROUND_WRITE] background transition failed:`, err));
+
+          return {
+            sessionId,
+            status: "PAUSED",
+            variables: variableStore.snapshot(),
+            pauseReason: "background_transition",
+            pausedNode: null,
+          };
+        }
+
         const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
         if (idx !== -1) nodeExecs[idx].status = "ERRORED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "ERRORED" });
@@ -514,6 +731,7 @@ export class WorkflowExecutor {
           new Error(
             `Async node type ${node.type} requires Chunk 4 (Inngest) to execute`,
           ),
+          options,
         );
       }
 
@@ -523,19 +741,24 @@ export class WorkflowExecutor {
         if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
 
-        this.deps.emitter.emit({
+        await this.deps.emitter.emit({
           type: "node:skipped",
           sessionId,
           nodeId,
           reason: "no_handler",
         }).catch(() => {});
+
+        if (options.liveUpdates) {
+          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+        }
+
         currentIndex++;
         continue;
       }
 
       const startTime = this.deps.clock.now();
 
-      this.deps.emitter.emit({
+      await this.deps.emitter.emit({
         type: "node:started",
         sessionId,
         nodeId,
@@ -569,15 +792,6 @@ export class WorkflowExecutor {
 
         await syncNodeExecsToRedis();
 
-        this.deps.emitter.emit({
-          type: "node:errored",
-          sessionId,
-          nodeId,
-          nodeLabel: node.label,
-          error: outcome.error,
-          errorType: classifyError(outcome.error),
-          durationMs,
-        }).catch(() => {});
         return this.errorOut(
           sessionId,
           session,
@@ -586,6 +800,8 @@ export class WorkflowExecutor {
           currentIndex,
           variableStore,
           outcome.error,
+          options,
+          durationMs,
         );
       }
 
@@ -594,19 +810,27 @@ export class WorkflowExecutor {
         if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
 
-        this.deps.emitter.emit({
+        await this.deps.emitter.emit({
           type: "node:skipped",
           sessionId,
           nodeId,
           reason: "no_handler",
         }).catch(() => {});
+
+        if (options.liveUpdates) {
+          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+        }
+
         currentIndex++;
         continue;
       }
 
       // ── paused (awaiting input / validation error) ───────────
       if (outcome.kind === "paused") {
-        console.log(`[WorkflowExecutor.continueExecution] ⏸️ Session paused: sessionId="${sessionId}" nodeId="${nodeId}" type="${node.type}" label="${node.label}" reason="${outcome.reason}"`);
+        logger.info(
+          { sessionId, nodeId, type: node.type, label: node.label, reason: outcome.reason },
+          `[WorkflowExecutor.continueExecution] ⏸️ Session paused`
+        );
         const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
         if (idx !== -1) nodeExecs[idx].status = "WAITING";
         else nodeExecs.push({ calcNodeId: nodeId, status: "WAITING" });
@@ -639,6 +863,7 @@ export class WorkflowExecutor {
               nodeId,
               nodeLabel: node.label,
               pauseReason: outcome.reason,
+              stepNumber: currentIndex,
             }),
             this.deps.emitter.emit({
               type: "session:paused",
@@ -686,7 +911,7 @@ export class WorkflowExecutor {
         for (const id of outcome.sideEffects.skipNodes) skipSet.add(id);
       }
 
-      this.deps.emitter.emit({
+      await this.deps.emitter.emit({
         type: "node:completed",
         sessionId,
         nodeId,
@@ -703,11 +928,21 @@ export class WorkflowExecutor {
       else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
 
       if (options.liveUpdates) {
-        await this.deps.repo.updateProgress(
+        await this.deps.repo.updateNodeCompleted({
           sessionId,
-          variableStore.snapshot(),
-          currentIndex + 1,
-        );
+          nodeId,
+          outputs: outcome.outputs,
+          result: outcome.result,
+          durationMs,
+        });
+        WriteBufferManager.update(sessionId, variableStore.snapshot(), currentIndex + 1);
+        if (WriteBufferManager.shouldFlush(sessionId)) {
+          const buffered = WriteBufferManager.get(sessionId);
+          if (buffered) {
+            await this.deps.repo.updateProgress(sessionId, buffered.variables, buffered.currentIndex);
+            WriteBufferManager.markFlushed(sessionId);
+          }
+        }
       }
 
       // ── CHUNK 3: stepMode pause after each completed node ────
@@ -723,7 +958,10 @@ export class WorkflowExecutor {
           totalSteps,
         };
 
-        console.log(`[WorkflowExecutor.continueExecution] ⏸️ stepMode Pause: sessionId="${sessionId}" nodeId="${nodeId}" type="${node.type}" label="${node.label}" stepNumber=${currentIndex}`);
+        logger.info(
+          { sessionId, nodeId, type: node.type, label: node.label, stepNumber: currentIndex },
+          `[WorkflowExecutor.continueExecution] ⏸️ stepMode Pause`
+        );
         await syncNodeExecsToRedis();
 
         // Synchronously update Redis cache state in 0ms
@@ -796,7 +1034,7 @@ export class WorkflowExecutor {
     }
 
     // ── all done ──────────────────────────────────────────────────
-    console.log(`[WorkflowExecutor.continueExecution] 🎉 Session Completed: sessionId="${sessionId}" status="COMPLETED"`);
+    logger.info({ sessionId, status: "COMPLETED" }, `[WorkflowExecutor.continueExecution] 🎉 Session Completed`);
     const finalSnapshot = variableStore.snapshot();
     const approxDuration = session.startedAt
       ? this.deps.clock.nowDate().getTime() - session.startedAt.getTime()
@@ -845,6 +1083,14 @@ export class WorkflowExecutor {
       finalSnapshot,
       approxDuration,
     );
+    } finally {
+      const finalData = WriteBufferManager.get(sessionId);
+      if (finalData && finalData.pendingCount > 0) {
+        await this.deps.repo.updateProgress(sessionId, finalData.variables, finalData.currentIndex)
+          .catch((err) => console.error(`[WriteBuffer] Final flush failed:`, err));
+      }
+      WriteBufferManager.remove(sessionId);
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -891,8 +1137,21 @@ export class WorkflowExecutor {
     currentIndex: number,
     store: DefaultVariableStore,
     error: Error,
+    options?: ExecutionOptions,
+    durationMs: number = 0,
   ): Promise<ExecutionResult> {
     const errorType = classifyError(error);
+
+    // Emit node:errored event so that listeners (like DatabaseListener) can process it
+    await this.deps.emitter.emit({
+      type: "node:errored",
+      sessionId,
+      nodeId: node.id,
+      nodeLabel: node.label,
+      error,
+      errorType,
+      durationMs,
+    }).catch(() => {});
 
     // Synchronously update Redis cache state in 0ms
     if (redisConnection) {
@@ -920,6 +1179,15 @@ export class WorkflowExecutor {
           errorType,
           variables: store.snapshot(),
         }),
+        options?.liveUpdates
+          ? this.deps.repo.updateNodeErrored({
+              sessionId,
+              nodeId: node.id,
+              message: error.message,
+              errorType,
+              durationMs,
+            })
+          : Promise.resolve(),
         this.deps.emitter.emit({
           type: "session:errored",
           sessionId,
@@ -1096,7 +1364,7 @@ export class WorkflowExecutor {
   }
 }
 
-function resolveExecutionOrder(wf: LoadedWorkflow): string[] {
+export function resolveExecutionOrder(wf: LoadedWorkflow): string[] {
   const allNodeIds = wf.nodes.map((n) => n.id);
   const pairs: [string, string][] = wf.edges.map((e) => [
     e.sourceNodeId,

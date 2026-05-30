@@ -127,6 +127,7 @@
 import type { PrismaClient } from "@/generated/prisma";
 
 import { SessionRepository } from "./SessionRepository";
+import { logger } from "./logger";
 import type { Clock, PollResult, VariableSnapshot } from "./types";
 
 /** How often the client should poll while a session is non-terminal. */
@@ -143,6 +144,13 @@ export class SessionPoller {
   ) {}
 
   async poll(sessionId: string): Promise<PollResult> {
+    // Self-healing stuck sessions recovery triggered asynchronously
+    this.repo.recoverStuckSessions().then((count) => {
+      if (count > 0) {
+        logger.info({ count }, `[SessionRecoveryJob] 🩹 Recovered stuck session(s) back to PAUSED state.`);
+      }
+    }).catch((err) => logger.error({ err }, "[SessionRecoveryJob] Failed to recover stuck sessions"));
+
     const session = await this.repo.loadSession(sessionId);
     const totalSteps = session.executionOrder.length;
 

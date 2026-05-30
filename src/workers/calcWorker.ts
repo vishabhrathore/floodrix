@@ -72,12 +72,12 @@ if (redisConnection) {
           wf.organizationId,
         );
         const executor = createWorkflowExecutor(calcCtx, {
-          liveUpdates: true,
+          liveUpdates: false,
         });
 
         const result = await executor.continueExecution(sessionId, {
           isBackgroundRun: true,
-          liveUpdates: true,
+          liveUpdates: false,
         });
 
         // If we hit ANOTHER async node, re-enqueue

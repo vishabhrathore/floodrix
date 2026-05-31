@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -93,6 +94,7 @@ interface FormulaConfigProps {
     showVars?: { key: string; label: string; unit: string }[];
     registry_inputs?: RegistryVariable[];
     registry_output?: RegistryVariable;
+    use_worker?: boolean;
   };
   availableVariables?: {
     key: string;
@@ -120,6 +122,7 @@ export function FormulaConfig({
   const [precision, setPrecision] = useState(config.result_precision ?? 3);
   const [reference, setReference] = useState(config.reference ?? "");
   const [registryId, setRegistryId] = useState(config.registry_id ?? "");
+  const [useWorker, setUseWorker] = useState(config.use_worker ?? false);
 
   const [registryInputs, setRegistryInputs] = useState<RegistryVariable[]>(
     config.registry_inputs ?? [],
@@ -176,6 +179,7 @@ export function FormulaConfig({
       result_variable: resultVar,
       result_unit: resultUnit,
       result_precision: precision,
+      use_worker: useWorker,
       reference,
       variable_bindings: effectiveBindings,
       registry_inputs: source === "registry" ? registryInputs : undefined,
@@ -200,6 +204,7 @@ export function FormulaConfig({
     resultVar,
     resultUnit,
     precision,
+    useWorker,
     reference,
     effectiveBindings,
     requiredVars,
@@ -466,6 +471,22 @@ export function FormulaConfig({
                 className="h-8 text-xs"
               />
             </ConfigField>
+          </div>
+          <div className="mt-4 rounded-lg border border-slate-200/60 bg-slate-50/50 p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col pr-2">
+                <span className="text-[11px] font-semibold text-slate-700">
+                  Background Heavy Task
+                </span>
+                <span className="text-[9px] text-slate-400">
+                  Execute in isolated background worker sandbox
+                </span>
+              </div>
+              <Switch
+                checked={useWorker}
+                onCheckedChange={setUseWorker}
+              />
+            </div>
           </div>
         </ConfigSection>
 

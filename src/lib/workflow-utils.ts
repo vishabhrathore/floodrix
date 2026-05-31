@@ -1,8 +1,9 @@
 import toposort from "toposort";
 
+import { Prisma } from "@prisma/client";
 import { Connection, Node } from "@/generated/prisma";
-
-import { addJob, workflowQueue } from "./bullmq";
+import prisma from "./db";
+import { QueueProducer } from "./queue-producers";
 
 export const topologicalSort = (
   nodes: Node[],
@@ -50,9 +51,22 @@ export const topologicalSort = (
   return sortedNodeIds.map((id) => nodeMap.get(id)!).filter(Boolean);
 };
 
-export const sendWorkflowExecution = async (data: {
-  workflowId: string;
-  [key: string]: any;
-}) => {
-  return addJob(workflowQueue, "execute-workflow", data);
+export const sendWorkflowExecution = async (
+  data: {
+    workflowId: string;
+    [key: string]: any;
+  },
+  txParam?: Prisma.TransactionClient,
+) => {
+  const runner = async (tx: Prisma.TransactionClient) => {
+    return QueueProducer.dispatchWorkflowExecution(tx, {
+      workflowId: data.workflowId,
+      initialData: data.initialData,
+    });
+  };
+
+  if (txParam) {
+    return runner(txParam);
+  }
+  return prisma.$transaction(runner);
 };

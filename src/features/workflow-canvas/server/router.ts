@@ -10,6 +10,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import { publishWorkflow, saveCanvasOptimized } from "../engine/canvas-save";
 import { loadWorkflowForExecution } from "./canvas-queries";
+import { invalidateWorkflowLoadedCache } from "../engine/registry-resolver";
 
 // ─── Input schemas ─────────────────────────────────────────────────────────
 
@@ -296,7 +297,7 @@ export const calcWorkflowCanvasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await assertWorkflowAccess(input.workflowId, ctx.auth.user.id);
       const { workflowId, tags, ...rest } = input;
-      return prisma.calcWorkflow.update({
+      const res = await prisma.calcWorkflow.update({
         where: { id: workflowId },
         data: {
           ...rest,
@@ -306,6 +307,8 @@ export const calcWorkflowCanvasRouter = createTRPCRouter({
         },
         select: { id: true, name: true, updatedAt: true },
       });
+      await invalidateWorkflowLoadedCache(workflowId);
+      return res;
     }),
 
   saveCanvas: protectedProcedure
@@ -328,6 +331,7 @@ export const calcWorkflowCanvasRouter = createTRPCRouter({
         nodes: input.nodes,
         edges: input.edges,
       });
+      await invalidateWorkflowLoadedCache(input.workflowId);
       return { success: true, savedAt: new Date().toISOString() };
     }),
 
@@ -476,6 +480,7 @@ export const calcWorkflowCanvasRouter = createTRPCRouter({
       });
       if (updated.count === 0)
         throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+      await invalidateWorkflowLoadedCache(input.workflowId);
       return { success: true };
     }),
 

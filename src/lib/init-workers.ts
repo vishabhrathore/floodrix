@@ -18,6 +18,7 @@ export function initWorkers() {
   require("@/workers/calcWorker");
   require("@/workers/sweeperWorker");
   require("@/workers/batchWorker");
+  require("@/workers/outboxRelayer");
 
   console.log("✅ Background workers initialized");
 }

@@ -50,7 +50,7 @@ export interface WorkerTimeoutOptions {
   handlerType?: string;
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 
 /**
  * Shape of messages exchanged with the worker. Kept small so serialization
@@ -155,7 +155,5 @@ export class WorkerPoolTimeout {
  * A simpler fallback: inline the worker code via `new Worker(new URL('./worker-mathjs-runner.js', import.meta.url))`.
  */
 function resolveWorkerScriptPath(): string {
-  // __dirname works in CommonJS. For ESM you'd use import.meta.url instead.
-  // Next.js compiles TS to CJS server-side so __dirname is safe here.
-  return join(__dirname, "worker-mathjs-runner.js");
+  return join(process.cwd(), "src/server/engine/worker-mathjs-runner.js");
 }

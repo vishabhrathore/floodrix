@@ -27,9 +27,104 @@ if (parentPort) {
       // Use a limited math instance. Not full sandboxing (a determined
       // attacker could still access globals) but blocks the obvious
       // dangerous surface.
-      // Use a limited math instance.
       const math = create(all);
       const internalEvaluate = math.evaluate;
+
+      // Safe memory-safeguard wrappers for array/matrix creation functions
+      const origRandom = math.random;
+      const origOnes = math.ones;
+      const origZeros = math.zeros;
+      const origIdentity = math.identity;
+      const origRange = math.range;
+
+      const MAX_ELEMENTS = 25000000; // Limit to 1 million elements (e.g., 1000x1000 matrix)
+
+      function checkDimensions(args) {
+        let size = 1;
+        let dims = [];
+
+        if (Array.isArray(args)) {
+          dims = args;
+        } else if (args && typeof args === "object" && typeof args.toArray === "function") {
+          dims = args.toArray();
+        } else if (typeof args === "number") {
+          dims = [args];
+        } else {
+          return;
+        }
+
+        const flatDims = [];
+        function extract(val) {
+          if (Array.isArray(val)) {
+            val.forEach(extract);
+          } else if (typeof val === "number") {
+            flatDims.push(val);
+          }
+        }
+        extract(dims);
+
+        if (flatDims.length === 0) return;
+
+        for (const d of flatDims) {
+          if (d < 0) throw new Error("Dimensions must be non-negative");
+          size *= d;
+        }
+
+        if (size > MAX_ELEMENTS) {
+          throw new Error(`Matrix size (${size.toLocaleString()}) exceeds the limit of ${MAX_ELEMENTS.toLocaleString()} elements.`);
+        }
+      }
+
+      function validateMatrixCreationArgs(args) {
+        if (args.length > 0) {
+          const first = args[0];
+          if (Array.isArray(first) || (first && typeof first === "object" && first.isMatrix)) {
+            checkDimensions(first);
+            return;
+          }
+        }
+        const allNumbers = args.every(x => typeof x === "number");
+        if (allNumbers && args.length > 0) {
+          let size = 1;
+          for (const d of args) {
+            size *= d;
+          }
+          if (size > MAX_ELEMENTS) {
+            throw new Error(`Matrix size exceeds limit of ${MAX_ELEMENTS.toLocaleString()} elements.`);
+          }
+        }
+      }
+
+      const safeRandom = function (...args) {
+        validateMatrixCreationArgs(args);
+        return origRandom.apply(math, args);
+      };
+
+      const safeOnes = function (...args) {
+        validateMatrixCreationArgs(args);
+        return origOnes.apply(math, args);
+      };
+
+      const safeZeros = function (...args) {
+        validateMatrixCreationArgs(args);
+        return origZeros.apply(math, args);
+      };
+
+      const safeIdentity = function (...args) {
+        validateMatrixCreationArgs(args);
+        return origIdentity.apply(math, args);
+      };
+
+      const safeRange = function (start, end, step = 1) {
+        if (typeof start === "number" && typeof end === "number" && typeof step === "number") {
+          if (step === 0) throw new Error("Step cannot be zero");
+          const count = Math.abs((end - start) / step);
+          if (count > MAX_ELEMENTS) {
+            throw new Error(`Range size (${Math.round(count).toLocaleString()}) exceeds the limit of ${MAX_ELEMENTS.toLocaleString()} elements.`);
+          }
+        }
+        return origRange.apply(math, arguments);
+      };
 
       math.import(
         {
@@ -39,9 +134,11 @@ if (parentPort) {
           createUnit: function () {
             throw new Error("createUnit disabled");
           },
-          // We don't override evaluate/parse/simplify here because we need
-          // them to perform the calculation. Security is handled by the
-          // validator in the main thread before the worker is spawned.
+          random: safeRandom,
+          ones: safeOnes,
+          zeros: safeZeros,
+          identity: safeIdentity,
+          range: safeRange,
         },
         { override: true },
       );

@@ -6,9 +6,10 @@
 //  The classification mistake (treating it as background) is from the
 //  legacy code; the mental model fixes it and this handler enforces it.
 //
-//  All evaluation goes through safeEvaluateMultiLine which has timeout
-//  enforcement and proper line-ending normalization.
+//  All evaluation goes through safeEvaluateMultiLine or WorkerPoolTimeout.
 // ═══════════════════════════════════════════════════════════════════════════
+import { safeEvaluateMultiLine } from "@/features/workflow-canvas/engine/formula-validator";
+
 import type { NodeHandler } from "../NodeHandler";
 import { toErroredOutcome } from "../NodeHandler";
 import { WorkerPoolTimeout } from "../WorkerPoolTimeout";
@@ -18,11 +19,12 @@ interface CustomCodeConfig {
   code?: string;
   output_variables?: string[];
   timeoutMs?: number;
+  use_worker?: boolean;
 }
 
 export class CustomCodeHandler implements NodeHandler {
   readonly type = "CUSTOM_CODE" as const;
-  readonly timeoutMs = 10_000;
+  readonly timeoutMs = 120_000;
 
   async execute(ctx: ExecutionContext): Promise<NodeOutcome> {
     try {
@@ -52,13 +54,21 @@ export class CustomCodeHandler implements NodeHandler {
         if (typeof v === "number" || typeof v === "boolean") scope[k] = v;
       }
 
-      // CHUNK 5: Execute in a worker pool for hard-cancellation support.
-      // This prevents an infinite loop in custom code from pinning the event loop.
-      const pool = new WorkerPoolTimeout();
-      const outputs = (await pool.runMathEvaluation(code, scope, {
-        timeoutMs: config.timeoutMs ?? this.timeoutMs,
-        handlerType: "CUSTOM_CODE",
-      })) as Record<string, number>;
+      let outputs: Record<string, number>;
+
+      if (config.use_worker) {
+        // Run in isolated Worker Thread (Background Heavy Task)
+        const pool = new WorkerPoolTimeout();
+        outputs = (await pool.runMathEvaluation(code, scope, {
+          timeoutMs: config.timeoutMs ?? this.timeoutMs,
+          handlerType: "CUSTOM_CODE",
+        })) as Record<string, number>;
+      } else {
+        // Run Synchronously on the Main Thread (Fast 2ms Simple Code)
+        outputs = safeEvaluateMultiLine(code, scope, outputVarNames, {
+          timeoutMs: config.timeoutMs ?? this.timeoutMs,
+        });
+      }
 
       // Apply outputs to the variable store
       const trackedOutputs: VariableMap = {};
@@ -67,9 +77,7 @@ export class CustomCodeHandler implements NodeHandler {
         trackedOutputs[k] = v;
       }
 
-      // Warn if any declared outputs weren't produced (validation already covers
-      // this at config time, but it can happen if users edit the code after
-      // declaring outputs)
+      // Warn if any declared outputs weren't produced
       const missing = outputVarNames.filter((v) => outputs[v] === undefined);
 
       ctx.variables.trackNodeOutput(

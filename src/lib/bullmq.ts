@@ -1,26 +1,22 @@
-import { type ConnectionOptions, type Job, Queue, Worker } from "bullmq";
-import Redis from "ioredis";
+import { type Job, Queue, Worker } from "bullmq";
 
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-export const BYPASS_REDIS = false;
+import { BYPASS_REDIS, redisQueueClient } from "./redis";
 
-let connection: Redis | undefined;
+// Re-export for backwards compatibility with existing workers
+export const redisConnection = redisQueueClient;
+export { BYPASS_REDIS };
 
-if (!BYPASS_REDIS) {
-  connection = new Redis(REDIS_URL, {
-    maxRetriesPerRequest: null,
-  });
-}
-
-export const redisConnection = connection;
-
-// Define Queues
-export const workflowQueue = connection
-  ? new Queue("workflow-execution", { connection })
+// Define Queues (using DB 2 for queues, configured in redis.ts)
+export const workflowQueue = redisConnection
+  ? new Queue("workflow-execution", { connection: redisConnection })
   : null;
 
-export const calcQueue = connection
-  ? new Queue("calc-execution", { connection })
+export const calcQueue = redisConnection
+  ? new Queue("calc-execution", { connection: redisConnection })
+  : null;
+
+export const batchQueue = redisConnection
+  ? new Queue("batch-process", { connection: redisConnection })
   : null;
 
 /**

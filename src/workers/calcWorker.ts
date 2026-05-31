@@ -1,7 +1,8 @@
 import { type Job, Worker } from "bullmq";
 
-import { addJob, calcQueue, redisConnection } from "@/lib/bullmq";
+import { redisConnection } from "@/lib/bullmq";
 import prisma from "@/lib/db";
+import { QueueProducer } from "@/lib/queue-producers";
 import { CalcContext, createWorkflowExecutor } from "@/server/engine";
 
 if (redisConnection) {
@@ -13,10 +14,11 @@ if (redisConnection) {
 
       if (type === "calc/session.start-background") {
         console.log(`[calcWorker] 📬 Job: "calc/session.start-background" received for sessionId="${sessionId}"`);
-        await addJob(calcQueue, "resume", {
-          sessionId,
-          reason: "background_batch",
-          type: "calc/session.resume",
+        await prisma.$transaction(async (tx) => {
+          await QueueProducer.dispatchCalcResume(tx, {
+            sessionId,
+            reason: "background_batch",
+          });
         });
         return { started: true };
       }
@@ -80,15 +82,16 @@ if (redisConnection) {
           liveUpdates: false,
         });
 
-        // If we hit ANOTHER async node, re-enqueue
+        // If we hit ANOTHER async node, re-enqueue via Outbox Pattern
         if (
           result.status === "PAUSED" &&
           result.pauseReason === "background_transition"
         ) {
-          await addJob(calcQueue, "resume", {
-            sessionId,
-            reason: "chained_async",
-            type: "calc/session.resume",
+          await prisma.$transaction(async (tx) => {
+            await QueueProducer.dispatchCalcResume(tx, {
+              sessionId,
+              reason: "chained_async",
+            });
           });
           return { status: "PAUSED", chainedToNextAsync: true };
         }

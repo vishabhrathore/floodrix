@@ -67,8 +67,12 @@ const variableSchema = z.object({
   displayLabel: z.string().min(1, "Label required"),
   unit: z.string().optional(),
   description: z.string().optional(),
-  dataType: z.enum(["NUMBER", "STRING", "BOOLEAN", "ARRAY", "OBJECT"]),
+  dataType: z
+    .enum(["NUMBER", "STRING", "BOOLEAN", "ARRAY", "OBJECT"])
+    .optional()
+    .default("NUMBER"),
   value: z.any().optional(),
+  useWorker: z.boolean().optional(),
 });
 
 const formulaSchema = z.object({
@@ -103,6 +107,7 @@ const formulaSchema = z.object({
   isSystem: z.boolean().optional(),
   isPublished: z.boolean().optional(),
   intermediateSteps: z.array(z.any()).optional(),
+  useWorker: z.boolean().optional(),
 });
 
 export type FormulaFormValues = z.infer<typeof formulaSchema>;
@@ -301,10 +306,12 @@ export function FormulaForm({
         unit: "",
         description: "",
         dataType: "NUMBER",
+        useWorker: false,
       },
       tags: [],
       isSystem: false,
       isPublished: false,
+      useWorker: false,
       ...initialValues,
     },
   });
@@ -696,6 +703,24 @@ export function FormulaForm({
                   (errors.outputVariable ?? {}) as Record<string, unknown>
                 }
               />
+              <div className="mt-4 flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3">
+                <div className="flex flex-col pr-2">
+                  <p className="text-sm font-medium">Background Heavy Task</p>
+                  <p className="text-xs text-muted-foreground">
+                    If this custom formula performs heavy computations or matrix loops, run it in an isolated worker thread sandbox.
+                  </p>
+                </div>
+                <Controller
+                  name="useWorker"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+              </div>
             </div>
           </div>
         </Section>

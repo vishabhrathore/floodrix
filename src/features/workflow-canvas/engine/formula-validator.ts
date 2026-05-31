@@ -107,7 +107,7 @@ const MAX_COMPLEXITY = 200;
 const MAX_MULTILINE_LINES = 50;
 
 /** Default per-evaluation wall-clock budget. Override via opts.timeoutMs. */
-const DEFAULT_EVAL_TIMEOUT_MS = 5_000;
+const DEFAULT_EVAL_TIMEOUT_MS = 120_000;
 
 // ─── Types ────────────────────────────────────────────────────────────────
 

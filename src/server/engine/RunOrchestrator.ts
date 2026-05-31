@@ -25,7 +25,7 @@
 //    - Retry: Inngest retries from currentIndex, same as Chunk 3 semantics
 // ═══════════════════════════════════════════════════════════════════════════
 import type { PrismaClient } from "@/generated/prisma";
-import { addJob, calcQueue, workflowQueue } from "@/lib/bullmq";
+import { QueueProducer } from "@/lib/queue-producers";
 
 import { RunStrategyResolver } from "./RunStrategyResolver";
 import { SessionRepository } from "./SessionRepository";
@@ -73,9 +73,33 @@ export class RunOrchestrator {
     const wf = await this.deps.repo.loadWorkflow(input.calcWorkflowId);
     const nodeTypes = wf.nodes.map((n) => n.type);
 
+    // Check if any registry formula node is marked as a heavy background task in the database
+    const formulaRegistryIds = wf.nodes
+      .filter(
+        (n) =>
+          n.type === "FORMULA" &&
+          (n.config as any)?.source === "registry" &&
+          (n.config as any)?.registry_id,
+      )
+      .map((n) => (n.config as any).registry_id as string);
+
+    let hasHeavyRegistryFormula = false;
+    if (formulaRegistryIds.length > 0) {
+      const items = await this.deps.db.formulaRegistryItem.findMany({
+        where: { id: { in: formulaRegistryIds }, deletedAt: null },
+        select: { outputVariable: true, useWorker: true },
+      });
+      hasHeavyRegistryFormula = items.some((item) => {
+        const out = (item.outputVariable ?? {}) as any;
+        return item.useWorker === true || out.useWorker === true || out.use_worker === true;
+      });
+    }
+
     // ─── 3. Pick strategy ─────────────────────────────────────────
     const { strategy, reason } = this.deps.resolver.resolve({
       nodeTypes,
+      nodes: wf.nodes,
+      hasHeavyRegistryFormula,
       batchSize: input.batchSize ?? 1,
       forceStrategy: input.forceStrategy,
     });
@@ -151,10 +175,11 @@ export class RunOrchestrator {
       result.status === "PAUSED" &&
       result.pauseReason === "background_transition"
     ) {
-      await addJob(calcQueue, "resume", {
-        sessionId: result.sessionId,
-        reason: "async_node_hit",
-        type: "calc/session.resume",
+      await this.deps.db.$transaction(async (tx) => {
+        await QueueProducer.dispatchCalcResume(tx, {
+          sessionId: result.sessionId,
+          reason: "async_node_hit",
+        });
       });
 
       return {
@@ -215,10 +240,11 @@ export class RunOrchestrator {
       executionOrder,
     }).catch(() => {});
 
-    // Always hand off to Inngest for background batch
-    await addJob(calcQueue, "start-background", {
-      sessionId: session.id,
-      type: "calc/session.start-background",
+    // Always hand off to Inngest for background batch (Outbox Pattern)
+    await this.deps.db.$transaction(async (tx) => {
+      await QueueProducer.dispatchCalcStartBackground(tx, {
+        sessionId: session.id,
+      });
     });
 
     return {

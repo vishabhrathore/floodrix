@@ -61,6 +61,15 @@ if (redisConnection) {
             completedAt: new Date(),
           },
         });
+
+        // Cascade: mark any dangling node executions as SKIPPED too
+        await prisma.calcNodeExecution.updateMany({
+          where: {
+            sessionId: { in: stalePending.map((s) => s.id) },
+            status: { in: ["PENDING", "WAITING", "RUNNING"] },
+          },
+          data: { status: "SKIPPED", completedAt: new Date() },
+        });
       }
 
       console.log(

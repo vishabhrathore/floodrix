@@ -7,6 +7,7 @@ import { loadContext } from "@/server/context/context.loader";
 import { assertPolicy } from "@/server/context/guards";
 import { isOrgAdmin, isSuperAdmin } from "@/server/context/permission";
 import { createTRPCRouter, orgProcedure } from "@/trpc/init";
+import { invalidateFormulaCache } from "@/features/workflow-canvas/engine/registry-resolver";
 
 export const formulasRouter = createTRPCRouter({
   getMany: orgProcedure
@@ -127,6 +128,7 @@ export const formulasRouter = createTRPCRouter({
         visibility: z.nativeEnum(Visibility).default(Visibility.PRIVATE),
         isSystem: z.boolean().optional(),
         isPublished: z.boolean().optional(),
+        useWorker: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -221,6 +223,7 @@ export const formulasRouter = createTRPCRouter({
         visibility: z.nativeEnum(Visibility).optional(),
         isSystem: z.boolean().optional(),
         isPublished: z.boolean().optional(),
+        useWorker: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -245,10 +248,14 @@ export const formulasRouter = createTRPCRouter({
         delete updateData.isSystem;
       }
 
-      return ctx.db.formulaRegistryItem.update({
+      const updated = await ctx.db.formulaRegistryItem.update({
         where: { id },
         data: updateData,
       });
+
+      await invalidateFormulaCache(ctx.db, id);
+
+      return updated;
     }),
 
   delete: orgProcedure
@@ -272,6 +279,17 @@ export const formulasRouter = createTRPCRouter({
       }
 
       assertPolicy(reqCtx, "delete", "formula");
+
+      const usageCount = await ctx.db.formulaRegistryUsage.count({
+        where: { formulaRegistryId: input.id },
+      });
+
+      if (usageCount > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Cannot delete formula because it is currently in use by one or more workflows.",
+        });
+      }
 
       return ctx.db.formulaRegistryItem.update({
         where: { id: input.id },
@@ -297,6 +315,7 @@ export const formulasRouter = createTRPCRouter({
         outputVariable: z.any(),
         intermediateSteps: z.array(z.any()).optional(),
         tags: z.array(z.string()).optional(),
+        useWorker: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

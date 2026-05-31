@@ -3,6 +3,7 @@ import z from "zod";
 
 import { Prisma } from "@/generated/prisma";
 import prisma from "@/lib/db";
+import { redisConnection } from "@/lib/bullmq";
 import { loadContext } from "@/server/context/context.loader";
 import { assertCanRunWorkflow, assertSessionAccess } from "@/server/context/guards";
 import {
@@ -167,7 +168,55 @@ export const calcExecutionRouter = createTRPCRouter({
         
         assertSessionAccess(reqCtx);
 
-        const session = reqCtx.session!;
+        let session = reqCtx.session!;
+
+        if (session.status !== "PAUSED") {
+          // Self-healing check for sessions stuck in RUNNING due to previous crashes
+          if (session.status === "RUNNING" && session.updatedAt) {
+            const isStuck = new Date(session.updatedAt).getTime() < Date.now() - 120000;
+            if (isStuck) {
+              logger.info({ sessionId: session.id }, `[submitInput] 🩹 Stuck session detected on submission. Triggering automatic recovery...`);
+              
+              // Evict/Invalidate caches and update DB to PAUSED status
+              await prisma.$transaction(async (tx) => {
+                await tx.calcSession.update({
+                  where: { id: session.id },
+                  data: {
+                    status: "PAUSED",
+                    pauseReason: "stuck_execution_timeout",
+                    lockVersion: { increment: 1 },
+                  },
+                });
+                await tx.calcNodeExecution.updateMany({
+                  where: {
+                    sessionId: session.id,
+                    status: "RUNNING",
+                  },
+                  data: {
+                    status: "PENDING",
+                  },
+                });
+              });
+
+              // Purge cache to keep Redis in sync
+              if (redisConnection) {
+                try {
+                  await Promise.all([
+                    redisConnection.set(`session:${session.id}:status`, "PAUSED"),
+                    redisConnection.del(`sess:${session.id}:loaded`),
+                    redisConnection.del(`res:session:${session.id}`),
+                  ]);
+                } catch {}
+              }
+
+              // Reload context/session so we have the freshly healed PAUSED state
+              const updatedCtx = await loadContext(prisma, ctx.userId, {
+                sessionId: input.sessionId,
+              });
+              session = updatedCtx.session!;
+            }
+          }
+        }
 
         if (session.status !== "PAUSED") {
           throw new TRPCError({

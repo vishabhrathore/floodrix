@@ -7,6 +7,7 @@ import { loadContext } from "@/server/context/context.loader";
 import { assertPolicy } from "@/server/context/guards";
 import { isOrgAdmin, isSuperAdmin } from "@/server/context/permission";
 import { createTRPCRouter, orgProcedure } from "@/trpc/init";
+import { invalidateTableCache } from "@/features/workflow-canvas/engine/registry-resolver";
 
 export const tablesRouter = createTRPCRouter({
   // ──────────────────────────────────────────────────────────────────────────
@@ -245,10 +246,14 @@ export const tablesRouter = createTRPCRouter({
 
       assertPolicy(reqCtx, "edit", "table");
 
-      return ctx.db.tableRegistryItem.update({
+      const updated = await ctx.db.tableRegistryItem.update({
         where: { id },
         data,
       });
+
+      await invalidateTableCache(ctx.db, id);
+
+      return updated;
     }),
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -266,6 +271,17 @@ export const tablesRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Table not found" });
 
       assertPolicy(reqCtx, "delete", "table");
+
+      const usageCount = await ctx.db.tableRegistryUsage.count({
+        where: { tableRegistryId: input.id },
+      });
+
+      if (usageCount > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Cannot delete table because it is currently in use by one or more workflows.",
+        });
+      }
 
       return ctx.db.tableRegistryItem.update({
         where: { id: input.id },

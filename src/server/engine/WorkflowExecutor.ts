@@ -682,8 +682,8 @@ export class WorkflowExecutor {
             } catch {}
           }
 
-          // Schedule slow database updates fully asynchronously in the background
-          WriteSerializer.enqueue(sessionId, () =>
+          // Schedule slow database updates and await them to prevent race conditions
+          await WriteSerializer.enqueue(sessionId, () =>
             Promise.all([
               this.deps.emitter.emit({
                 type: "session:paused",
@@ -854,8 +854,8 @@ export class WorkflowExecutor {
           } catch {}
         }
 
-        // Schedule slow database updates fully asynchronously in the background
-        WriteSerializer.enqueue(sessionId, () =>
+        // Schedule slow database updates and await them to prevent race conditions
+        await WriteSerializer.enqueue(sessionId, () =>
           Promise.all([
             this.deps.emitter.emit({
               type: "node:waiting",
@@ -981,8 +981,8 @@ export class WorkflowExecutor {
           } catch {}
         }
 
-        // Schedule slow database updates fully asynchronously in the background
-        WriteSerializer.enqueue(sessionId, () =>
+        // Schedule slow database updates and await them to prevent race conditions
+        await WriteSerializer.enqueue(sessionId, () =>
           Promise.all([
             this.deps.emitter.emit({
               type: "session:paused",
@@ -1057,8 +1057,8 @@ export class WorkflowExecutor {
       } catch {}
     }
 
-    // Schedule slow database updates fully asynchronously in the background
-    WriteSerializer.enqueue(sessionId, () =>
+    // Schedule slow database updates and await them to prevent race conditions
+    await WriteSerializer.enqueue(sessionId, () =>
       Promise.all([
         this.deps.repo.completeSession({
           sessionId,
@@ -1168,8 +1168,8 @@ export class WorkflowExecutor {
       } catch {}
     }
 
-    // Schedule slow database updates fully asynchronously in the background
-    WriteSerializer.enqueue(sessionId, () =>
+    // Schedule slow database updates and await them to prevent race conditions
+    await WriteSerializer.enqueue(sessionId, () =>
       Promise.all([
         this.deps.repo.errorSession({
           sessionId,

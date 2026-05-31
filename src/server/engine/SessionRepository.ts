@@ -515,7 +515,7 @@ export class SessionRepository {
     return success;
   }
 
-  async recoverStuckSessions(maxExecutionDurationMs = 300000): Promise<number> {
+  async recoverStuckSessions(maxExecutionDurationMs = 120000): Promise<number> {
     const threshold = new Date(Date.now() - maxExecutionDurationMs);
 
     // 1. Identify stuck sessions

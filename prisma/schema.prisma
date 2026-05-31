@@ -111,24 +111,24 @@ model OrganizationMember {
 }
 
 model CalcActor {
-  id                String                   @id @default(cuid())
+  id                String                @id @default(cuid())
   userId            String?
   organizationId    String
   displayName       String
-  createdAt         DateTime                 @default(now())
+  createdAt         DateTime              @default(now())
   auditLogs         AuditLog[]
   batchJobs         BatchJob[]
-  organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user              User?                    @relation(fields: [userId], references: [id])
+  organization      Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user              User?                 @relation(fields: [userId], references: [id])
   collaborations    CalcCollaborator[]
   drafts            CalcDraft[]
   calcRatings       CalcRating[]
   calcSessions      CalcSession[]
   calcVersions      CalcVersion[]
-  createdFormulas   FormulaRegistryItem[]    @relation("FormulaCreator")
-  reviews           LibrarySubmission[]      @relation("ReviewedBy")
-  submissions       LibrarySubmission[]      @relation("SubmittedBy")
-  createdTables     TableRegistryItem[]      @relation("TableCreator")
+  createdFormulas   FormulaRegistryItem[] @relation("FormulaCreator")
+  reviews           LibrarySubmission[]   @relation("ReviewedBy")
+  submissions       LibrarySubmission[]   @relation("SubmittedBy")
+  createdTables     TableRegistryItem[]   @relation("TableCreator")
   uploadedDatasets  UploadedDataset[]
   workspaceSessions WorkspaceSession[]
 
@@ -428,35 +428,36 @@ model CalcCollaborator {
 }
 
 model FormulaRegistryItem {
-  id                 String                   @id @default(cuid())
+  id                 String                 @id @default(cuid())
   organizationId     String
   slug               String
   name               String
   description        String?
   category           String
   subCategory        String?
-  tags               Json                     @default("[]")
+  tags               Json                   @default("[]")
   expressionNotation String
   displayExpression  String
   inputVariables     Json
   outputVariable     Json
-  intermediateSteps  Json                     @default("[]")
+  useWorker          Boolean                @default(false)
+  intermediateSteps  Json                   @default("[]")
   reference          String?
   sourceStandard     String?
   yearIntroduced     Int?
   region             String?
   applicability      String?
   limitations        String?
-  stability          FormulaStability         @default(STANDARD)
-  isPublished        Boolean                  @default(false)
-  isSystem           Boolean                  @default(false)
-  visibility         Visibility               @default(PRIVATE)
+  stability          FormulaStability       @default(STANDARD)
+  isPublished        Boolean                @default(false)
+  isSystem           Boolean                @default(false)
+  visibility         Visibility             @default(PRIVATE)
   createdBy          String?
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
   deletedAt          DateTime?
-  creator            CalcActor?               @relation("FormulaCreator", fields: [createdBy], references: [id])
-  organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator            CalcActor?             @relation("FormulaCreator", fields: [createdBy], references: [id])
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   registryUsages     FormulaRegistryUsage[]
 
   @@unique([organizationId, slug])
@@ -467,38 +468,38 @@ model FormulaRegistryItem {
 }
 
 model TableRegistryItem {
-  id                  String                 @id @default(cuid())
+  id                  String               @id @default(cuid())
   organizationId      String
   slug                String
   name                String
   description         String?
   category            String
   subCategory         String?
-  tags                Json                   @default("[]")
+  tags                Json                 @default("[]")
   tableType           TableType
   inputKeys           Json
   outputKey           Json
   columns             Json
   data                Json
   interpolationConfig Json?
-  fallbackMode        String                 @default("error")
+  fallbackMode        String               @default("error")
   fallbackValue       Json?
-  allowOverride       Boolean                @default(false)
-  showInOutput        Boolean                @default(true)
+  allowOverride       Boolean              @default(false)
+  showInOutput        Boolean              @default(true)
   reference           String?
   sourceStandard      String?
   sourcePage          String?
   sourceImage         String?
-  stability           FormulaStability       @default(STANDARD)
-  isPublished         Boolean                @default(false)
-  isSystem            Boolean                @default(false)
-  visibility          Visibility             @default(PRIVATE)
+  stability           FormulaStability     @default(STANDARD)
+  isPublished         Boolean              @default(false)
+  isSystem            Boolean              @default(false)
+  visibility          Visibility           @default(PRIVATE)
   createdBy           String?
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   deletedAt           DateTime?
-  creator             CalcActor?             @relation("TableCreator", fields: [createdBy], references: [id])
-  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator             CalcActor?           @relation("TableCreator", fields: [createdBy], references: [id])
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   registryUsages      TableRegistryUsage[]
 
   @@unique([organizationId, slug])
@@ -1092,3 +1093,28 @@ enum AuditAction {
   COLLABORATOR_REMOVED
   PERMISSION_CHANGED
 }
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  ENQUEUED
+  FAILED
+}
+
+model OutboxJob {
+  id           String      @id @default(cuid())
+  queueName    String      // e.g., 'calc-execution'
+  jobName      String      // e.g., 'resume'
+  payload      Json        // The strictly typed data payload
+  status       OutboxStatus @default(PENDING)
+  attemptCount Int         @default(0)        // How many dispatch attempts have been made
+  lastError    String?     // Last error message from a failed dispatch attempt
+  nextRetryAt  DateTime?   // Earliest time the relayer may retry this job
+  redisJobId   String?     // Preserves source of truth after BullMQ insertion
+  enqueuedAt   DateTime?   // When it was successfully handed to BullMQ
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([status, nextRetryAt, createdAt]) // Optimized for retry-aware polling
+}
+

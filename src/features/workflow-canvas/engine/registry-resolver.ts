@@ -28,6 +28,7 @@ interface ResolvedFormula {
     label: string;
     unit: string;
     precision: number;
+    useWorker?: boolean;
   };
   intermediateSteps: { key: string; expr: string; label: string }[];
   reference: string | null;
@@ -278,6 +279,7 @@ function mapFormulaRecord(r: {
   outputVariable: unknown;
   intermediateSteps: unknown;
   reference: string | null;
+  useWorker?: boolean;
 }): ResolvedFormula {
   const inputVarsRaw = (r.inputVariables || []) as any[];
   const inputVariables = inputVarsRaw.map((v) => ({
@@ -295,6 +297,7 @@ function mapFormulaRecord(r: {
     label: outVarRaw.label || "",
     unit: outVarRaw.unit || "",
     precision: outVarRaw.precision ?? 3,
+    useWorker: r.useWorker === true || outVarRaw.useWorker === true || outVarRaw.use_worker === true,
   };
 
   return {
@@ -356,3 +359,62 @@ function mapTableRecord(r: {
     reference: r.reference,
   };
 }
+
+export async function invalidateFormulaCache(db: PrismaClient, formulaId: string) {
+  const cacheKey = `f:${formulaId}`;
+  GLOBAL_FORMULA_CACHE.delete(cacheKey);
+
+  // Find all workflows using this formula
+  const usages = await db.formulaRegistryUsage.findMany({
+    where: { formulaRegistryId: formulaId },
+    select: { calcWorkflowId: true },
+  });
+
+  if (redisConnection) {
+    try {
+      const pipeline = redisConnection.pipeline();
+      pipeline.del(cacheKey);
+      for (const usage of usages) {
+        pipeline.del(`wf:${usage.calcWorkflowId}:registry-prefetch`);
+      }
+      await pipeline.exec();
+    } catch (err) {
+      console.error("Failed to invalidate Redis formula cache:", err);
+    }
+  }
+}
+
+export async function invalidateTableCache(db: PrismaClient, tableId: string) {
+  const cacheKey = `t:${tableId}`;
+  GLOBAL_TABLE_CACHE.delete(cacheKey);
+
+  // Find all workflows using this table
+  const usages = await db.tableRegistryUsage.findMany({
+    where: { tableRegistryId: tableId },
+    select: { calcWorkflowId: true },
+  });
+
+  if (redisConnection) {
+    try {
+      const pipeline = redisConnection.pipeline();
+      pipeline.del(cacheKey);
+      for (const usage of usages) {
+        pipeline.del(`wf:${usage.calcWorkflowId}:registry-prefetch`);
+      }
+      await pipeline.exec();
+    } catch (err) {
+      console.error("Failed to invalidate Redis table cache:", err);
+    }
+  }
+}
+
+export async function invalidateWorkflowLoadedCache(workflowId: string) {
+  if (redisConnection) {
+    try {
+      await redisConnection.del(`wf:${workflowId}:loaded-workflow`);
+    } catch (err) {
+      console.error("Failed to invalidate Redis loaded-workflow cache:", err);
+    }
+  }
+}
+

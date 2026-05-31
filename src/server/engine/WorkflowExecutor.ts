@@ -44,7 +44,7 @@ import {
   isAsyncNodeType,
   isStructuralNodeType,
 } from "./types";
-import { redisConnection } from "@/lib/bullmq";
+import { AppCache } from "@/lib/cache";
 
 export class WriteSerializer {
   private static queues = new Map<string, Promise<any>>();
@@ -221,30 +221,16 @@ export class WorkflowExecutor {
       `[WorkflowExecutor.startExecution] 🌐 Triggered execution`
     );
     if (idempotencyKey) {
-      if (redisConnection) {
-        try {
-          const cachedSessionId = await redisConnection.get(
-            `idemp:${calcWorkflowId}:${idempotencyKey}`,
-          );
-          if (cachedSessionId) {
-            return this.continueExecution(cachedSessionId, options);
-          }
-        } catch {}
+      const cachedSessionId = await AppCache.getString(AppCache.keys.idempotencyKey(`${calcWorkflowId}:${idempotencyKey}`));
+      if (cachedSessionId) {
+        return this.continueExecution(cachedSessionId, options);
       }
       const existing = await this.deps.repo.findByIdempotencyKey(
         calcWorkflowId,
         idempotencyKey,
       );
       if (existing) {
-        if (redisConnection) {
-          redisConnection
-            .setex(
-              `idemp:${calcWorkflowId}:${idempotencyKey}`,
-              3600,
-              existing.id,
-            )
-            .catch(() => {});
-        }
+        await AppCache.setString(AppCache.keys.idempotencyKey(`${calcWorkflowId}:${idempotencyKey}`), existing.id, 3600);
         return this._continueExecutionWithSession(existing, options);
       }
     }
@@ -271,10 +257,8 @@ export class WorkflowExecutor {
       runStrategy: options.runStrategy,
     });
 
-    if (idempotencyKey && redisConnection) {
-      redisConnection
-        .setex(`idemp:${calcWorkflowId}:${idempotencyKey}`, 3600, session.id)
-        .catch(() => {});
+    if (idempotencyKey) {
+      await AppCache.setString(AppCache.keys.idempotencyKey(`${calcWorkflowId}:${idempotencyKey}`), session.id, 3600);
     }
 
     // Emit session:started and await to ensure listener is fully ready
@@ -336,20 +320,14 @@ export class WorkflowExecutor {
       pauseReason: null,
       inputSnapshot,
     };
+    await AppCache.setSessionState(sessionId, updatedSession);
+    await AppCache.setSessionStatus(sessionId, "RUNNING");
 
-    // Synchronously update Redis cache in 0ms for instant polling response
-    if (redisConnection) {
-      try {
-        // Also update executions cache to mark this node COMPLETED in Redis
-        let nodeExecs: any[] = [];
-        const cached = await redisConnection.get(`sess:${sessionId}:executions`);
-        if (cached) nodeExecs = JSON.parse(cached);
-        const idx = nodeExecs.findIndex((n: any) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "COMPLETED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
-        await redisConnection.setex(`sess:${sessionId}:executions`, 3600, JSON.stringify(nodeExecs));
-      } catch {}
-    }
+    let nodeExecs = await AppCache.getSessionExecutions(sessionId) || [];
+    const idx = nodeExecs.findIndex((n: any) => n.calcNodeId === nodeId);
+    if (idx !== -1) nodeExecs[idx].status = "COMPLETED";
+    else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
+    await AppCache.setSessionExecutions(sessionId, nodeExecs);
 
     // Synchronously execute DB updates before calling _continueExecutionWithSession
     // to prevent race conditions during execution lock acquisition.
@@ -475,20 +453,14 @@ export class WorkflowExecutor {
     await this.deps.repo.resetNodeExecutions(sessionId, nodesToReset);
 
     // Synchronize the node executions cache in Redis to keep the UI in sync immediately
-    if (redisConnection) {
-      try {
-        const cacheKey = `sess:${sessionId}:executions`;
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) {
-          const currentExecs = JSON.parse(cached);
-          for (const e of currentExecs) {
-            if (nodesToReset.includes(e.calcNodeId)) {
-              e.status = "PENDING";
-            }
-          }
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(currentExecs));
+    const currentExecs = await AppCache.getSessionExecutions(sessionId);
+    if (currentExecs) {
+      for (const e of currentExecs) {
+        if (nodesToReset.includes(e.calcNodeId)) {
+          e.status = "PENDING";
         }
-      } catch {}
+      }
+      await AppCache.setSessionExecutions(sessionId, currentExecs);
     }
 
     // Resume session at target index synchronously to prevent execution lock race
@@ -569,21 +541,10 @@ export class WorkflowExecutor {
     let currentIndex = session.currentIndex;
 
     // Load existing executions cache from Redis to keep them warm
-    let nodeExecs: any[] = [];
-    const execsCacheKey = `sess:${sessionId}:executions`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(execsCacheKey);
-        if (cached) nodeExecs = JSON.parse(cached);
-      } catch {}
-    }
+    let nodeExecs = await AppCache.getSessionExecutions(sessionId) || [];
 
     const syncNodeExecsToRedis = async () => {
-      if (redisConnection) {
-        try {
-          await redisConnection.setex(execsCacheKey, 3600, JSON.stringify(nodeExecs));
-        } catch {}
-      }
+      await AppCache.setSessionExecutions(sessionId, nodeExecs);
     };
 
     while (currentIndex < session.executionOrder.length) {
@@ -666,24 +627,19 @@ export class WorkflowExecutor {
           await syncNodeExecsToRedis();
 
           // Synchronously update Redis cache state in 0ms for instant API polling
-          if (redisConnection) {
-            try {
-              const updatedSession: LoadedSession = {
-                ...session,
-                status: "PAUSED",
-                currentNodeId: nodeId,
-                currentIndex,
-                variables: variableStore.snapshot(),
-                pauseReason: "background_transition",
-              };
-              redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-              redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-              redisConnection.setex(`session:${sessionId}:status`, 3600, "PAUSED").catch(() => {});
-            } catch {}
-          }
+          const updatedSession: LoadedSession = {
+            ...session,
+            status: "PAUSED",
+            currentNodeId: nodeId,
+            currentIndex,
+            variables: variableStore.snapshot(),
+            pauseReason: "background_transition",
+          };
+          await AppCache.setSessionState(sessionId, updatedSession);
+          await AppCache.setSessionStatus(sessionId, "PAUSED");
 
           // Schedule slow database updates and await them to prevent race conditions
-          await WriteSerializer.enqueue(sessionId, () =>
+          WriteSerializer.enqueue(sessionId, () =>
             Promise.all([
               this.deps.emitter.emit({
                 type: "session:paused",
@@ -837,25 +793,19 @@ export class WorkflowExecutor {
 
         await syncNodeExecsToRedis();
 
-        // Synchronously update Redis cache state in 0ms
-        if (redisConnection) {
-          try {
-            const updatedSession: LoadedSession = {
-              ...session,
-              status: "PAUSED",
-              currentNodeId: nodeId,
-              currentIndex,
-              variables: variableStore.snapshot(),
-              pauseReason: outcome.reason,
-            };
-            redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-            redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-            redisConnection.setex(`session:${sessionId}:status`, 3600, "PAUSED").catch(() => {});
-          } catch {}
-        }
+        const updatedSession: LoadedSession = {
+          ...session,
+          status: "PAUSED",
+          currentNodeId: nodeId,
+          currentIndex,
+          variables: variableStore.snapshot(),
+          pauseReason: outcome.reason,
+        };
+        await AppCache.setSessionState(sessionId, updatedSession);
+        await AppCache.setSessionStatus(sessionId, "PAUSED");
 
         // Schedule slow database updates and await them to prevent race conditions
-        await WriteSerializer.enqueue(sessionId, () =>
+        WriteSerializer.enqueue(sessionId, () =>
           Promise.all([
             this.deps.emitter.emit({
               type: "node:waiting",
@@ -964,25 +914,19 @@ export class WorkflowExecutor {
         );
         await syncNodeExecsToRedis();
 
-        // Synchronously update Redis cache state in 0ms
-        if (redisConnection) {
-          try {
-            const updatedSession: LoadedSession = {
-              ...session,
-              status: "PAUSED",
-              currentNodeId: nodeId,
-              currentIndex,
-              variables: variableStore.snapshot(),
-              pauseReason: "step_complete",
-            };
-            redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-            redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-            redisConnection.setex(`session:${sessionId}:status`, 3600, "PAUSED").catch(() => {});
-          } catch {}
-        }
+        const updatedSession: LoadedSession = {
+          ...session,
+          status: "PAUSED",
+          currentNodeId: nodeId,
+          currentIndex,
+          variables: variableStore.snapshot(),
+          pauseReason: "step_complete",
+        };
+        await AppCache.setSessionState(sessionId, updatedSession);
+        await AppCache.setSessionStatus(sessionId, "PAUSED");
 
         // Schedule slow database updates and await them to prevent race conditions
-        await WriteSerializer.enqueue(sessionId, () =>
+        WriteSerializer.enqueue(sessionId, () =>
           Promise.all([
             this.deps.emitter.emit({
               type: "session:paused",
@@ -1005,14 +949,7 @@ export class WorkflowExecutor {
           ])
         ).catch((err) => console.error(`[BACKGROUND_WRITE] stepMode paused failed:`, err));
 
-        let execs: any[] = [];
-        const cacheKey = `sess:${sessionId}:executions`;
-        if (redisConnection) {
-          try {
-            const cached = await redisConnection.get(cacheKey);
-            if (cached) execs = JSON.parse(cached);
-          } catch {}
-        }
+        let execs = await AppCache.getSessionExecutions(sessionId) || [];
         if (execs.length === 0) {
           execs = await this.deps.db.calcNodeExecution.findMany({
             where: { sessionId },
@@ -1042,23 +979,17 @@ export class WorkflowExecutor {
 
     await syncNodeExecsToRedis();
 
-    // Synchronously update Redis cache state in 0ms
-    if (redisConnection) {
-      try {
-        const updatedSession: LoadedSession = {
-          ...session,
-          status: "COMPLETED",
-          currentNodeId: null,
-          variables: finalSnapshot,
-        };
-        redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`session:${sessionId}:status`, 3600, "COMPLETED").catch(() => {});
-      } catch {}
-    }
+    const updatedSession: LoadedSession = {
+      ...session,
+      status: "COMPLETED",
+      currentNodeId: null,
+      variables: finalSnapshot,
+    };
+    await AppCache.setSessionState(sessionId, updatedSession);
+    await AppCache.setSessionStatus(sessionId, "COMPLETED");
 
     // Schedule slow database updates and await them to prevent race conditions
-    await WriteSerializer.enqueue(sessionId, () =>
+    WriteSerializer.enqueue(sessionId, () =>
       Promise.all([
         this.deps.repo.completeSession({
           sessionId,
@@ -1153,23 +1084,17 @@ export class WorkflowExecutor {
       durationMs,
     }).catch(() => {});
 
-    // Synchronously update Redis cache state in 0ms
-    if (redisConnection) {
-      try {
-        const updatedSession: LoadedSession = {
-          ...session,
-          status: "ERRORED",
-          currentNodeId: node.id,
-          variables: store.snapshot(),
-        };
-        redisConnection.setex(`sess:${sessionId}:loaded`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`res:session:${sessionId}`, 3600, JSON.stringify(updatedSession)).catch(() => {});
-        redisConnection.setex(`session:${sessionId}:status`, 3600, "ERRORED").catch(() => {});
-      } catch {}
-    }
+    const updatedSession: LoadedSession = {
+      ...session,
+      status: "ERRORED",
+      currentNodeId: node.id,
+      variables: store.snapshot(),
+    };
+    await AppCache.setSessionState(sessionId, updatedSession);
+    await AppCache.setSessionStatus(sessionId, "ERRORED");
 
     // Schedule slow database updates and await them to prevent race conditions
-    await WriteSerializer.enqueue(sessionId, () =>
+    WriteSerializer.enqueue(sessionId, () =>
       Promise.all([
         this.deps.repo.errorSession({
           sessionId,
@@ -1199,14 +1124,7 @@ export class WorkflowExecutor {
       ])
     ).catch((err) => console.error(`[BACKGROUND_WRITE] errorSession failed:`, err));
 
-    let execs: any[] = [];
-    const cacheKey = `sess:${sessionId}:executions`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) execs = JSON.parse(cached);
-      } catch {}
-    }
+    let execs = await AppCache.getSessionExecutions(sessionId) || [];
     if (execs.length === 0) {
       execs = await this.deps.db.calcNodeExecution.findMany({
         where: { sessionId },
@@ -1234,20 +1152,15 @@ export class WorkflowExecutor {
     variables: VariableSnapshot,
     durationMs?: number,
   ): Promise<ExecutionResult> {
-    const cacheKey = `sess:${sessionId}:executions`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) {
-          return {
-            sessionId,
-            status,
-            variables,
-            completedAt: this.deps.clock.nowDate().toISOString(),
-            nodeExecutions: JSON.parse(cached),
-          };
-        }
-      } catch {}
+    const cachedExecs = await AppCache.getSessionExecutions(sessionId);
+    if (cachedExecs) {
+      return {
+        sessionId,
+        status,
+        variables,
+        completedAt: this.deps.clock.nowDate().toISOString(),
+        nodeExecutions: cachedExecs,
+      };
     }
 
     const execs = await this.deps.db.calcNodeExecution.findMany({
@@ -1255,10 +1168,8 @@ export class WorkflowExecutor {
       select: { calcNodeId: true, status: true },
     });
 
-    if (redisConnection && execs.length > 0) {
-      try {
-        await redisConnection.setex(cacheKey, 30, JSON.stringify(execs));
-      } catch {}
+    if (execs.length > 0) {
+      await AppCache.setSessionExecutions(sessionId, execs);
     }
 
     return {

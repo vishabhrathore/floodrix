@@ -7,7 +7,7 @@ import {
   CalcActor,
 } from "@/generated/prisma";
 import { RequestContext } from "./context.types";
-import { redisConnection } from "@/lib/bullmq";
+import { AppCache } from "@/lib/cache";
 
 // ─────────────────────────────────────────────
 // Types
@@ -60,129 +60,101 @@ async function resolveOrganizationId(
 
   if (opts.workspaceId) {
     const cacheKey = `map:workspace:${opts.workspaceId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const ws = await db.workspace.findUnique({
       where: { id: opts.workspaceId },
       select: { organizationId: true },
     });
-    if (ws?.organizationId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, ws.organizationId); } catch {}
+    if (ws?.organizationId) {
+      await AppCache.setString(cacheKey, ws.organizationId, 3600);
     }
     return ws?.organizationId;
   }
 
   if (opts.workflowId) {
     const cacheKey = `map:workflow:${opts.workflowId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const wf = await db.calcWorkflow.findUnique({
       where: { id: opts.workflowId },
       select: { organizationId: true },
     });
-    if (wf?.organizationId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, wf.organizationId); } catch {}
+    if (wf?.organizationId) {
+      await AppCache.setString(cacheKey, wf.organizationId, 3600);
     }
     return wf?.organizationId;
   }
 
   if (opts.formulaRegistryId) {
     const cacheKey = `map:formula:${opts.formulaRegistryId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const f = await db.formulaRegistryItem.findUnique({
       where: { id: opts.formulaRegistryId },
       select: { organizationId: true },
     });
-    if (f?.organizationId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, f.organizationId); } catch {}
+    if (f?.organizationId) {
+      await AppCache.setString(cacheKey, f.organizationId, 3600);
     }
     return f?.organizationId;
   }
 
   if (opts.tableRegistryId) {
     const cacheKey = `map:table:${opts.tableRegistryId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const t = await db.tableRegistryItem.findUnique({
       where: { id: opts.tableRegistryId },
       select: { organizationId: true },
     });
-    if (t?.organizationId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, t.organizationId); } catch {}
+    if (t?.organizationId) {
+      await AppCache.setString(cacheKey, t.organizationId, 3600);
     }
     return t?.organizationId;
   }
 
   if (opts.sessionId) {
     const cacheKey = `map:session:${opts.sessionId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const sess = await db.calcSession.findUnique({
       where: { id: opts.sessionId },
       select: { calcWorkflow: { select: { organizationId: true } } },
     });
     const orgId = sess?.calcWorkflow.organizationId;
-    if (orgId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, orgId); } catch {}
+    if (orgId) {
+      await AppCache.setString(cacheKey, orgId, 3600);
     }
     return orgId;
   }
 
   if (opts.batchJobId) {
     const cacheKey = `map:batchjob:${opts.batchJobId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const job = await db.batchJob.findUnique({
       where: { id: opts.batchJobId },
       select: { calcWorkflow: { select: { organizationId: true } } },
     });
     const orgId = job?.calcWorkflow.organizationId;
-    if (orgId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, orgId); } catch {}
+    if (orgId) {
+      await AppCache.setString(cacheKey, orgId, 3600);
     }
     return orgId;
   }
 
   if (opts.calcVersionId) {
     const cacheKey = `map:version:${opts.calcVersionId}:orgId`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return cached;
-      } catch {}
-    }
+    const cached = await AppCache.getString(cacheKey);
+    if (cached) return cached;
     const ver = await db.calcVersion.findUnique({
       where: { id: opts.calcVersionId },
       select: { calcWorkflow: { select: { organizationId: true } } },
     });
     const orgId = ver?.calcWorkflow.organizationId;
-    if (orgId && redisConnection) {
-      try { await redisConnection.setex(cacheKey, 3600, orgId); } catch {}
+    if (orgId) {
+      await AppCache.setString(cacheKey, orgId, 3600);
     }
     return orgId;
   }
@@ -201,16 +173,8 @@ async function loadUserWithRelations(
 ): Promise<{ user: UserWithRelations; resolvedOrgId: string | undefined }> {
   const cacheKey = `user-relations:${userId}:${organizationId || "none"}`;
 
-  if (redisConnection) {
-    try {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (err) {
-      console.warn("[REDIS] Failed to read cached user-relations:", err);
-    }
-  }
+  const cached = await AppCache.get<{ user: UserWithRelations; resolvedOrgId: string | undefined }>(cacheKey);
+  if (cached) return cached;
 
   let result: { user: UserWithRelations; resolvedOrgId: string | undefined };
 
@@ -280,13 +244,7 @@ async function loadUserWithRelations(
     }
   }
 
-  if (redisConnection) {
-    try {
-      await redisConnection.setex(cacheKey, 300, JSON.stringify(result));
-    } catch (err) {
-      console.warn("[REDIS] Failed to write user-relations to cache:", err);
-    }
-  }
+  await AppCache.set(cacheKey, result, 300);
 
   return result;
 }
@@ -338,14 +296,8 @@ async function loadOrganization(db: PrismaClient, organizationId: string | undef
   if (!organizationId) return null;
 
   const cacheKey = `org:${organizationId}`;
-  if (redisConnection) {
-    try {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch {}
-  }
+  const cached = await AppCache.get<any>(cacheKey);
+  if (cached) return cached;
 
   const organization = await db.organization.findUnique({
     where: { id: organizationId },
@@ -355,11 +307,7 @@ async function loadOrganization(db: PrismaClient, organizationId: string | undef
     throw new TRPCError({ code: "NOT_FOUND", message: "Organization not found" });
   }
 
-  if (redisConnection) {
-    try {
-      await redisConnection.setex(cacheKey, 3600, JSON.stringify(organization));
-    } catch {}
-  }
+  await AppCache.set(cacheKey, organization, 3600);
 
   return organization;
 }
@@ -391,41 +339,30 @@ async function loadResources(
   ] = await Promise.all([
     ifEnabled(!!opts.workflowId, async () => {
       const cacheKey = `res:workflow:${opts.workflowId!}`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const workflow = await db.calcWorkflow.findFirst({
         where: { id: opts.workflowId!, ...nonDeletedOrgWorkflow },
         include: {
           collaborators: { select: { actorId: true, permission: true } },
         },
       });
-      if (workflow && redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(workflow));
-        } catch {}
+      if (workflow) {
+        await AppCache.set(cacheKey, workflow, 3600);
       }
       return workflow;
     }),
 
     ifEnabled(!!opts.sessionId, async () => {
       const cacheKey = `res:session:${opts.sessionId!}`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (parsed.pausedAt) parsed.pausedAt = new Date(parsed.pausedAt);
-            if (parsed.startedAt) parsed.startedAt = new Date(parsed.startedAt);
-            if (parsed.completedAt) parsed.completedAt = new Date(parsed.completedAt);
-            if (parsed.createdAt) parsed.createdAt = new Date(parsed.createdAt);
-            if (parsed.updatedAt) parsed.updatedAt = new Date(parsed.updatedAt);
-            return parsed;
-          }
-        } catch {}
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) {
+        if (cached.pausedAt) cached.pausedAt = new Date(cached.pausedAt);
+        if (cached.startedAt) cached.startedAt = new Date(cached.startedAt);
+        if (cached.completedAt) cached.completedAt = new Date(cached.completedAt);
+        if (cached.createdAt) cached.createdAt = new Date(cached.createdAt);
+        if (cached.updatedAt) cached.updatedAt = new Date(cached.updatedAt);
+        return cached;
       }
       const session = await db.calcSession.findFirst({
         where: {
@@ -434,10 +371,8 @@ async function loadResources(
           ...(isOrgAdmin ? {} : { actorId }),
         },
       });
-      if (session && redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(session));
-        } catch {}
+      if (session) {
+        await AppCache.set(cacheKey, session, 3600);
       }
       return session;
     }),
@@ -454,113 +389,77 @@ async function loadResources(
 
     ifEnabled(!!opts.workspaceId, async () => {
       const cacheKey = `res:workspace:${opts.workspaceId!}`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const workspace = await db.workspace.findFirst({
         where: { id: opts.workspaceId!, ...orgFilter },
       });
-      if (workspace && redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(workspace));
-        } catch {}
+      if (workspace) {
+        await AppCache.set(cacheKey, workspace, 3600);
       }
       return workspace;
     }),
 
     ifEnabled(!!opts.formulaRegistryId, async () => {
       const cacheKey = `res:formula:${opts.formulaRegistryId!}`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const formula = await db.formulaRegistryItem.findFirst({
         where: { id: opts.formulaRegistryId!, ...nonDeletedOrgWorkflow },
       });
-      if (formula && redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(formula));
-        } catch {}
+      if (formula) {
+        await AppCache.set(cacheKey, formula, 3600);
       }
       return formula;
     }),
 
     ifEnabled(!!opts.tableRegistryId, async () => {
       const cacheKey = `res:table:${opts.tableRegistryId!}`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const table = await db.tableRegistryItem.findFirst({
         where: { id: opts.tableRegistryId!, ...nonDeletedOrgWorkflow },
       });
-      if (table && redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(table));
-        } catch {}
+      if (table) {
+        await AppCache.set(cacheKey, table, 3600);
       }
       return table;
     }),
 
     ifEnabled(!!opts.calcVersionId, async () => {
       const cacheKey = `res:version:${opts.calcVersionId!}`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const version = await db.calcVersion.findFirst({
         where: {
           id: opts.calcVersionId!,
           calcWorkflow: nonDeletedOrgWorkflow,
         },
       });
-      if (version && redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(version));
-        } catch {}
+      if (version) {
+        await AppCache.set(cacheKey, version, 3600);
       }
       return version;
     }),
 
     ifEnabled(!!(opts.loadBilling && organizationId), async () => {
       const cacheKey = `org:${organizationId}:billing`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const records = await db.orgBilling.findMany({
         where: { organizationId: organizationId!, status: "ACTIVE" },
         include: { plan: true },
         orderBy: { startedAt: "desc" },
         take: 1,
       });
-      if (redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(records));
-        } catch {}
-      }
+      await AppCache.set(cacheKey, records, 3600);
       return records;
     }),
 
     ifEnabled(!!(opts.loadBilling && organizationId), async () => {
       const cacheKey = `org:${organizationId}:usage`;
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
+      const cached = await AppCache.get<any>(cacheKey);
+      if (cached) return cached;
       const record = await db.orgUsage.findFirst({
         where: {
           organizationId: organizationId!,
@@ -568,11 +467,7 @@ async function loadResources(
           periodEnd: { gte: new Date() },
         },
       });
-      if (redisConnection) {
-        try {
-          await redisConnection.setex(cacheKey, 3600, JSON.stringify(record));
-        } catch {}
-      }
+      await AppCache.set(cacheKey, record, 3600);
       return record;
     }),
   ]);

@@ -88,7 +88,7 @@ if (redisConnection) {
         throw error;
       }
     },
-    { connection: redisConnection },
+    { connection: redisConnection, concurrency: 10 },
   );
 
   console.log("🚀 Workflow Worker started");

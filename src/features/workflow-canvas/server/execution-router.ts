@@ -3,7 +3,7 @@ import z from "zod";
 
 import { Prisma } from "@/generated/prisma";
 import prisma from "@/lib/db";
-import { redisConnection } from "@/lib/bullmq";
+import { AppCache } from "@/lib/cache";
 import { loadContext } from "@/server/context/context.loader";
 import { assertCanRunWorkflow, assertSessionAccess } from "@/server/context/guards";
 import {
@@ -171,11 +171,11 @@ export const calcExecutionRouter = createTRPCRouter({
         let session = reqCtx.session!;
 
         if (session.status !== "PAUSED") {
-          // Self-healing check for sessions stuck in RUNNING due to previous crashes
-          if (session.status === "RUNNING" && session.updatedAt) {
+          // Self-healing check for sessions stuck in RUNNING or PENDING due to previous crashes
+          if ((session.status === "RUNNING" || session.status === "PENDING") && session.updatedAt) {
             const isStuck = new Date(session.updatedAt).getTime() < Date.now() - 120000;
             if (isStuck) {
-              logger.info({ sessionId: session.id }, `[submitInput] 🩹 Stuck session detected on submission. Triggering automatic recovery...`);
+              logger.info({ sessionId: session.id, status: session.status }, `[submitInput] 🩹 Stuck session detected on submission. Triggering automatic recovery...`);
               
               // Evict/Invalidate caches and update DB to PAUSED status
               await prisma.$transaction(async (tx) => {
@@ -199,15 +199,8 @@ export const calcExecutionRouter = createTRPCRouter({
               });
 
               // Purge cache to keep Redis in sync
-              if (redisConnection) {
-                try {
-                  await Promise.all([
-                    redisConnection.set(`session:${session.id}:status`, "PAUSED"),
-                    redisConnection.del(`sess:${session.id}:loaded`),
-                    redisConnection.del(`res:session:${session.id}`),
-                  ]);
-                } catch {}
-              }
+              await AppCache.setSessionStatus(session.id, "PAUSED");
+              await AppCache.invalidateSession(session.id);
 
               // Reload context/session so we have the freshly healed PAUSED state
               const updatedCtx = await loadContext(prisma, ctx.userId, {

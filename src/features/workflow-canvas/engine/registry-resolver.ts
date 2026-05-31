@@ -6,7 +6,7 @@
 //  now fully immutable standard published items fetched directly by ID.
 // ═══════════════════════════════════════════════════════════════════════════
 import type { PrismaClient } from "@/generated/prisma";
-import { redisConnection } from "@/lib/bullmq";
+import { AppCache } from "@/lib/cache";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -153,19 +153,7 @@ export function createRegistryResolver() {
     async prefetchForWorkflow(db: PrismaClient, workflowId: string) {
       const cacheKey = `wf:${workflowId}:registry-prefetch`;
 
-      let payload: {
-        formulas: any[];
-        tables: any[];
-      } | null = null;
-
-      if (redisConnection) {
-        try {
-          const cached = await redisConnection.get(cacheKey);
-          if (cached) {
-            payload = JSON.parse(cached);
-          }
-        } catch {}
-      }
+      let payload: { formulas: any[]; tables: any[] } | null = await AppCache.get(cacheKey);
 
       if (!payload) {
         const [formulaUsages, tableUsages] = await Promise.all([
@@ -223,11 +211,7 @@ export function createRegistryResolver() {
           tables,
         };
 
-        if (redisConnection) {
-          try {
-            await redisConnection.setex(cacheKey, 3600, JSON.stringify(payload));
-          } catch {}
-        }
+        await AppCache.set(cacheKey, payload, 3600);
       }
 
       for (const f of payload.formulas) {
@@ -370,18 +354,11 @@ export async function invalidateFormulaCache(db: PrismaClient, formulaId: string
     select: { calcWorkflowId: true },
   });
 
-  if (redisConnection) {
-    try {
-      const pipeline = redisConnection.pipeline();
-      pipeline.del(cacheKey);
-      for (const usage of usages) {
-        pipeline.del(`wf:${usage.calcWorkflowId}:registry-prefetch`);
-      }
-      await pipeline.exec();
-    } catch (err) {
-      console.error("Failed to invalidate Redis formula cache:", err);
-    }
-  }
+  const keysToDel = [
+    cacheKey,
+    ...usages.map((u) => `wf:${u.calcWorkflowId}:registry-prefetch`),
+  ];
+  await AppCache.del(keysToDel);
 }
 
 export async function invalidateTableCache(db: PrismaClient, tableId: string) {
@@ -394,27 +371,14 @@ export async function invalidateTableCache(db: PrismaClient, tableId: string) {
     select: { calcWorkflowId: true },
   });
 
-  if (redisConnection) {
-    try {
-      const pipeline = redisConnection.pipeline();
-      pipeline.del(cacheKey);
-      for (const usage of usages) {
-        pipeline.del(`wf:${usage.calcWorkflowId}:registry-prefetch`);
-      }
-      await pipeline.exec();
-    } catch (err) {
-      console.error("Failed to invalidate Redis table cache:", err);
-    }
-  }
+  const keysToDel = [
+    cacheKey,
+    ...usages.map((u) => `wf:${u.calcWorkflowId}:registry-prefetch`),
+  ];
+  await AppCache.del(keysToDel);
 }
 
 export async function invalidateWorkflowLoadedCache(workflowId: string) {
-  if (redisConnection) {
-    try {
-      await redisConnection.del(`wf:${workflowId}:loaded-workflow`);
-    } catch (err) {
-      console.error("Failed to invalidate Redis loaded-workflow cache:", err);
-    }
-  }
+  await AppCache.invalidateWorkflow(workflowId);
 }
 

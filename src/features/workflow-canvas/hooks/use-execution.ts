@@ -92,7 +92,7 @@ export function useExecution(workflowId: string) {
         completedAt: data.completedAt ?? null,
         error: data.error?.message ?? null,
       }));
-      pollingRef.current = data.status === "RUNNING";
+      pollingRef.current = data.status === "RUNNING" || data.status === "PENDING";
       // NEW: sync highlights
       if (Array.isArray(data.nodeExecutions)) {
         highlightStore.syncExecutionHighlights(data.nodeExecutions);
@@ -155,7 +155,9 @@ export function useExecution(workflowId: string) {
       { sessionId: state.sessionId! },
       {
         enabled:
-          !!state.sessionId && state.status === "RUNNING" && pollingRef.current,
+          !!state.sessionId &&
+          (state.status === "RUNNING" || state.status === "PENDING") &&
+          pollingRef.current,
         refetchInterval: POLL_INTERVAL_MS,
       },
     ),
@@ -224,7 +226,7 @@ export function useExecution(workflowId: string) {
 
   return {
     ...state,
-    isRunning: state.status === "RUNNING",
+    isRunning: state.status === "RUNNING" || state.status === "PENDING",
     isPaused: state.status === "PAUSED",
     isComplete: state.status === "COMPLETED",
     isErrored: state.status === "ERRORED",

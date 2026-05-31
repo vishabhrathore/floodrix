@@ -27,7 +27,7 @@ import type {
   VariableSnapshot,
 } from "./types";
 import { METADATA_VERSION, RunStrategy, emptySessionMetadata } from "./types";
-import { redisConnection } from "@/lib/bullmq";
+import { AppCache } from "@/lib/cache";
 
 // ─── Result types ─────────────────────────────────────────────────────────
 
@@ -78,25 +78,14 @@ export class SessionRepository {
   ) {}
 
   private async cacheStatus(sessionId: string, status: SessionStatus): Promise<void> {
-    if (redisConnection) {
-      try {
-        await redisConnection.setex(`session:${sessionId}:status`, 3600, status);
-      } catch (err) {
-        console.warn(`[REDIS] Failed to write status for session ${sessionId}:`, err);
-      }
-    }
+    await AppCache.setSessionStatus(sessionId, status);
   }
 
   // ── Workflow loading ──────────────────────────────────────────────────
 
   async loadWorkflow(workflowId: string): Promise<LoadedWorkflow> {
-    const cacheKey = `wf:${workflowId}:loaded-workflow`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) return JSON.parse(cached);
-      } catch {}
-    }
+    const cached = await AppCache.getWorkflow(workflowId);
+    if (cached) return cached as LoadedWorkflow;
 
     const workflow = await this.db.calcWorkflow.findUniqueOrThrow({
       where: { id: workflowId },
@@ -152,11 +141,7 @@ export class SessionRepository {
       variables: workflow.variables,
     };
 
-    if (redisConnection) {
-      try {
-        await redisConnection.setex(cacheKey, 3600, JSON.stringify(result));
-      } catch {}
-    }
+    await AppCache.setWorkflow(workflowId, result);
 
     return result;
   }
@@ -236,10 +221,12 @@ export class SessionRepository {
       await this.cacheStatus(row.id, "PENDING");
 
       const wf = await this.loadWorkflow(input.calcWorkflowId);
-      if (redisConnection && wf.workflow.organizationId) {
-        try {
-          await redisConnection.setex(`map:session:${row.id}:orgId`, 3600, wf.workflow.organizationId);
-        } catch {}
+      if (wf.workflow.organizationId) {
+        await AppCache.setString(
+          AppCache.keys.sessionOrgMap(row.id),
+          wf.workflow.organizationId,
+          3600
+        );
       }
 
       return this.hydrateSession(row);
@@ -249,17 +236,11 @@ export class SessionRepository {
   }
 
   async loadSession(sessionId: string): Promise<LoadedSession> {
-    const cacheKey = `sess:${sessionId}:loaded`;
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed.startedAt) parsed.startedAt = new Date(parsed.startedAt);
-          if (parsed.completedAt) parsed.completedAt = new Date(parsed.completedAt);
-          return parsed;
-        }
-      } catch {}
+    const cached = await AppCache.getSessionState<LoadedSession>(sessionId);
+    if (cached) {
+      if (cached.startedAt) cached.startedAt = new Date(cached.startedAt);
+      if (cached.completedAt) cached.completedAt = new Date(cached.completedAt);
+      return cached;
     }
 
     const row = await this.db.calcSession.findUniqueOrThrow({
@@ -267,23 +248,12 @@ export class SessionRepository {
     });
     const result = this.hydrateSession(row);
 
-    if (redisConnection) {
-      try {
-        await redisConnection.setex(cacheKey, 3600, JSON.stringify(result));
-      } catch {}
-    }
+    await AppCache.setSessionState(sessionId, result);
     return result;
   }
 
   private async invalidateSessionCache(sessionId: string): Promise<void> {
-    if (redisConnection) {
-      try {
-        await Promise.all([
-          redisConnection.del(`sess:${sessionId}:loaded`),
-          redisConnection.del(`res:session:${sessionId}`),
-        ]);
-      } catch {}
-    }
+    await AppCache.invalidateSession(sessionId);
   }
 
   async updateProgress(
@@ -301,25 +271,13 @@ export class SessionRepository {
 
     if (res.count === 0) return;
 
-    if (redisConnection) {
-      try {
-        const cacheKey = `sess:${sessionId}:loaded`;
-        const resKey = `res:session:${sessionId}`;
-        const cached = await redisConnection.get(cacheKey);
-        if (cached) {
-          const session = JSON.parse(cached) as LoadedSession;
-          session.variables = variables;
-          session.currentIndex = currentIndex;
-          await Promise.all([
-            redisConnection.setex(cacheKey, 3600, JSON.stringify(session)),
-            redisConnection.setex(resKey, 3600, JSON.stringify(session)),
-          ]);
-        } else {
-          await this.invalidateSessionCache(sessionId);
-        }
-      } catch {
-        await this.invalidateSessionCache(sessionId);
-      }
+    const cached = await AppCache.getSessionState<LoadedSession>(sessionId);
+    if (cached) {
+      cached.variables = variables;
+      cached.currentIndex = currentIndex;
+      await AppCache.setSessionState(sessionId, cached);
+    } else {
+      await this.invalidateSessionCache(sessionId);
     }
   }
 
@@ -563,15 +521,9 @@ export class SessionRepository {
   }
 
   async getStatus(sessionId: string): Promise<SessionStatus> {
-    if (redisConnection) {
-      try {
-        const cached = await redisConnection.get(`session:${sessionId}:status`);
-        if (cached) {
-          return cached as SessionStatus;
-        }
-      } catch (err) {
-        console.warn(`[REDIS] Failed to read status for session ${sessionId}:`, err);
-      }
+    const cached = await AppCache.getSessionStatus(sessionId);
+    if (cached) {
+      return cached as SessionStatus;
     }
 
     const row = await this.db.calcSession.findUniqueOrThrow({
@@ -579,13 +531,7 @@ export class SessionRepository {
       select: { status: true },
     });
 
-    if (redisConnection) {
-      try {
-        await redisConnection.setex(`session:${sessionId}:status`, 3600, row.status);
-      } catch (err) {
-        /* noop */
-      }
-    }
+    await AppCache.setSessionStatus(sessionId, row.status);
 
     return row.status;
   }

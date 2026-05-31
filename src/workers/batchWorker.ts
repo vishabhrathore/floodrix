@@ -160,7 +160,7 @@ if (redisConnection) {
 
       return { batchJobId, processedCount, errorCount };
     },
-    { connection: redisConnection },
+    { connection: redisConnection, concurrency: 10 },
   );
 
   console.log("🚀 Batch Worker started");

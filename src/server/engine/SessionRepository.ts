@@ -66,6 +66,7 @@ export interface LoadedSession {
   metadata: SessionMetadata;
   inputSnapshot: Record<string, unknown> | null;
   idempotencyKey: string | null;
+  completedAt?: Date | string | null;
   lockVersion: number;
 }
 

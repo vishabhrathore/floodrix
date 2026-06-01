@@ -329,27 +329,29 @@ export class WorkflowExecutor {
     else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
     await AppCache.setSessionExecutions(sessionId, nodeExecs);
 
-    // Synchronously execute DB updates before calling _continueExecutionWithSession
-    // to prevent race conditions during execution lock acquisition.
-    await this.deps.repo.updateNodeCompleted({
-      sessionId,
-      nodeId,
-      outputs: userInput as VariableMap,
-      result: {
-        userInput,
-        providedAt: this.deps.clock.nowDate().toISOString(),
-      },
-      durationMs: 0,
-    });
-    await this.deps.repo.resumeSession({
-      sessionId,
-      userInput,
-      nextIndex: currentIdx + 1,
-      variables,
-    });
+    // Run slow database updates fully asynchronously in the background
+    WriteSerializer.enqueue(sessionId, () =>
+      Promise.all([
+        this.deps.repo.updateNodeCompleted({
+          sessionId,
+          nodeId,
+          outputs: userInput as VariableMap,
+          result: {
+            userInput,
+            providedAt: this.deps.clock.nowDate().toISOString(),
+          },
+          durationMs: 0,
+        }),
+        this.deps.repo.resumeSession({
+          sessionId,
+          userInput,
+          nextIndex: currentIdx + 1,
+          variables,
+        }),
+      ])
+    ).catch((err) => console.error(`[BACKGROUND_WRITE] resumeWithInput failed:`, err));
 
-    const reloadedSession = await this.deps.repo.loadSession(sessionId);
-    return this._continueExecutionWithSession(reloadedSession, options);
+    return this._continueExecutionWithSession(updatedSession, { ...options, bypassLock: true });
   }
 
   /**
@@ -383,20 +385,20 @@ export class WorkflowExecutor {
       variables: session.variables,
       pauseReason: null,
     };
+    await AppCache.setSessionState(sessionId, updatedSession);
+    await AppCache.setSessionStatus(sessionId, "RUNNING");
 
+    // Run slow database updates fully asynchronously in the background
+    WriteSerializer.enqueue(sessionId, () =>
+      this.deps.repo.resumeSession({
+        sessionId,
+        userInput: {},
+        nextIndex: session.currentIndex + 1,
+        variables: session.variables,
+      })
+    ).catch((err) => console.error(`[BACKGROUND_WRITE] stepForward failed:`, err));
 
-
-    // Synchronously execute DB updates before calling _continueExecutionWithSession
-    // to prevent race conditions during execution lock acquisition.
-    await this.deps.repo.resumeSession({
-      sessionId,
-      userInput: {},
-      nextIndex: session.currentIndex + 1,
-      variables: session.variables,
-    });
-
-    const reloadedSession = await this.deps.repo.loadSession(sessionId);
-    return this._continueExecutionWithSession(reloadedSession, { ...options, stepMode: true });
+    return this._continueExecutionWithSession(updatedSession, { ...options, stepMode: true, bypassLock: true });
   }
 
   /**
@@ -450,7 +452,6 @@ export class WorkflowExecutor {
 
     // Reset all node executions from target onwards back to PENDING.
     const nodesToReset = session.executionOrder.slice(targetIndex);
-    await this.deps.repo.resetNodeExecutions(sessionId, nodesToReset);
 
     // Synchronize the node executions cache in Redis to keep the UI in sync immediately
     const currentExecs = await AppCache.getSessionExecutions(sessionId);
@@ -463,15 +464,31 @@ export class WorkflowExecutor {
       await AppCache.setSessionExecutions(sessionId, currentExecs);
     }
 
-    // Resume session at target index synchronously to prevent execution lock race
-    await this.deps.repo.resumeSession({
-      sessionId,
-      userInput: {},
-      nextIndex: targetIndex,
+    const updatedSession: LoadedSession = {
+      ...session,
+      status: "RUNNING",
+      currentNodeId: null,
+      currentIndex: targetIndex,
       variables: session.variables,
-    });
+      pauseReason: null,
+    };
+    await AppCache.setSessionState(sessionId, updatedSession);
+    await AppCache.setSessionStatus(sessionId, "RUNNING");
 
-    return this.continueExecution(sessionId, { stepMode: true });
+    // Run slow database updates fully asynchronously in the background
+    WriteSerializer.enqueue(sessionId, () =>
+      Promise.all([
+        this.deps.repo.resetNodeExecutions(sessionId, nodesToReset),
+        this.deps.repo.resumeSession({
+          sessionId,
+          userInput: {},
+          nextIndex: targetIndex,
+          variables: session.variables,
+        }),
+      ])
+    ).catch((err) => console.error(`[BACKGROUND_WRITE] stepBack failed:`, err));
+
+    return this._continueExecutionWithSession(updatedSession, { stepMode: true, bypassLock: true });
   }
 
   async cancelExecution(sessionId: string, actorId: string): Promise<void> {
@@ -505,11 +522,13 @@ export class WorkflowExecutor {
     options: ExecutionOptions = {},
   ): Promise<ExecutionResult> {
     const sessionId = session.id;
-    const locked = await this.deps.repo.acquireExecutionLock(session.id, session.lockVersion);
-    if (!locked) {
-      throw new Error(
-        `Concurrency Lock Conflict: Session ${session.id} is already being executed by another process.`
-      );
+    if (!options.bypassLock) {
+      const locked = await this.deps.repo.acquireExecutionLock(session.id, session.lockVersion);
+      if (!locked) {
+        throw new Error(
+          `Concurrency Lock Conflict: Session ${session.id} is already being executed by another process.`
+        );
+      }
     }
 
     if (options.liveUpdates) {

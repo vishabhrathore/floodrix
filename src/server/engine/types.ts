@@ -203,6 +203,7 @@ export interface ExecutionOptions {
   parentSessionId?: string;
   ancestorWorkflowChain?: string[];
   runStrategy?: RunStrategy;
+  bypassLock?: boolean;
 }
 
 export interface StepOutput {

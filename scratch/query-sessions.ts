@@ -1,13 +1,24 @@
 import prisma from "../src/lib/db";
 
 async function main() {
-  const workflowId = "cmprtvv6l00075n3bzb7i7vz1";
   const sessions = await prisma.calcSession.findMany({
-    where: { calcWorkflowId: workflowId },
-    orderBy: { updatedAt: "desc" },
-    take: 5,
+    include: {
+      calcWorkflow: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
   });
-  console.log("Sessions:", JSON.stringify(sessions, null, 2));
+  console.log("Sessions:", JSON.stringify(sessions.map(s => ({
+    id: s.id,
+    workflowName: s.calcWorkflow.name,
+    workflowId: s.calcWorkflowId,
+    status: s.status,
+    currentNodeId: s.currentNodeId,
+    currentIndex: s.currentIndex,
+    duration: s.duration,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+  })), null, 2));
 }
 
 main().finally(() => prisma.$disconnect());

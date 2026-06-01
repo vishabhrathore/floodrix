@@ -14,13 +14,9 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
 async function main() {
   await client.connect();
 
-  console.log("=== REGISTRY FORMULA ===");
-  const res = await client.query("SELECT id, name, \"outputVariable\" FROM formula_registry WHERE id = 'cmptak0sn000ged3baxoc6ya6'");
-  if (res.rows.length > 0) {
-    console.log(JSON.stringify(res.rows[0], null, 2));
-  } else {
-    console.log("Registry formula not found!");
-  }
+  console.log("=== UPDATING REGISTRY FORMULA ===");
+  const res = await client.query("UPDATE formula_registry SET \"useWorker\" = true WHERE id = 'cmptak0sn000ged3baxoc6ya6'");
+  console.log("Updated rows:", res.rowCount);
 
   await client.end();
 }

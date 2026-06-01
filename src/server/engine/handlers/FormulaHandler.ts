@@ -45,7 +45,6 @@ export class FormulaHandler implements NodeHandler {
       let evalScope: Record<string, number | boolean>;
       let outputNotation = "result";
       let registry: any = null;
-      let liveUseWorker = false;
 
       if (config.source === "registry" && config.registry_id) {
         registry =
@@ -56,22 +55,6 @@ export class FormulaHandler implements NodeHandler {
             ctx.db,
             config.registry_id,
           ));
-
-        try {
-          const dbItem = await ctx.db.formulaRegistryItem.findUnique({
-            where: { id: config.registry_id },
-            select: { useWorker: true, outputVariable: true },
-          });
-          if (dbItem) {
-            const out = (dbItem.outputVariable ?? {}) as any;
-            liveUseWorker =
-              dbItem.useWorker === true ||
-              out.useWorker === true ||
-              out.use_worker === true;
-          }
-        } catch (e) {
-          // Fallback to snapshot values
-        }
 
         const bindings = config.variable_bindings ?? {};
         expression = registry.expressionNotation;
@@ -149,7 +132,7 @@ export class FormulaHandler implements NodeHandler {
            (registry.outputVariable as any)?.useWorker === true ||
            (registry.outputVariable as any)?.use_worker === true)
         : false;
-      const finalUseWorker = (config.use_worker === true) || (useWorkerFromRegistry === true) || (liveUseWorker === true);
+      const finalUseWorker = (config.use_worker === true) || (useWorkerFromRegistry === true);
 
       let value: number;
 

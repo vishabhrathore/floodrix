@@ -96,6 +96,7 @@ export function createRegistryResolver() {
           outputVariable: true,
           intermediateSteps: true,
           reference: true,
+          useWorker: true,
         },
       });
 
@@ -183,6 +184,7 @@ export function createRegistryResolver() {
                   outputVariable: true,
                   intermediateSteps: true,
                   reference: true,
+                  useWorker: true,
                 },
               })
             : [],

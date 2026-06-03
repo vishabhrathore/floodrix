@@ -33,9 +33,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useExecution } from "@/features/workflow-canvas/hooks/use-execution";
+import MarkdownContent from "@/web/components/MarkdownContent";
 
 interface WorkflowRunnerProps {
   workflowId: string;
@@ -63,7 +63,7 @@ export function WorkflowRunner({
   }, [autoStarted, exec, stepMode]);
 
   return (
-    <div className="flex h-full w-[400px] flex-col border-l bg-white">
+    <div className="flex h-full w-[400px] flex-col border-l bg-white overflow-hidden">
       {/* ── Header ──────────────────────────────────────── */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
@@ -78,12 +78,31 @@ export function WorkflowRunner({
       </div>
 
       {/* ── Body ────────────────────────────────────────── */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-4 space-y-4">
           {exec.isStarting && <LoadingState message="Starting execution…" />}
 
           {exec.isRunning && !exec.isStarting && (
-            <LoadingState message="Executing nodes…" />
+            <div className="space-y-4">
+              <LoadingState message="Executing nodes…" />
+              {exec.stepOutput && (
+                <Card className="border-sky-200 bg-sky-50/40 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-sky-800">
+                      Latest Output: {exec.stepOutput.nodeLabel}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] text-sky-700 border-sky-300">
+                      {exec.stepOutput.nodeType}
+                    </Badge>
+                  </div>
+                  {(exec.stepOutput.result as any)?.markdown && (
+                    <div className="rounded border border-neutral-100 bg-white p-3 text-xs text-neutral-800 shadow-sm max-h-[250px] overflow-y-auto">
+                      <MarkdownContent content={String((exec.stepOutput.result as any).markdown)} />
+                    </div>
+                  )}
+                </Card>
+              )}
+            </div>
           )}
 
           {exec.isInputPause && exec.pausedNode && (
@@ -114,6 +133,7 @@ export function WorkflowRunner({
           {exec.isComplete && (
             <CompletedView
               variables={exec.variables}
+              nodeOutputs={exec.nodeOutputs ?? {}}
               onRunAgain={() => {
                 exec.reset();
                 setAutoStarted(false);
@@ -132,7 +152,7 @@ export function WorkflowRunner({
             />
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* ── Footer ──────────────────────────────────────── */}
       {(exec.isRunning || exec.isPaused) && (
@@ -341,23 +361,24 @@ function StepPauseView({
   isStepping: boolean;
 }) {
   return (
-    <Card className="border-sky-200 bg-sky-50/40 p-4">
-      <div className="mb-3">
+    <Card className="border-neutral-200/80 bg-white p-4 shadow-md rounded-xl relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-sky-500" />
+      <div className="mb-3 pl-1">
         <div className="flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-sky-600">
             Step {output.stepNumber + 1} of {output.totalSteps}
           </div>
           <Badge
-            variant="outline"
-            className="text-[10px] text-sky-700 border-sky-300"
+            variant="secondary"
+            className="text-[9px] text-sky-700 bg-sky-50 border border-sky-100 rounded-md font-semibold px-1.5"
           >
             {output.nodeType}
           </Badge>
         </div>
-        <div className="mt-1 text-sm font-medium text-neutral-800">
+        <div className="mt-1.5 text-sm font-bold text-neutral-800">
           {output.nodeLabel}
         </div>
-        <div className="mt-0.5 text-[11px] text-neutral-500">
+        <div className="mt-0.5 text-[10px] text-neutral-400 font-medium">
           Completed in {output.durationMs}ms
         </div>
       </div>
@@ -365,18 +386,18 @@ function StepPauseView({
       {Object.keys(output.outputs).length > 0 && (
         <>
           <Separator className="my-2" />
-          <div className="mt-2">
-            <div className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide mb-1">
+          <div className="mt-2 pl-1">
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
               Outputs
             </div>
             <div className="space-y-1">
               {Object.entries(output.outputs).map(([k, v]) => (
                 <div
                   key={k}
-                  className="flex items-center justify-between text-xs rounded bg-white/70 px-2 py-1"
+                  className="flex items-center justify-between text-xs rounded-lg border border-neutral-100/50 bg-neutral-50/50 px-2.5 py-1.5"
                 >
-                  <span className="font-mono text-neutral-600">{k}</span>
-                  <span className="font-mono font-medium text-neutral-900">
+                  <span className="font-mono text-neutral-500 font-medium">{k}</span>
+                  <span className="font-mono font-bold text-neutral-800">
                     {typeof v === "number" ? v.toLocaleString() : String(v)}
                   </span>
                 </div>
@@ -386,12 +407,26 @@ function StepPauseView({
         </>
       )}
 
-      <div className="mt-4 flex gap-2">
+      {(output.result as any)?.markdown && (
+        <>
+          <Separator className="my-2" />
+          <div className="mt-2 pl-1">
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
+              Node Output (Markdown)
+            </div>
+            <div className="rounded-lg border border-neutral-150 bg-neutral-50/20 p-3 text-xs text-neutral-800 shadow-inner max-h-[300px] overflow-y-auto">
+              <MarkdownContent content={String((output.result as any).markdown)} />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="mt-4 flex gap-2 pl-1">
         <Button
           size="sm"
           onClick={onNext}
           disabled={isStepping}
-          className="flex-1 bg-sky-600 hover:bg-sky-700 text-white"
+          className="flex-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-sm"
         >
           {isStepping ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -409,9 +444,11 @@ function StepPauseView({
 
 function CompletedView({
   variables,
+  nodeOutputs,
   onRunAgain,
 }: {
   variables: Record<string, unknown>;
+  nodeOutputs: Record<string, any>;
   onRunAgain: () => void;
 }) {
   // Filter out internal keys ($nodes, $results)
@@ -419,54 +456,91 @@ function CompletedView({
     ([k]) => !k.startsWith("$"),
   );
 
+  const markdownOutputs = Object.values(nodeOutputs).filter(
+    (out: any) => out.result?.markdown,
+  );
+
   return (
-    <Card className="border-emerald-200 bg-emerald-50/40 p-4">
-      <div className="flex items-start gap-2">
-        <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" />
+    <div className="space-y-4">
+      {/* Success banner */}
+      <Card className="border-emerald-200 bg-emerald-50/40 p-3.5 flex items-start gap-3 shadow-sm rounded-xl">
+        <div className="rounded-full bg-emerald-500 p-1 text-white mt-0.5">
+          <CheckCircle2 className="h-4 w-4" />
+        </div>
         <div className="flex-1">
-          <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            Completed
+          <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+            Workflow Completed
           </div>
-          <div className="mt-0.5 text-sm text-neutral-700">
-            All {visibleVars.length} variables computed successfully.
+          <div className="mt-0.5 text-xs text-emerald-700 font-medium">
+            All {visibleVars.length} variables resolved successfully.
           </div>
         </div>
-      </div>
+      </Card>
 
       {visibleVars.length > 0 && (
-        <>
-          <Separator className="my-3" />
-          <div>
-            <div className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide mb-1">
-              Results
-            </div>
-            <div className="space-y-1">
-              {visibleVars.map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex items-center justify-between text-xs rounded bg-white/70 px-2 py-1"
-                >
-                  <span className="font-mono text-neutral-600">{k}</span>
-                  <span className="font-mono font-medium text-neutral-900">
-                    {typeof v === "number" ? v.toLocaleString() : String(v)}
-                  </span>
-                </div>
-              ))}
-            </div>
+        <Card className="border-neutral-100 bg-neutral-50/40 p-4 rounded-xl shadow-sm">
+          <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+            Computed variables
           </div>
-        </>
+          <div className="space-y-1.5">
+            {visibleVars.map(([k, v]) => (
+              <div
+                key={k}
+                className="flex items-center justify-between text-xs rounded-lg border border-neutral-100/50 bg-white p-2 shadow-xs transition-colors hover:bg-neutral-50"
+              >
+                <span className="font-mono font-medium text-neutral-500">{k}</span>
+                <span className="font-mono font-bold text-neutral-800">
+                  {typeof v === "number" ? v.toLocaleString() : String(v)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {markdownOutputs.length > 0 && (
+        <div className="space-y-3">
+          <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider pl-1">
+            Execution Output Timeline
+          </div>
+          <div className="space-y-4">
+            {markdownOutputs.map((out: any) => (
+              <Card
+                key={out.nodeId}
+                className="border-neutral-150 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl overflow-hidden relative"
+              >
+                {/* Accent indicator line */}
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-400 to-indigo-500" />
+                
+                <div className="flex items-center justify-between mb-3 border-b border-neutral-100 pb-2 pl-1">
+                  <span className="text-xs font-bold text-neutral-700">
+                    {out.nodeLabel || "Node Output"}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] font-semibold text-neutral-500 bg-neutral-50/50 border-neutral-200/60 px-1.5 py-0.5 rounded-md"
+                  >
+                    {out.nodeType}
+                  </Badge>
+                </div>
+                <div className="text-xs text-neutral-800 overflow-x-auto pl-1 pr-1">
+                  <MarkdownContent content={String((out.result as any).markdown)} />
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
 
       <Button
         size="sm"
         onClick={onRunAgain}
-        className="mt-4 w-full"
-        variant="outline"
+        className="w-full bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl py-5 font-semibold shadow-sm transition-all"
       >
-        <RefreshCw className="h-3.5 w-3.5 mr-1" />
-        Run again
+        <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin-slow" />
+        Run Calculation Again
       </Button>
-    </Card>
+    </div>
   );
 }
 

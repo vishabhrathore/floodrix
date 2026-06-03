@@ -1,6 +1,7 @@
 import { type Queue } from "bullmq";
 import prisma from "@/lib/db";
 import { calcQueue, workflowQueue, batchQueue } from "@/lib/bullmq";
+import { logger } from "@/server/engine/logger";
 
 // ============================================================
 // CONFIGURATION
@@ -73,7 +74,7 @@ async function processOutboxBatch(): Promise<number> {
       return 0;
     }
 
-    console.log(`[OutboxRelayer] Claimed ${claimedJobs.length} jobs to dispatch.`);
+    logger.info({ jobCount: claimedJobs.length }, "[OutboxRelayer] Claimed jobs to dispatch");
 
     for (const job of claimedJobs) {
       try {
@@ -105,24 +106,38 @@ async function processOutboxBatch(): Promise<number> {
         const newAttemptCount = job.attemptCount + 1;
         const isPermanentlyFailed = newAttemptCount >= MAX_ATTEMPTS;
 
-        console.error(
-          `[OutboxRelayer] Dispatch failed for job ${job.id} ` +
-          `(attempt ${newAttemptCount}/${MAX_ATTEMPTS}): ${err.message}`,
+        logger.error(
+          { jobId: job.id, attempt: newAttemptCount, maxAttempts: MAX_ATTEMPTS, err },
+          "[OutboxRelayer] Dispatch failed for job"
         );
 
         if (isPermanentlyFailed) {
           // Exceeded retry threshold — this job needs human intervention
-          console.error(
-            `[OutboxRelayer] ❌ Job ${job.id} permanently FAILED after ${MAX_ATTEMPTS} attempts.`,
+          logger.error(
+            { jobId: job.id, maxAttempts: MAX_ATTEMPTS },
+            "[OutboxRelayer] ❌ Job permanently FAILED"
           );
-          await prisma.outboxJob.update({
-            where: { id: job.id },
-            data: {
-              status: "FAILED",
-              attemptCount: newAttemptCount,
-              lastError: err.message || String(err),
-            },
-          });
+          await prisma.$transaction([
+            prisma.outboxJob.update({
+              where: { id: job.id },
+              data: {
+                status: "FAILED",
+                attemptCount: newAttemptCount,
+                lastError: err.message || String(err),
+              },
+            }),
+            prisma.deadLetterJob.create({
+              data: {
+                outboxJobId: job.id,
+                queueName: job.queueName,
+                jobName: job.jobName,
+                payload: job.payload,
+                error: err.message || String(err),
+                stackTrace: err.stack || null,
+                attemptCount: newAttemptCount,
+              },
+            }),
+          ]);
         } else {
           // Transient failure (e.g. Redis outage) — reset to PENDING with
           // an exponential backoff nextRetryAt so the relayer re-picks it up
@@ -137,8 +152,9 @@ async function processOutboxBatch(): Promise<number> {
               nextRetryAt,
             },
           });
-          console.warn(
-            `[OutboxRelayer] ⚠️ Job ${job.id} will retry at ${nextRetryAt.toISOString()}.`,
+          logger.warn(
+            { jobId: job.id, nextRetryAt: nextRetryAt.toISOString() },
+            "[OutboxRelayer] Job will retry"
           );
         }
       }
@@ -146,7 +162,7 @@ async function processOutboxBatch(): Promise<number> {
 
     return claimedJobs.length;
   } catch (error) {
-    console.error("[OutboxRelayer] Error in batch processing loop:", error);
+    logger.error(error, "[OutboxRelayer] Error in batch processing loop");
     return 0;
   }
 }
@@ -170,12 +186,13 @@ async function runWatchdogRecovery() {
         AND "updatedAt" < NOW() - INTERVAL '5 minutes'
     `;
     if (recovered > 0) {
-      console.log(
-        `[OutboxRelayer Watchdog] Recovered ${recovered} stuck PROCESSING job(s) → PENDING.`,
+      logger.info(
+        { recoveredCount: recovered },
+        "[OutboxRelayer Watchdog] Recovered stuck PROCESSING job(s) → PENDING"
       );
     }
   } catch (error) {
-    console.error("[OutboxRelayer Watchdog] Recovery query failed:", error);
+    logger.error(error, "[OutboxRelayer Watchdog] Recovery query failed");
   }
 }
 
@@ -198,18 +215,18 @@ async function startPolling() {
 // ============================================================
 
 export function startOutboxRelayer() {
-  console.log("🚀 Outbox Relayer started — polling PostgreSQL for pending jobs...");
+  logger.info("🚀 Outbox Relayer started — polling PostgreSQL for pending jobs...");
 
   // Run watchdog immediately on startup to recover any jobs stuck from
   // a previous crash before the poll loop begins.
-  runWatchdogRecovery().catch(console.error);
+  runWatchdogRecovery().catch((err) => logger.error(err, "[OutboxRelayer Watchdog] Startup recovery failed"));
 
   startPolling();
   watchdogInterval = setInterval(runWatchdogRecovery, WATCHDOG_INTERVAL_MS);
 }
 
 export function stopOutboxRelayer() {
-  console.log("🛑 Outbox Relayer stopping gracefully...");
+  logger.info("🛑 Outbox Relayer stopping gracefully...");
   isRunning = false;
   if (pollTimeout) clearTimeout(pollTimeout);
   if (watchdogInterval) clearInterval(watchdogInterval);

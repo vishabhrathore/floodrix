@@ -2,13 +2,15 @@ import { type Job, Queue, Worker } from "bullmq";
 
 import { redisConnection } from "@/lib/bullmq";
 import prisma from "@/lib/db";
+import { logger } from "@/server/engine/logger";
 
 const PAUSED_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const PENDING_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const BATCH_LIMIT = 500;
 
+export let sweeperWorker: Worker | null = null;
 if (redisConnection) {
-  new Worker(
+  sweeperWorker = new Worker(
     "sweeper-queue",
     async (job: Job) => {
       const now = Date.now();
@@ -72,8 +74,9 @@ if (redisConnection) {
         });
       }
 
-      console.log(
-        `TTL sweep done: ${stalePaused.length} paused + ${stalePending.length} pending timed out`,
+      logger.info(
+        { pausedCount: stalePaused.length, pendingCount: stalePending.length },
+        "TTL sweep done"
       );
     },
     { connection: redisConnection },
@@ -93,7 +96,7 @@ if (redisConnection) {
         },
       },
     )
-    .catch((err) => console.error("Failed to add repeatable sweeper job", err));
+    .catch((err) => logger.error(err, "Failed to add repeatable sweeper job"));
 
-  console.log("🚀 Sweeper Worker started");
+  logger.info("🚀 Sweeper Worker started");
 }

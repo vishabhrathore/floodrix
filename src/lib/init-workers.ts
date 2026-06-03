@@ -1,17 +1,22 @@
 import { BYPASS_REDIS } from "./bullmq";
+import { registerShutdownHooks } from "./shutdown-orchestrator";
+import { logger } from "@/server/engine/logger";
 
 export function initWorkers() {
   if (BYPASS_REDIS) {
-    console.log("⏭️ Bypassing background workers (BYPASS_REDIS=true)");
+    logger.info("⏭️ Bypassing background workers (BYPASS_REDIS=true)");
     return;
   }
 
   if (process.env.NODE_ENV === "production" && !process.env.START_WORKERS) {
-    console.log(
-      "⏭️ Skipping workers in production (set START_WORKERS=true to enable)",
+    logger.info(
+      "⏭️ Skipping workers in production (set START_WORKERS=true to enable)"
     );
     return;
   }
+
+  // Register OS lifecycle signal handlers (SIGTERM, SIGINT)
+  registerShutdownHooks();
 
   // Import workers here so they start
   require("@/workers/workflowWorker");
@@ -20,5 +25,5 @@ export function initWorkers() {
   require("@/workers/batchWorker");
   require("@/workers/outboxRelayer");
 
-  console.log("✅ Background workers initialized");
+  logger.info("✅ Background workers initialized");
 }

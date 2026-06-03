@@ -16,10 +16,6 @@ import { RunStrategy, isAsyncNodeType } from "./types";
 export interface ResolveInput {
   /** Ordered list of node types in this workflow. */
   nodeTypes: CalcNodeType[];
-  /** Optional full list of nodes to check their configs for use_worker flags. */
-  nodes?: { type: CalcNodeType; config: any }[];
-  /** Optional flag if any referenced registry formulas are marked heavy. */
-  hasHeavyRegistryFormula?: boolean;
   /** Number of input rows if this is a batch run. Default 1 for single runs. */
   batchSize?: number;
   /** Force a specific strategy (admin override / testing). */
@@ -46,7 +42,16 @@ export class RunStrategyResolver {
       };
     }
 
-    // 1. If any node is inherently async, route to background
+    // 1. Batch executions always run in background queue
+    if (input.batchSize && input.batchSize > 1) {
+      return {
+        strategy: RunStrategy.BACKGROUND_BATCH,
+        firstAsyncIndex: -1,
+        reason: `batch size ${input.batchSize} is greater than 1`,
+      };
+    }
+
+    // 2. If any node is inherently async (requires queuing/scheduling), route to background
     const firstAsyncIndex = input.nodeTypes.findIndex(isAsyncNodeType);
     if (firstAsyncIndex !== -1) {
       return {
@@ -56,39 +61,11 @@ export class RunStrategyResolver {
       };
     }
 
-    // 2. If any node is explicitly configured as a heavy worker task, route to background
-    if (input.nodes) {
-      const heavyNodeIndex = input.nodes.findIndex((node) => {
-        const config = (node.config ?? {}) as any;
-        if (node.type === "FORMULA" || node.type === "CUSTOM_CODE") {
-          return config.use_worker === true;
-        }
-        return false;
-      });
-
-      if (heavyNodeIndex !== -1) {
-        return {
-          strategy: RunStrategy.BACKGROUND_BATCH,
-          firstAsyncIndex: heavyNodeIndex,
-          reason: `workflow contains a background heavy math node "${input.nodes[heavyNodeIndex].type}" configured with use_worker`,
-        };
-      }
-    }
-
-    // 3. If any referenced registry formula is heavy, route to background
-    if (input.hasHeavyRegistryFormula) {
-      return {
-        strategy: RunStrategy.BACKGROUND_BATCH,
-        firstAsyncIndex: input.nodeTypes.indexOf("FORMULA"),
-        reason: "workflow contains a formula node referencing a heavy registry formula",
-      };
-    }
-
-    // 4. Lightweight synchronous execution
+    // 3. Single-user, synchronous math executions (evaluated via Piscina worker pool)
     return {
       strategy: RunStrategy.INLINE_SYNC,
       firstAsyncIndex: -1,
-      reason: "all nodes are sync and lightweight",
+      reason: "single execution run with sync nodes",
     };
   }
 }

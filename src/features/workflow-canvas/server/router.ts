@@ -4,7 +4,7 @@
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 
-import { Prisma, Visibility, WorkflowStatus } from "@/generated/prisma";
+import { Prisma, Visibility, WorkflowStatus, CollaboratorPermission, CalcNodeType } from "@/generated/prisma";
 import prisma from "@/lib/db";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
@@ -482,6 +482,178 @@ export const calcWorkflowCanvasRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
       await invalidateWorkflowLoadedCache(input.workflowId);
       return { success: true };
+    }),
+
+  importWorkflow: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string(),
+        workflowJson: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.auth.user.id;
+      const member = await prisma.organizationMember.findUnique({
+        where: {
+          userId_organizationId: {
+            userId,
+            organizationId: input.organizationId,
+          },
+        },
+      });
+      if (!member)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Not a member of this organization",
+        });
+
+      let actor = await prisma.calcActor.findUnique({
+        where: {
+          userId_organizationId: {
+            userId,
+            organizationId: input.organizationId,
+          },
+        },
+      });
+      let actorId: string;
+      if (!actor) {
+        const user = await prisma.user.findUniqueOrThrow({
+          where: { id: userId },
+          select: { globalRole: true },
+        });
+        if (user.globalRole === "SUPER_ADMIN") {
+          actorId = "actor_superadmin";
+        } else {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Actor not found for this organization",
+          });
+        }
+      } else {
+        actorId = actor.id;
+      }
+
+      // Schema validators inside the mutation for robust parsing
+      const importNodeSchema = z.object({
+        id: z.string(),
+        type: z.nativeEnum(CalcNodeType),
+        label: z.string(),
+        description: z.string().optional().nullable(),
+        positionX: z.number(),
+        positionY: z.number(),
+        config: z.record(z.string(), z.unknown()).default({}),
+        style: z.record(z.string(), z.unknown()).default({}),
+        sortOrder: z.number().default(0),
+      });
+
+      const importEdgeSchema = z.object({
+        sourceNodeId: z.string(),
+        targetNodeId: z.string(),
+        sourceHandle: z.string().default("output"),
+        targetHandle: z.string().default("input"),
+        condition: z.unknown().optional().nullable(),
+        label: z.string().optional().nullable(),
+        style: z.record(z.string(), z.unknown()).default({}),
+        sortOrder: z.number().default(0),
+      });
+
+      const importWorkflowSchema = z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional().nullable(),
+        category: z.string().optional().nullable(),
+        tags: z.array(z.string()).default([]),
+        nodes: z.array(importNodeSchema).default([]),
+        edges: z.array(importEdgeSchema).default([]),
+      });
+
+      let workflowData: z.infer<typeof importWorkflowSchema>;
+      try {
+        const parsed = JSON.parse(input.workflowJson);
+        workflowData = importWorkflowSchema.parse(parsed);
+      } catch (err: any) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Invalid workflow JSON: ${err.message}`,
+        });
+      }
+
+      const baseSlug = workflowData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      const existing = await prisma.calcWorkflow.count({
+        where: {
+          organizationId: input.organizationId,
+          slug: { startsWith: baseSlug },
+        },
+      });
+      const slug = existing > 0 ? `${baseSlug}-${existing + 1}` : baseSlug;
+
+      return prisma.$transaction(async (tx) => {
+        const newWorkflow = await tx.calcWorkflow.create({
+          data: {
+            organizationId: input.organizationId,
+            name: workflowData.name,
+            slug,
+            description: workflowData.description,
+            category: workflowData.category ?? "General",
+            tags: workflowData.tags as Prisma.InputJsonValue,
+            visibility: "PRIVATE",
+            status: "DRAFT",
+            collaborators: {
+              create: {
+                actorId,
+                permission: CollaboratorPermission.ADMIN,
+              },
+            },
+          },
+        });
+
+        const nodeIdMap = new Map<string, string>();
+        for (const node of workflowData.nodes) {
+          const n = await tx.calcNode.create({
+            data: {
+              calcWorkflowId: newWorkflow.id,
+              type: node.type,
+              label: node.label,
+              description: node.description,
+              positionX: node.positionX,
+              positionY: node.positionY,
+              config: node.config as Prisma.InputJsonValue,
+              style: node.style as Prisma.InputJsonValue,
+              sortOrder: node.sortOrder,
+            },
+          });
+          nodeIdMap.set(node.id, n.id);
+        }
+
+        for (const edge of workflowData.edges) {
+          const s = nodeIdMap.get(edge.sourceNodeId);
+          const t = nodeIdMap.get(edge.targetNodeId);
+          if (!s || !t) continue;
+          await tx.calcEdge.create({
+            data: {
+              calcWorkflowId: newWorkflow.id,
+              sourceNodeId: s,
+              targetNodeId: t,
+              sourceHandle: edge.sourceHandle,
+              targetHandle: edge.targetHandle,
+              condition: edge.condition ?? undefined,
+              label: edge.label,
+              style: edge.style as Prisma.InputJsonValue,
+              sortOrder: edge.sortOrder,
+            },
+          });
+        }
+
+        return {
+          id: newWorkflow.id,
+          name: newWorkflow.name,
+          slug: newWorkflow.slug,
+          status: newWorkflow.status,
+          createdAt: newWorkflow.createdAt,
+        };
+      });
     }),
 
   loadForExecution: protectedProcedure

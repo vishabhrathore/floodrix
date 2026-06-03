@@ -1,5 +1,6 @@
 import { CACHE_TTL } from "@/config/constants";
 import { redisCacheClient } from "./redis";
+import { logger } from "@/server/engine/logger";
 
 /**
  * Centralized Cache Manager
@@ -63,7 +64,7 @@ export class AppCache {
       if (!data) return null;
       return JSON.parse(data) as T;
     } catch (e) {
-      console.warn(`[AppCache] Failed to get ${key}`, e);
+      logger.warn({ key, err: e }, `[AppCache] Failed to get key`);
       return null;
     }
   }
@@ -76,7 +77,7 @@ export class AppCache {
     try {
       return await client.get(key);
     } catch (e) {
-      console.warn(`[AppCache] Failed to get ${key}`, e);
+      logger.warn({ key, err: e }, `[AppCache] Failed to get key`);
       return null;
     }
   }
@@ -89,7 +90,7 @@ export class AppCache {
     try {
       await client.setex(key, ttlSeconds, JSON.stringify(value));
     } catch (e) {
-      console.warn(`[AppCache] Failed to set ${key}`, e);
+      logger.warn({ key, err: e }, `[AppCache] Failed to set key`);
     }
   }
 
@@ -101,7 +102,7 @@ export class AppCache {
     try {
       await client.setex(key, ttlSeconds, value);
     } catch (e) {
-      console.warn(`[AppCache] Failed to set ${key}`, e);
+      logger.warn({ key, err: e }, `[AppCache] Failed to set key`);
     }
   }
 
@@ -116,7 +117,7 @@ export class AppCache {
     try {
       await client.del(...keysArray);
     } catch (e) {
-      console.warn(`[AppCache] Failed to delete keys ${keysArray.join(', ')}`, e);
+      logger.warn({ keys: keysArray, err: e }, `[AppCache] Failed to delete keys`);
     }
   }
 

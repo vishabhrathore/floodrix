@@ -14,6 +14,7 @@ import type { NodeHandler } from "../NodeHandler";
 import { toErroredOutcome } from "../NodeHandler";
 import { WorkerPoolTimeout } from "../WorkerPoolTimeout";
 import type { ExecutionContext, NodeOutcome, VariableMap } from "../types";
+import { logger } from "../logger";
 
 interface CustomCodeConfig {
   code?: string;
@@ -57,6 +58,17 @@ export class CustomCodeHandler implements NodeHandler {
       let outputs: Record<string, number>;
 
       if (config.use_worker) {
+        logger.info(
+          {
+            sessionId: ctx.sessionId,
+            nodeId: ctx.node.id,
+            nodeLabel: ctx.node.label,
+            code,
+            scope,
+          },
+          `[CustomCodeHandler] 🧵 Running custom code in WORKER THREAD (Background Heavy Task)`
+        );
+
         // Run in isolated Worker Thread (Background Heavy Task)
         const pool = new WorkerPoolTimeout();
         outputs = (await pool.runMathEvaluation(code, scope, {
@@ -64,11 +76,31 @@ export class CustomCodeHandler implements NodeHandler {
           handlerType: "CUSTOM_CODE",
         })) as Record<string, number>;
       } else {
+        logger.info(
+          {
+            sessionId: ctx.sessionId,
+            nodeId: ctx.node.id,
+            nodeLabel: ctx.node.label,
+            code,
+            scope,
+          },
+          `[CustomCodeHandler] 🧵 Running custom code in MAIN THREAD (Synchronous Simple Code)`
+        );
+
         // Run Synchronously on the Main Thread (Fast 2ms Simple Code)
         outputs = safeEvaluateMultiLine(code, scope, outputVarNames, {
           timeoutMs: config.timeoutMs ?? this.timeoutMs,
         });
       }
+
+      logger.info(
+        {
+          sessionId: ctx.sessionId,
+          nodeId: ctx.node.id,
+          outputs,
+        },
+        `[CustomCodeHandler] Custom code execution completed`
+      );
 
       // Apply outputs to the variable store
       const trackedOutputs: VariableMap = {};

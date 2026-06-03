@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ["piscina"],
+  experimental: {
+    serverComponentsExternalPackages: ["piscina"],
+  },
 };
 
 export default nextConfig;

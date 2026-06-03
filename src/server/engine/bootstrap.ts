@@ -34,6 +34,7 @@ import { ValidationHandler } from "./handlers/ValidationHandler";
 import { AuditListener } from "./listeners/AuditListener";
 import { DatabaseListener } from "./listeners/DatabaseListener";
 import { MetricsListener } from "./listeners/MetricsListener";
+import { RedisPubSubListener } from "./listeners/RedisPubSubListener";
 import type { Clock, ExecutionOptions } from "./types";
 
 // ─── Default Clock ────────────────────────────────────────────────────────
@@ -113,6 +114,7 @@ export function createWorkflowExecutor(
 
   emitter.on((e) => dbListener.handle(e), { name: "database", priority: 50 });
   emitter.on((e) => auditListener.handle(e), { name: "audit", priority: 100 });
+  emitter.on((e) => new RedisPubSubListener().handle(e), { name: "redis-pubsub", priority: 150 });
 
   // CHUNK 5: register metrics listener unless explicitly disabled
   if (opts.metricsEnabled !== false) {

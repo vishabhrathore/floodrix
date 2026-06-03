@@ -254,6 +254,7 @@ model Execution {
   inngestEventId String          @unique
   output         Json?
   workflow       Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeResults    ExecutionNodeResult[]
 }
 
 model CalcWorkflow {
@@ -1116,5 +1117,43 @@ model OutboxJob {
   updatedAt    DateTime    @updatedAt
 
   @@index([status, nextRetryAt, createdAt]) // Optimized for retry-aware polling
+  @@index([status, updatedAt])              // Optimized for watchdog stuck-job recovery
+}
+
+model ExecutionNodeResult {
+  executionId String
+  nodeId      String
+  result      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@id([executionId, nodeId])
+  @@map("execution_node_results")
+}
+
+model DeadLetterJob {
+  id           String   @id @default(cuid())
+  outboxJobId  String   @unique
+  queueName    String
+  jobName      String
+  payload      Json
+  error        String
+  stackTrace   String?
+  attemptCount Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("dead_letter_jobs")
+}
+
+model BatchCheckpoint {
+  id               String   @id @default(cuid())
+  batchJobId       String   @unique
+  chunkNumber      Int
+  lastProcessedRow Int
+  updatedAt        DateTime @updatedAt
+
+  @@map("batch_checkpoints")
 }
 

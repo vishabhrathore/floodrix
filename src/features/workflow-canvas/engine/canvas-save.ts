@@ -284,6 +284,14 @@ export async function publishWorkflow(input: {
     },
   });
 
+  // Guard maximum workflow complexity limits
+  const MAX_WORKFLOW_NODES = 500;
+  if (workflow.nodes.length > MAX_WORKFLOW_NODES) {
+    throw new Error(
+      `WorkflowComplexityError: Workflow exceeds the maximum allowed size of ${MAX_WORKFLOW_NODES} nodes. Current: ${workflow.nodes.length}`
+    );
+  }
+
   // Compute next version from CalcVersion table
   const latestVersion = await db.calcVersion.findFirst({
     where: { calcWorkflowId: workflowId },

@@ -1,6 +1,7 @@
 import { type Job, Queue, Worker } from "bullmq";
 
 import { BYPASS_REDIS, redisQueueClient } from "./redis";
+import { logger } from "@/server/engine/logger";
 
 // Re-export for backwards compatibility with existing workers
 export const redisConnection = redisQueueClient;
@@ -29,7 +30,7 @@ export async function addJob(
   opts?: any,
 ) {
   if (BYPASS_REDIS || !queue) {
-    console.warn(`Bypassing background job: ${name}`);
+    logger.warn({ jobName: name }, `Bypassing background job`);
     return null;
   }
   return queue.add(name, data, opts);

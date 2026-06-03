@@ -358,6 +358,7 @@ export async function invalidateFormulaCache(db: PrismaClient, formulaId: string
 
   const keysToDel = [
     cacheKey,
+    `res:formula:${formulaId}`,
     ...usages.map((u) => `wf:${u.calcWorkflowId}:registry-prefetch`),
   ];
   await AppCache.del(keysToDel);
@@ -375,6 +376,7 @@ export async function invalidateTableCache(db: PrismaClient, tableId: string) {
 
   const keysToDel = [
     cacheKey,
+    `res:table:${tableId}`,
     ...usages.map((u) => `wf:${u.calcWorkflowId}:registry-prefetch`),
   ];
   await AppCache.del(keysToDel);

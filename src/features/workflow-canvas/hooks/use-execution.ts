@@ -13,6 +13,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { useExecutionHighlightStore } from "@/features/workflow-canvas/store/workflow-canvas-store";
 import type { SessionStatus } from "@/generated/prisma";
+import { useSubscription } from "@trpc/tanstack-react-query";
 import { useTRPC } from "@/trpc/client";
 
 interface InputField {
@@ -51,6 +52,7 @@ interface ExecutionState {
   pauseReason: string | null;
   pausedNode: PausedNode | null;
   stepOutput: StepOutput | null;
+  nodeOutputs: Record<string, StepOutput>;
   variables: Record<string, unknown>;
   error: string | null;
   completedAt: string | null;
@@ -65,6 +67,7 @@ const initialState: ExecutionState = {
   pauseReason: null,
   pausedNode: null,
   stepOutput: null,
+  nodeOutputs: {},
   variables: {},
   error: null,
   completedAt: null,
@@ -80,18 +83,25 @@ export function useExecution(workflowId: string) {
   // Helper to absorb a server response into state
   const ingest = useCallback(
     (data: any) => {
-      setState((s) => ({
-        ...s,
-        status: data.status as SessionStatus,
-        sessionId: data.sessionId ?? s.sessionId,
-        currentNodeId: data.currentNodeId ?? data.pausedNode?.nodeId ?? null,
-        pauseReason: data.pauseReason ?? null,
-        pausedNode: (data.pausedNode as PausedNode) ?? null,
-        stepOutput: (data.stepOutput as StepOutput) ?? null,
-        variables: (data.variables as Record<string, unknown>) ?? s.variables,
-        completedAt: data.completedAt ?? null,
-        error: data.error?.message ?? null,
-      }));
+      setState((s) => {
+        const nextOutputs = { ...s.nodeOutputs };
+        if (data.stepOutput) {
+          nextOutputs[data.stepOutput.nodeId] = data.stepOutput;
+        }
+        return {
+          ...s,
+          status: data.status as SessionStatus,
+          sessionId: data.sessionId ?? s.sessionId,
+          currentNodeId: data.currentNodeId ?? data.pausedNode?.nodeId ?? null,
+          pauseReason: data.pauseReason ?? null,
+          pausedNode: (data.pausedNode as PausedNode) ?? null,
+          stepOutput: (data.stepOutput as StepOutput) ?? null,
+          nodeOutputs: nextOutputs,
+          variables: (data.variables as Record<string, unknown>) ?? s.variables,
+          completedAt: data.completedAt ?? null,
+          error: data.error?.message ?? null,
+        };
+      });
       pollingRef.current = data.status === "RUNNING" || data.status === "PENDING";
       // NEW: sync highlights
       if (Array.isArray(data.nodeExecutions)) {
@@ -163,11 +173,114 @@ export function useExecution(workflowId: string) {
     ),
   );
 
-  // When poll result comes back with a terminal status, absorb it
-  // (Handled by the useEffect below to avoid render-time side effects)
-  //     if (sessionQuery.data && sessionQuery.data.status !== "RUNNING" && pollingRef.current) {
-  //     ingest(sessionQuery.data);
-  // }
+  // tRPC Subscription for real-time progress updates
+  useSubscription(
+    trpc.calcExecution.subscribeProgress.subscriptionOptions(
+      { executionId: state.sessionId! },
+      {
+        enabled: !!state.sessionId,
+        onData(event: any) {
+          console.log("[tRPC Subscription] Real-time event received:", event);
+
+          switch (event.type) {
+            case "NODE_STARTED":
+              highlightStore.setNodeExecutionStatus(event.nodeId, "RUNNING");
+              highlightStore.setActiveExecutionNode(event.nodeId);
+              setState((s) => ({
+                ...s,
+                currentNodeId: event.nodeId,
+                status: "RUNNING" as SessionStatus,
+              }));
+              break;
+
+            case "NODE_COMPLETED":
+              highlightStore.setNodeExecutionStatus(event.nodeId, "COMPLETED");
+              highlightStore.setActiveExecutionNode(null);
+              setState((s) => {
+                const updatedVars = {
+                  ...s.variables,
+                  ...(event.output as Record<string, unknown>),
+                };
+
+                const stepOut: StepOutput = {
+                  nodeId: event.nodeId,
+                  nodeLabel: event.nodeLabel ?? "",
+                  nodeType: event.nodeType ?? "",
+                  outputs: (event.output as Record<string, unknown>) ?? {},
+                  result: (event.result as Record<string, unknown>) ?? {},
+                  durationMs: event.durationMs ?? 0,
+                  stepNumber: event.stepNumber ?? 0,
+                  totalSteps: 0,
+                };
+
+                const nextOutputs = {
+                  ...s.nodeOutputs,
+                  [event.nodeId]: stepOut,
+                };
+
+                return {
+                  ...s,
+                  currentNodeId: null,
+                  variables: updatedVars,
+                  stepOutput: stepOut,
+                  nodeOutputs: nextOutputs,
+                };
+              });
+              break;
+
+            case "NODE_FAILED":
+              highlightStore.setNodeExecutionStatus(event.nodeId, "ERRORED");
+              highlightStore.setActiveExecutionNode(null);
+              setState((s) => ({
+                ...s,
+                currentNodeId: null,
+                status: "ERRORED" as SessionStatus,
+                error: event.error,
+              }));
+              break;
+
+            case "WORKFLOW_STARTED":
+              setState((s) => ({
+                ...s,
+                status: "RUNNING" as SessionStatus,
+              }));
+              break;
+
+            case "WORKFLOW_COMPLETED":
+              highlightStore.setActiveExecutionNode(null);
+              setState((s) => ({
+                ...s,
+                status: "COMPLETED" as SessionStatus,
+                completedAt: new Date().toISOString(),
+              }));
+              break;
+
+            case "WORKFLOW_FAILED":
+              highlightStore.setActiveExecutionNode(null);
+              setState((s) => ({
+                ...s,
+                status: "ERRORED" as SessionStatus,
+                error: event.error,
+                completedAt: new Date().toISOString(),
+              }));
+              break;
+
+            case "WORKFLOW_CANCELLED":
+              highlightStore.setActiveExecutionNode(null);
+              setState((s) => ({
+                ...s,
+                status: "CANCELLED" as SessionStatus,
+                completedAt: new Date().toISOString(),
+              }));
+              break;
+          }
+        },
+        onError(err) {
+          console.error("[tRPC Subscription] Error in subscription:", err);
+        },
+      },
+    ),
+  );
 
   // ─── Actions ──────────────────────────────────────────────────────────
   //todo:ai-check
@@ -226,6 +339,7 @@ export function useExecution(workflowId: string) {
 
   return {
     ...state,
+    nodeOutputs: state.nodeOutputs,
     isRunning: state.status === "RUNNING" || state.status === "PENDING",
     isPaused: state.status === "PAUSED",
     isComplete: state.status === "COMPLETED",

@@ -99,6 +99,7 @@
     "nuqs": "^2.7.1",
     "papaparse": "^5.5.3",
     "pg": "^8.20.0",
+    "piscina": "^5.1.4",
     "prisma-erd-generator": "^2.4.2",
     "random-word-slugs": "^0.1.7",
     "react": "19.1.0",

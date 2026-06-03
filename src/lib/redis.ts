@@ -1,4 +1,5 @@
-import { Redis, type RedisOptions } from 'ioredis';
+import { Redis, Cluster, type RedisOptions } from 'ioredis';
+import { logger } from "@/server/engine/logger";
 
 export const BYPASS_REDIS = process.env.BYPASS_REDIS === 'true' || false;
 
@@ -36,14 +37,29 @@ function createRedisClient(name: string, db: number, customOptions: Partial<Redi
   };
 
   const REDIS_URL = process.env.REDIS_URL;
-  const finalClient = REDIS_URL ? new Redis(REDIS_URL, options) : new Redis(options);
+  const REDIS_USE_CLUSTER = process.env.REDIS_USE_CLUSTER === 'true';
+  const REDIS_USE_SENTINEL = process.env.REDIS_USE_SENTINEL === 'true';
+  const REDIS_SENTINELS = process.env.REDIS_SENTINELS; // JSON string of sentinels
+  const REDIS_SENTINEL_MASTER = process.env.REDIS_SENTINEL_MASTER || 'mymaster';
 
-  // Using console so we don't break if utils/logger.js isn't available exactly as imported
-  finalClient.on('connect', () => console.log(`[Redis] ${name} client connected (DB ${db})`));
-  finalClient.on('ready', () => console.log(`[Redis] ${name} client ready (DB ${db})`));
-  finalClient.on('error', (err: Error) => console.error(`[Redis] ${name} client error (DB ${db}):`, err));
-  finalClient.on('close', () => console.log(`[Redis] ${name} client connection closed (DB ${db})`));
-  finalClient.on('reconnecting', () => console.log(`[Redis] ${name} client reconnecting (DB ${db})...`));
+  if (REDIS_USE_SENTINEL && REDIS_SENTINELS) {
+    options.sentinels = JSON.parse(REDIS_SENTINELS);
+    options.name = REDIS_SENTINEL_MASTER;
+  }
+
+  const finalClient = REDIS_USE_CLUSTER
+    ? (new Cluster(JSON.parse(process.env.REDIS_CLUSTER_NODES || '[]'), {
+        redisOptions: options,
+      }) as any)
+    : REDIS_URL && !REDIS_USE_SENTINEL
+      ? new Redis(REDIS_URL, options)
+      : new Redis(options);
+
+  finalClient.on('connect', () => logger.info({ redisClient: name, db }, `[Redis] client connected`));
+  finalClient.on('ready', () => logger.info({ redisClient: name, db }, `[Redis] client ready`));
+  finalClient.on('error', (err: Error) => logger.error({ redisClient: name, db, err }, `[Redis] client error`));
+  finalClient.on('close', () => logger.info({ redisClient: name, db }, `[Redis] client connection closed`));
+  finalClient.on('reconnecting', () => logger.info({ redisClient: name, db }, `[Redis] client reconnecting`));
 
   clients.set(db, finalClient);
   return finalClient;
@@ -72,11 +88,12 @@ export const rateLimitRedisClient = createRedisClient('rate-limit', 3);
 // ============================================================
 
 export async function testAllRedisClients(): Promise<void> {
-  for (const [db, client] of clients.entries()) {
+  const entries = Array.from(clients.entries());
+  for (const [db, client] of entries) {
     if (!client) continue;
     const pong = await client.ping();
     if (pong === 'PONG') {
-      console.log(`✓ Redis DB ${db} client connected`);
+      logger.info({ db }, `✓ Redis client connected`);
     } else {
       throw new Error(`Redis DB ${db} ping failed`);
     }
@@ -84,10 +101,11 @@ export async function testAllRedisClients(): Promise<void> {
 }
 
 export async function closeAllRedisClients(): Promise<void> {
-  for (const [db, client] of clients.entries()) {
+  const entries = Array.from(clients.entries());
+  for (const [db, client] of entries) {
     if (client) {
       await client.quit();
-      console.log(`Redis DB ${db} client closed gracefully`);
+      logger.info({ db }, `Redis client closed gracefully`);
     }
   }
 }

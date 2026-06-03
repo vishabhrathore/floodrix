@@ -6,3 +6,4 @@ export async function register() {
     initWorkers();
   }
 }
+// Trigger server container reload to enforce safe 100 million elements matrix limit

@@ -152,7 +152,7 @@ export class FormulaHandler implements NodeHandler {
             expression: finalCode,
             scope,
           },
-          `[FormulaHandler] 🧵 Running in WORKER THREAD (Background Heavy Task)`
+          `[FormulaHandler] 🧵 Running in WORKER THREAD (Background Heavy Task - Piscina)`
         );
 
         const workerResult = (await pool.runMathEvaluation(finalCode, scope, {
@@ -166,7 +166,7 @@ export class FormulaHandler implements NodeHandler {
             nodeId: ctx.node.id,
             workerResult,
           },
-          `[FormulaHandler] Worker completed execution`
+          `[FormulaHandler] Piscina worker completed execution`
         );
 
         const rawValue =
@@ -242,7 +242,7 @@ export class FormulaHandler implements NodeHandler {
               expression,
               evalScope,
             },
-            `[FormulaHandler] 🧵 Running simple formula in MAIN THREAD`
+            `[FormulaHandler] 🧵 Running simple formula in MAIN THREAD (Synchronous Simple Code)`
           );
           value = safeEvaluate(expression, evalScope, {
             precision,

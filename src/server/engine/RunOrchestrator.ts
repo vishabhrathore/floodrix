@@ -73,33 +73,9 @@ export class RunOrchestrator {
     const wf = await this.deps.repo.loadWorkflow(input.calcWorkflowId);
     const nodeTypes = wf.nodes.map((n) => n.type);
 
-    // Check if any registry formula node is marked as a heavy background task in the database
-    const formulaRegistryIds = wf.nodes
-      .filter(
-        (n) =>
-          n.type === "FORMULA" &&
-          (n.config as any)?.source === "registry" &&
-          (n.config as any)?.registry_id,
-      )
-      .map((n) => (n.config as any).registry_id as string);
-
-    let hasHeavyRegistryFormula = false;
-    if (formulaRegistryIds.length > 0) {
-      const items = await this.deps.db.formulaRegistryItem.findMany({
-        where: { id: { in: formulaRegistryIds }, deletedAt: null },
-        select: { outputVariable: true, useWorker: true },
-      });
-      hasHeavyRegistryFormula = items.some((item) => {
-        const out = (item.outputVariable ?? {}) as any;
-        return item.useWorker === true || out.useWorker === true || out.use_worker === true;
-      });
-    }
-
     // ─── 3. Pick strategy ─────────────────────────────────────────
     const { strategy, reason } = this.deps.resolver.resolve({
       nodeTypes,
-      nodes: wf.nodes,
-      hasHeavyRegistryFormula,
       batchSize: input.batchSize ?? 1,
       forceStrategy: input.forceStrategy,
     });

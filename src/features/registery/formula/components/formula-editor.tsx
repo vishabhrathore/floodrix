@@ -52,6 +52,7 @@ export default function FormulaEditor({
           notation: "",
           displayLabel: "",
         },
+        intermediateSteps: (existing.intermediateSteps as any[]) ?? [],
         reference: existing.reference ?? undefined,
         sourceStandard: existing.sourceStandard ?? undefined,
         yearIntroduced: existing.yearIntroduced ?? undefined,
@@ -61,6 +62,8 @@ export default function FormulaEditor({
         tags: (existing.tags as string[]) ?? [],
         visibility: existing.visibility as any,
         useWorker: existing.useWorker,
+        isSystem: existing.isSystem,
+        isPublished: existing.isPublished,
       }
     : undefined;
 

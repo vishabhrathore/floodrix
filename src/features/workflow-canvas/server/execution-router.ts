@@ -4,6 +4,7 @@ import z from "zod";
 import { Prisma } from "@/generated/prisma";
 import prisma from "@/lib/db";
 import { AppCache } from "@/lib/cache";
+import { redisCacheClient } from "@/lib/redis";
 import { loadContext } from "@/server/context/context.loader";
 import { assertCanRunWorkflow, assertSessionAccess } from "@/server/context/guards";
 import {
@@ -496,6 +497,80 @@ export const calcExecutionRouter = createTRPCRouter({
         );
       } finally {
         tracker.end();
+      }
+    }),
+
+  subscribeProgress: protectedProcedure
+    .input(z.object({ executionId: z.string() }))
+    .subscription(async function* (opts) {
+      const { ctx, input } = opts;
+
+      // 1. Security Check: Validate session exists, tenant ownership, and permissions
+      const reqCtx = await loadContext(prisma, ctx.userId, {
+        sessionId: input.executionId,
+      });
+      assertSessionAccess(reqCtx);
+
+      // 2. Open Redis subscriber client
+      if (!redisCacheClient) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Redis cache client is not configured",
+        });
+      }
+
+      const subscriber = redisCacheClient.duplicate();
+      const channel = `workflow:${input.executionId}`;
+
+      try {
+        await subscriber.subscribe(channel);
+
+        const eventQueue: any[] = [];
+        let resolveNext: ((value: any) => void) | null = null;
+        let isClosed = false;
+
+        subscriber.on("message", (chan, message) => {
+          if (chan === channel) {
+            try {
+              const event = JSON.parse(message);
+              if (resolveNext) {
+                resolveNext({ value: event, done: false });
+                resolveNext = null;
+              } else {
+                eventQueue.push(event);
+              }
+            } catch (err) {
+              console.error("[tRPC Subscription] Failed to parse message:", err);
+            }
+          }
+        });
+
+        // Cleanup on disconnect
+        opts.signal?.addEventListener("abort", () => {
+          isClosed = true;
+          if (resolveNext) {
+            resolveNext({ done: true });
+            resolveNext = null;
+          }
+          subscriber.quit().catch(() => {});
+        });
+
+        while (!isClosed) {
+          if (eventQueue.length > 0) {
+            yield eventQueue.shift();
+          } else {
+            const nextPromise = new Promise<any>((resolve) => {
+              resolveNext = resolve;
+            });
+            const result = await nextPromise;
+            if (result.done) {
+              break;
+            }
+            yield result.value;
+          }
+        }
+      } finally {
+        await subscriber.quit().catch(() => {});
       }
     }),
 });

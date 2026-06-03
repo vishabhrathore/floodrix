@@ -1,38 +1,25 @@
-# Asynchronous Job & Transactional Outbox Infrastructure Memory
+# Asynchronous Job, Transactional Outbox, & Piscina Worker Thread Infrastructure
 
-This document provides a comprehensive blueprint of the decoupled, highly scalable, and 100% reliable background execution architecture implemented in this codebase. It explains how **Redis**, **BullMQ**, and the **Transactional Outbox Pattern** cooperate to guarantee absolute data consistency across all engineering calculations and batch workflow processes.
+This document is the definitive production-grade architectural guide for background execution, database-isolated Redis connectivity, the Transactional Outbox pattern, and resource-isolated worker threads in this system.
 
 ---
 
-## 🏗️ 1. Architecture Overview
+## 🏗️ 1. Complete System Architecture Flow
 
-To achieve bulletproof durability, we decoupled database writes from external job queuing. In high-scale distributed systems, pushing a job directly to Redis (`BullMQ`) within a database transaction is an anti-pattern. If the database transaction rolls back, the job will still execute. Conversely, if Redis fails, the transaction fails. 
+The workflow execution pipeline completely decouples database commits from background queue dispatch, and isolates compute-heavy user formulas inside worker threads managed via Piscina to prevent Node event-loop blockages:
 
-The **Transactional Outbox Pattern** solves this. When an execution event occurs, the server saves the business state AND writes a corresponding task payload as an `OutboxJob` inside the **same PostgreSQL transaction**. A dedicated background daemon—the **Outbox Relayer**—constantly polls PostgreSQL for these jobs, publishes them to Redis/BullMQ, and updates their state.
-
-```
-+-----------------------------------------------------------------------------------+
-|                            [ POSTGRESQL TRANSACTION ]                              |
-|                                                                                   |
-|  1. Business Write: Update CalcSession / workflow state                           |
-|  2. Outbox Write:   Create OutboxJob (status = 'PENDING')                         |
-+------------------------------------------+----------------------------------------+
-                                           | (Guaranteed Atomic Commit)
-                                           v
-                                   [ PostgreSQL DB ]
-                                           |
-                                           | (FOR UPDATE SKIP LOCKED)
-                                           v
-                             +---------------------------+
-                             |   Outbox Relayer Daemon   |
-                             +-------------+-------------+
-                                           | (Idempotent push with jobId = OutboxJob.id)
-                                           v
-                                   [ Redis (DB 2) ]
-                                           |
-                                           v
-                                   [ BullMQ Workers ]
-                             (calc, workflow, batch, sweeper)
+```mermaid
+graph TD
+    A[(PostgreSQL)] -->|1. Commit State + Outbox| B[Transactional Outbox]
+    B -->|2. Poll claimed jobs| C[Outbox Relayer]
+    C -->|3. Idempotent dispatch| D[BullMQ Queue]
+    D -->|4. Trigger job task| E[Workflow Worker]
+    E -->|5. Piscina wrapper run| F[Piscina Thread Pool]
+    F -->|6. Spawn / draw thread| G[Worker Thread]
+    G -->|7. Load workflow graph| A
+    G -->|8. Fetch inputs / datasets| A
+    G -->|9. Sandbox computation| H[Execute Math.js Scope]
+    H -->|10. Idempotent commit| A
 ```
 
 ---
@@ -41,7 +28,7 @@ The **Transactional Outbox Pattern** solves this. When an execution event occurs
 
 To ensure maximum resilience and separation of concerns, the Redis architecture employs isolated logical databases. This prevents application caching operations from evicting background workers or critical user sessions.
 
-### Key Database Allocations
+### Logical Database Allocation Table
 | Logical DB | Client Instance Name | Scope & Function | Custom Connection Settings |
 | :--- | :--- | :--- | :--- |
 | **DB 0** | `redisCacheClient` | Application-level cache, idempotency logs, step locks | Standard max attempts (3) |
@@ -49,8 +36,8 @@ To ensure maximum resilience and separation of concerns, the Redis architecture 
 | **DB 2** | `redisQueueClient` | **BullMQ Queues & Workers** | `maxRetriesPerRequest: null` (Required) |
 | **DB 3** | `rateLimitRedisClient` | API Rate-limiting counters | Standard max attempts (3) |
 
-### ⚡ The BullMQ connection Safety Override
-BullMQ workers poll Redis using blocking commands (e.g. `BRPOPLPUSH`). Under default configurations, `ioredis` limits blocking retry durations, causing connection drops during idle periods. 
+### ⚡ The BullMQ Connection Safety Override
+BullMQ workers poll Redis using blocking commands (e.g. `BRPOPLPUSH`). Under default configurations, `ioredis` limits blocking retry durations, causing connection drops during idle periods.
 * **The Solution**: The connection factory specifically overrides this behavior for **DB 2**, applying `maxRetriesPerRequest: null`. All other Redis clients retain strict retry constraints to prevent event-loop starvation during network partition incidents.
 * **Backward Compatibility**: `src/lib/bullmq.ts` re-exports `redisQueueClient` as `redisConnection`. Existing legacy worker hooks automatically inherited these upgrades without modifying their internal code structures.
 
@@ -77,11 +64,12 @@ model OutboxJob {
   updatedAt    DateTime     @updatedAt
 
   @@index([status, nextRetryAt, createdAt]) // High-performance index optimized for polling
+  @@index([status, updatedAt])              // High-performance index optimized for stuck-job watchdog recovery
 }
 ```
 
 > [!NOTE]  
-> The index `@@index([status, nextRetryAt, createdAt])` is critical. It allows the Outbox Relayer to instantly scan and claim pending/failed jobs without performing heavy full-table scans.
+> The indexes on `OutboxJob` are critical. The composite index `[status, nextRetryAt, createdAt]` allows the Outbox Relayer to instantly scan and claim pending/failed jobs without performing full-table scans. The index `[status, updatedAt]` ensures the watchdog recovery query is fully optimized.
 
 ---
 
@@ -130,18 +118,23 @@ RETURNING id, "queueName", "jobName", payload, "attemptCount";
 ```
 * **How it works**: The `FOR UPDATE SKIP LOCKED` clause locks the claimed rows for the duration of the current transaction. Concurrently running Relayer daemons ignore locked rows and grab the next available batch of 50 jobs. This prevents race conditions and maximizes throughput.
 
-#### 2. Guaranteed Exactly-Once Delivery (Idempotency Mapping)
-If the Relayer successfully pushes a job to Redis but crashes *before* it can update the job status in PostgreSQL, a potential double-dispatch arises. 
-* **The Solution**: We assign the PostgreSQL `OutboxJob.id` as the **BullMQ Job ID**:
-  ```typescript
-  await queue.add(job.jobName, job.payload, { jobId: job.id });
-  ```
-  Since BullMQ natively enforces uniqueness on Job IDs inside Redis, any repeated push attempts of the same `OutboxJob.id` are safely ignored as duplicate keys, guaranteeing **exactly-once execution**.
+#### 2. Idempotent Dispatch & Exactly-Once Processing Semantics
+BullMQ provides **at-least-once delivery semantics**. If a worker crashes immediately after running a task but before acknowledging, BullMQ will redeliver the job. To prevent data corruption, the system achieves **exactly-once processing semantics** through:
+
+$$\text{At-Least-Once Queue Delivery} + \text{Idempotent Processing} = \text{Exactly-Once Processing Semantics}$$
+
+*   **Job ID Mapping**: The PostgreSQL `OutboxJob.id` is explicitly passed as the BullMQ `jobId`:
+    ```typescript
+    await queue.add(job.jobName, job.payload, { jobId: job.id });
+    ```
+    Since BullMQ natively enforces unique job IDs inside Redis, any re-queue attempt of the same outbox job is ignored by Redis as a duplicate key.
+*   **Execution Idempotency**: The worker layer uses the `executionId` as a unique cluster-wide idempotency key.
+*   **Idempotent Execution Updates**: Persistent calculations must check state transitions to ensure that a finished execution cannot be modified or re-run by a delayed queue retry.
 
 #### 3. Fault-Tolerant Exponential Backoff & Capped Retries
 If the Redis cluster is temporarily offline, the Relayer updates the job status to `PENDING` and calculates a delayed retry execution window:
 $$\text{delay} = \min(2^{\text{attemptCount}} \times 1000\text{ms},\ 5\text{ minutes})$$
-* **Max Attempts**: If a malformed payload fails persistently for **20 attempts**, it is moved to `FAILED` and logged for developer intervention, preventing poison pill payloads from clogging the pipeline.
+* **Max Attempts**: If a job fails persistently for **20 attempts**, it is moved to `FAILED` and logged for developer intervention, preventing poison pill payloads from clogging the pipeline.
 
 #### 4. Automatic Crash Watchdog Recovery
 If the server container crashes midway through Relayer execution, claimed jobs remain locked in `PROCESSING` status indefinitely.
@@ -152,12 +145,13 @@ If the server container crashes midway through Relayer execution, claimed jobs r
   WHERE status = 'PROCESSING'
     AND "updatedAt" < NOW() - INTERVAL '5 minutes'
   ```
+  *(Optimized by the `@@index([status, updatedAt])` schema index).*
 
 ---
 
 ## 🪵 5. The Specialized Background Workers (`src/workers/`)
 
-The workers subscribe to individual logical queues mapped from `DB 2` and process tasks asynchronously:
+The workers subscribe to individual logical queues mapped from `DB 2` and coordinate tasks. Crucially, they act as an **orchestration layer** and delegate heavy CPU mathematical work to isolated **Piscina worker threads** to maintain process stability.
 
 ```
                   +-----------------------------------+
@@ -174,19 +168,36 @@ The workers subscribe to individual logical queues mapped from `DB 2` and proces
     |   Calc    |     | Workflow  |   |   Batch   |     |  Sweeper  |
     |  Worker   |     |  Worker   |   |  Worker   |     |  Worker   |
     +-----------+     +-----------+   +-----------+     +-----------+
+          |                 |               |
+          +--------+--------+---------------+
+                   |
+                   v
+         +-------------------+
+         | Piscina Pool      |  <-- Prevents Event Loop Blockage
+         +---------+---------+
+                   |
+         +---------+---------+
+         | Worker Thread     |  <-- Runs MathJS Sandboxed Scope
+         +-------------------+
 ```
 
 ### 1. Calculation Session Worker (`calcWorker.ts`)
 * **Queue**: `calc-execution`
-* **Function**: Executes mathematical calculations in multi-stage sessions. Supports non-blocking paused flows. If calculations hit slow or asynchronous nodes, it registers a `calc/session.resume` job and pauses execution to process on next tick.
+* **Function**: Orchestrates calculations in multi-stage sessions. Loads execution metadata and delegates calculations to a Piscina worker thread. If the worker thread hits a slow or asynchronous node, it pauses execution and enqueues a `calc/session.resume` job.
 
 ### 2. Workflow Executor Worker (`workflowWorker.ts`)
 * **Queue**: `workflow-execution`
-* **Function**: Standard workflow execution. Creates an `Execution` log, generates a dependency graph, sorts nodes topologically via `topologicalSort`, runs executors sequentially, and writes result states.
+* **Function**: The BullMQ worker acts as an orchestration layer. It loads execution metadata and delegates workflow execution to a Piscina worker thread. The worker thread:
+  1. Loads the workflow definition directly from the database using `workflowId`.
+  2. Loads execution inputs and variables directly using `executionId`.
+  3. Performs topological sorting (`topologicalSort`) to determine node execution order.
+  4. Runs each node through its matching sandboxed executor.
+  5. Persists result states idempotently in PostgreSQL.
 
 ### 3. Batch Processor Worker (`batchWorker.ts`)
 * **Queue**: `batch-process`
-* **Function**: Runs heavy calculations (e.g. executing workflows over thousands of input records). Employs memory protection by caching formulas beforehand and streaming updates in chunks of 50 inside database transactions.
+* **Function**: Acts as a batch orchestration coordinator. To avoid out-of-memory errors and main-thread blocks, work is chunked and executed sequentially within worker threads.
+* **Option A Model (Enforced)**: A single batch execution request is locked to a single, dedicated worker thread. The worker thread loops through chunks sequentially (streaming and executing 100 rows at a time) to process the entire batch, preserving CPU isolation and memory limits without spawning concurrent threads.
 
 ### 4. Sweeper TTL Clean-up Worker (`sweeperWorker.ts`)
 * **Queue**: `sweeper-queue`
@@ -194,74 +205,157 @@ The workers subscribe to individual logical queues mapped from `DB 2` and proces
 
 ---
 
-## 📊 6. Job Lifecycle & State Transitions
+## 🧵 6. Worker Thread Runtime & Boundary Rules
 
-An `OutboxJob` transitions through the following statuses during its processing lifecycle:
+Executing user calculation expressions or sandboxed code blocks inside the main process event loop is completely prohibited:
 
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING : Transaction Committed
-    PENDING --> PROCESSING : Poller Claims Batch (SKIP LOCKED)
-    
-    state Relayer_Dispatch {
-        PROCESSING --> BullMQ_Push : Try adding to Redis
-    }
+> [!CAUTION]  
+> **Forbidden Boundary Violation**:
+> $$\text{BullMQ Worker Process} \rightarrow \text{Direct MathJS Execution (Main Thread)} \quad \text{[BANNED]}$$
 
-    BullMQ_Push --> ENQUEUED : Success (redisJobId registered)
-    BullMQ_Push --> PENDING : Transient Failure (Retry Backoff applied)
-    BullMQ_Push --> FAILED : Permanent Failure (Attempts >= 20)
-    
-    PROCESSING --> PENDING : Watchdog Recovers Crash (> 5m stuck)
-    
-    ENQUEUED --> [*] : Worker Executes Task
-    FAILED --> [*] : Human Intervention Required
-```
+User calculation expressions or sandboxed code blocks must **never** be executed inside the main process event loop.
 
-| Outbox Status | Description | System Behavior |
-| :--- | :--- | :--- |
-| **`PENDING`** | Job is written to DB. Ready for processing. | Checked by the Outbox Relayer's polling interval loop. |
-| **`PROCESSING`** | Claimed by an active Relayer node. | Rows are locked via `FOR UPDATE` so concurrent relayers ignore them. |
-| **`ENQUEUED`** | Successfully pushed to BullMQ/Redis DB 2. | Enqueued timestamp and BullMQ `jobId` are recorded for logging. |
-| **`FAILED`** | Failed persistently after 20 retries. | Poller stops querying this row. Requires administrative analysis. |
+> [!TIP]  
+> **Required Execution Pipeline**:
+> $$\text{BullMQ Worker Process} \rightarrow \text{Piscina Pool Manager} \rightarrow \text{Worker Thread} \rightarrow \text{MathJS Sandboxed Eval} \quad \text{[MANDATORY]}$$
+
+Every workflow execution is isolated from the Node.js main event loop by running inside a Piscina worker thread drawn from the pool.
 
 ---
 
-## 🛠️ 7. Verification & Operations Command Guide
+### 🔌 A. Thread Boundary Rules (Identifiers Only)
+To minimize message-passing overhead and memory pressure under high concurrency, we enforce a strict **lightweight messaging policy** across the thread boundary.
 
-Use these queries and tools to monitor and troubleshoot the Outbox and Worker subsystems.
+> [!IMPORTANT]  
+> **Rule**: Do not pass heavy datasets, large matrices, raw execution state JSON blobs, or complex visual graphs through the Piscina message-passing interface. Only pass identifiers.
 
-### 1. View Current Outbox Health & Queue Backlogs
-Monitor the distribution of jobs across queues to verify the system is draining smoothly:
-```sql
-SELECT status, "queueName", COUNT(*), MIN("createdAt") AS oldest_job 
-FROM "OutboxJob" 
-GROUP BY status, "queueName" 
-ORDER BY status;
+*   **Before (Anti-Pattern - Causes GC Pressure)**:
+    ```typescript
+    await piscina.run({
+      workflowId,
+      executionId,
+      inputs, // Heavy JSON payload containing matrices/rows
+    });
+    ```
+*   **After (Standardized - High Performance)**:
+    ```typescript
+    await piscina.run({
+      workflowId,
+      executionId,
+    });
+    ```
+*   **Allowed across boundary**:
+    *   `workflowId` (string)
+    *   `executionId` (string)
+    *   `sessionId` (string)
+*   **Forbidden across boundary**:
+    *   Large matrices
+    *   Workflow graphs
+    *   Batch datasets
+    *   Execution state snapshots
+*   **Enforcement**: Worker threads must load their required graphs, variables, and data payloads directly from PostgreSQL or the persistent caching layer.
+
+---
+
+### 🛡️ B. Worker Failure Isolation & Timeout Actions
+Piscina worker crashes or execution timeouts must never terminate BullMQ worker processes or cause the main API server to halt.
+*   **Required Try/Catch Guard**: Every Piscina invocation must be wrapped in a `try/catch` block.
+    ```typescript
+    try {
+      await piscina.run({
+        executionId,
+        workflowId,
+      });
+    } catch (error) {
+      await handleExecutionError(executionId, error);
+    }
+    ```
+*   **Thread Timeout Execution Flow (30 Seconds)**:
+    If a calculation execution exceeds the configured timeout:
+    1.  **Mark execution as FAILED** in PostgreSQL with a `TIMEOUT_EXPIRED` diagnostic error.
+    2.  **Terminate the worker task** to immediately release worker threads back to the pool.
+    3.  **Release the BullMQ worker process** so it is free to grab the next queue items.
+    4.  **Record timeout diagnostics** (e.g. current node and elapsed stats) to stdout logs.
+
+---
+
+### 💾 C. Execution & Persistence Idempotency
+To prevent data duplication in case of worker crashes after a DB commit but before a queue acknowledgment, all database persistence operations must be fully idempotent.
+
+*   **Uniqueness Constraints**:
+    Database tables enforce strict constraints to handle conflicts cleanly via `ON CONFLICT DO UPDATE`:
+    ```sql
+    UNIQUE(executionId)         -- Unique constraint on execution summaries
+    UNIQUE(executionId, nodeId)  -- Unique constraint on step-by-step outcomes
+    ```
+*   **Payload Size Persistence Routing Recommendation**:
+    We divide persistence routing based on payload sizes to optimize memory usage:
+
+| Output Payload Size | Recommended Path | Execution Flow |
+| :--- | :--- | :--- |
+| **Large Outputs** (e.g. matrices, CSV data, heavy JSON) | **Direct Worker Write** | Worker Thread $\rightarrow$ Direct DB Write |
+| **Small Outputs** (e.g. status keys, small scalars) | **Returned Output** | Worker Thread $\rightarrow$ Return to BullMQ Worker $\rightarrow$ BullMQ Worker Writes |
+
+---
+
+### 🔒 D. Expression Safety & Curated Evaluation Scope
+Arbitrary user calculation formulas are processed inside a highly restricted, curated MathJS evaluation scope inside the worker thread.
+
+*   **Curated MathJS Scope**:
+    Math.js itself is **not** a secure virtual machine sandbox and does not provide CPU, process, or memory isolation. **The parent Node OS Worker Threads provide the actual process and memory isolation boundary**. Math.js is strictly used to enforce a restricted, curated namespace of exposed symbols.
+*   **Approved Whitelist of Symbols**:
+    Only pure mathematical, logical, and array manipulation helpers are exposed:
+    `sqrt`, `pow`, `log`, `sin`, `cos`, `multiply`, `divide`, etc.
+*   **Forbidden Operations (Exposed Blacklist)**:
+    Access to system files, imports, package inclusion, and dynamic module creation are completely blocked:
+    `import`, `createUnit`, dynamic extensions.
+*   **Workflow Runtime Limits**:
+    Even with sandboxing, we enforce operational limits to prevent denial-of-service attempts:
+    *   **Maximum Execution Time**: Enforce a strict execution window (e.g., 30 seconds default).
+    *   **Maximum Matrix Size**: Throws a size error if matrix dimensions exceed `MAX_ELEMENTS = 1,000,000` (prevents memory blowup).
+    *   **Maximum Node Count**: Configurable limit to check workflow depth.
+    *   **Memory Protection**: Memory usage is monitored and protected through matrix-size limits, workflow limits, and process-level resource controls. Individual worker threads cannot reliably enforce memory limits internally.
+
+---
+
+### 🛑 E. Cancellation Semantics
+Workflow execution cancellation is **cooperative**, meaning calculations check for cancellation states at logical boundaries.
+
+*   **Node-Boundary Cancellation**: The engine queries cancellation states before launching a node's execution.
+*   **Batch Chunk Cancellation**: For batch executions, cancellation checks occur before grabbing the next data chunk.
+*   **Guarantees**: While a single expensive mathematical operation (e.g., large matrix multiplication) might not be instantly interruptible, the workflow will stop immediately at the very next node or chunk boundary.
+*   **Cancellation Check Trigger Locations**:
+    1.  Before next node execution.
+    2.  Before next batch chunk execution.
+    3.  Before resuming a paused execution.
+
+---
+
+## 🏎️ 7. Piscina Pool Configuration & Thread Reuse
+
+To prevent severe thread creation overhead, CPU thrashing, and context-switching bottlenecks, we utilize Piscina's core thread reuse design. 
+
+### 🔄 Thread Reuse Mechanics
+Piscina worker threads are persistent and drawn from the thread pool. A single worker thread is kept alive and reused across its lifetime—executing `Workflow A`, then `Workflow B`, then `Workflow C` sequentially as tasks arrive in the queue. 
+
+### 📐 Sizing Configurations
+Piscina pools must be scaled according to the host system's hardware specifications:
+
+```typescript
+const poolConfig = {
+  minThreads: 2,
+  maxThreads: Math.max(2, os.cpus().length), // Draw up to available physical/logical cores
+};
 ```
 
-### 2. Inspect Blocked or Failed Jobs
-Identify payloads causing repeated failures:
-```sql
-SELECT id, "queueName", "jobName", "attemptCount", "lastError", "nextRetryAt", "createdAt"
-FROM "OutboxJob"
-WHERE status = 'FAILED' OR ("status" = 'PENDING' AND "attemptCount" > 0)
-ORDER BY "updatedAt" DESC
-LIMIT 10;
-```
+| Host CPU Cores | Sizing Policy (`min` $\rightarrow$ `max`) | Recommended Target |
+| :--- | :--- | :--- |
+| **4-Core Host** | 2 $\rightarrow$ 4 | **4 Threads max** |
+| **8-Core Host** | 2 $\rightarrow$ 8 | **8 Threads max** |
+| **16-Core Host** | 2 $\rightarrow$ 16 | **16 Threads max** |
 
-### 3. Recover Stuck Failed Jobs for Reprocessing
-To force reprocessing of a failed job, reset its status, attempt count, and retry delay:
-```sql
-UPDATE "OutboxJob" 
-SET status = 'PENDING', "attemptCount" = 0, "nextRetryAt" = NOW() 
-WHERE id = 'job_id_here';
-```
-
-### 4. Observe Logging Logs
-Background daemons emit high-observability tags to stdout. Watch server output for these markers:
-* `[OutboxRelayer] Claimed X jobs to dispatch` — Relayer active.
-* `[Redis] bullmq client connected (DB 2)` — Worker connection pool initialized successfully.
-* `[OutboxRelayer Watchdog] Recovered X stuck PROCESSING job(s)` — Crash-recovery running.
+> [!WARNING]  
+> Avoid over-allocating threads (e.g., configuring `maxThreads: 100` on a 4-core machine). Over-allocation forces high context-switching overhead, triggers CPU thrashing, and significantly degrades overall calculation throughput.
 
 ---
 *Document author: Antigravity AI Engine (Pair Programming Session)*

@@ -12,6 +12,7 @@
 //  and vice versa.
 // ═══════════════════════════════════════════════════════════════════════════
 import type { ExecutionEvent } from "./types";
+import { logger } from "./logger";
 
 export type ListenerFn = (event: ExecutionEvent) => void | Promise<void>;
 
@@ -51,26 +52,21 @@ export class ExecutionEventEmitter {
    * executor dropping this promise, swallowing DB errors.
    */
   async emit(event: ExecutionEvent): Promise<void> {
-    const results = await Promise.allSettled(
-      this.listeners.map(async (listener) => {
-        try {
-          await listener.fn(event);
-        } catch (err) {
-          const wrapped = err instanceof Error ? err : new Error(String(err));
-          wrapped.message = `[listener:${listener.name}] ${wrapped.message}`;
-          throw wrapped;
-        }
-      })
-    );
-
-    const errors = results
-      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-      .map((r) => r.reason as Error);
+    const errors: Error[] = [];
+    for (const listener of this.listeners) {
+      try {
+        await listener.fn(event);
+      } catch (err) {
+        const wrapped = err instanceof Error ? err : new Error(String(err));
+        wrapped.message = `[listener:${listener.name}] ${wrapped.message}`;
+        errors.push(wrapped);
+      }
+    }
 
     if (errors.length > 0) {
       if (errors.length > 1) {
         for (let i = 1; i < errors.length; i++) {
-          console.error("Additional listener error:", errors[i]);
+          logger.error(errors[i], "Additional listener error");
         }
       }
       throw errors[0];

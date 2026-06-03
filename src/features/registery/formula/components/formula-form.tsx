@@ -863,6 +863,24 @@ export function FormulaForm({
                 )}
               />
             </div>
+            <div className="flex items-center justify-between rounded-md border border-border/60 p-3">
+              <div>
+                <p className="text-sm font-medium">Published</p>
+                <p className="text-xs text-muted-foreground">
+                  Make available for general use in workflows
+                </p>
+              </div>
+              <Controller
+                name="isPublished"
+                control={control}
+                render={({ field }) => (
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
           </div>
         </Section>
       </div>
@@ -893,25 +911,6 @@ export function FormulaForm({
                 </div>
                 <Controller
                   name="isSystem"
-                  control={control}
-                  render={({ field }) => (
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  )}
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-md border border-border/60 bg-background p-3">
-                <div>
-                  <p className="text-sm font-medium">Published</p>
-                  <p className="text-xs text-muted-foreground">
-                    Make available for general use in workflows
-                  </p>
-                </div>
-                <Controller
-                  name="isPublished"
                   control={control}
                   render={({ field }) => (
                     <Switch

@@ -65,6 +65,13 @@ export class WriteSerializer {
 
     return next as any;
   }
+
+  static async awaitPending(sessionId: string): Promise<void> {
+    const pending = this.queues.get(sessionId);
+    if (pending) {
+      await pending;
+    }
+  }
 }
 
 interface WorkflowExecutorDeps {
@@ -148,6 +155,12 @@ export class WriteBufferManager {
 const GLOBAL_SHUTDOWN_KEY = Symbol.for("nodebase.shutdown_hook_registered");
 
 function registerShutdownHook(repo: SessionRepository) {
+  if (process.env.NODE_ENV !== "production") {
+    // In development mode, global signal interceptors that call process.exit()
+    // interfere with Next.js's own signal handling and compilation worker reload mechanisms.
+    return;
+  }
+
   // Use Node.js global scope to persist the registration state across Next.js HMR reloads,
   // preventing memory leaks and duplicate process event listeners.
   if ((global as any)[GLOBAL_SHUTDOWN_KEY]) return;
@@ -349,7 +362,7 @@ export class WorkflowExecutor {
           variables,
         }),
       ])
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] resumeWithInput failed:`, err));
+    ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] resumeWithInput failed`));
 
     return this._continueExecutionWithSession(updatedSession, { ...options, bypassLock: true });
   }
@@ -396,7 +409,7 @@ export class WorkflowExecutor {
         nextIndex: session.currentIndex + 1,
         variables: session.variables,
       })
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] stepForward failed:`, err));
+    ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] stepForward failed`));
 
     return this._continueExecutionWithSession(updatedSession, { ...options, stepMode: true, bypassLock: true });
   }
@@ -486,7 +499,7 @@ export class WorkflowExecutor {
           variables: session.variables,
         }),
       ])
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] stepBack failed:`, err));
+    ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] stepBack failed`));
 
     return this._continueExecutionWithSession(updatedSession, { stepMode: true, bypassLock: true });
   }
@@ -679,7 +692,7 @@ export class WorkflowExecutor {
                 stepMode: false,
               }),
             ])
-          ).catch((err) => console.error(`[BACKGROUND_WRITE] background transition failed:`, err));
+          ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] background transition failed`));
 
           return {
             sessionId,
@@ -760,7 +773,10 @@ export class WorkflowExecutor {
 
       // ── errored ───────────────────────────────────────────────
       if (outcome.kind === "errored") {
-        console.error(`[WorkflowExecutor.continueExecution] ❌ Node failed: nodeId="${nodeId}" type="${node.type}" label="${node.label}" error="${outcome.error.message}"`);
+        logger.error(
+          { sessionId, nodeId, nodeType: node.type, nodeLabel: node.label, err: outcome.error },
+          `[WorkflowExecutor.continueExecution] ❌ Node failed`
+        );
         const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
         if (idx !== -1) nodeExecs[idx].status = "ERRORED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "ERRORED" });
@@ -853,7 +869,7 @@ export class WorkflowExecutor {
               stepMode,
             }),
           ])
-        ).catch((err) => console.error(`[BACKGROUND_WRITE] paused handler failed:`, err));
+        ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] paused handler failed`));
 
         return {
           sessionId,
@@ -966,7 +982,7 @@ export class WorkflowExecutor {
               stepMode: true,
             }),
           ])
-        ).catch((err) => console.error(`[BACKGROUND_WRITE] stepMode paused failed:`, err));
+        ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] stepMode paused failed`));
 
         let execs = await AppCache.getSessionExecutions(sessionId) || [];
         if (execs.length === 0) {
@@ -1025,7 +1041,7 @@ export class WorkflowExecutor {
           ),
         }),
       ])
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] completion failed:`, err));
+    ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] completion failed`));
 
     return await this.buildResult(
       sessionId,
@@ -1037,9 +1053,12 @@ export class WorkflowExecutor {
       const finalData = WriteBufferManager.get(sessionId);
       if (finalData && finalData.pendingCount > 0) {
         await this.deps.repo.updateProgress(sessionId, finalData.variables, finalData.currentIndex)
-          .catch((err) => console.error(`[WriteBuffer] Final flush failed:`, err));
+          .catch((err) => logger.error({ sessionId, err }, `[WriteBuffer] Final flush failed`));
       }
       WriteBufferManager.remove(sessionId);
+
+      // Await any pending background writes to ensure transactional consistency in worker threads/processes
+      await WriteSerializer.awaitPending(sessionId);
     }
   }
 
@@ -1141,7 +1160,7 @@ export class WorkflowExecutor {
           error: error.message,
         }),
       ])
-    ).catch((err) => console.error(`[BACKGROUND_WRITE] errorSession failed:`, err));
+    ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] errorSession failed`));
 
     let execs = await AppCache.getSessionExecutions(sessionId) || [];
     if (execs.length === 0) {
@@ -1233,6 +1252,8 @@ export class WorkflowExecutor {
         break;
       }
       case "FORMULA": {
+        outputs.displayExpression = outcome.result.displayExpression ?? outcome.result.expression;
+        outputs.value = outcome.result.value;
         outputs.expressions = [
           {
             outputKey: outcome.result.outputKey,

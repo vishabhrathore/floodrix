@@ -39,7 +39,7 @@ import {
   Wand2,
   X,
 } from "lucide-react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm, UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 
 import { type EditorParsed, MathEditor, type MathEditorRef } from "@/components/core/MathEditor";
@@ -67,12 +67,8 @@ const variableSchema = z.object({
   displayLabel: z.string().min(1, "Label required"),
   unit: z.string().optional(),
   description: z.string().optional(),
-  dataType: z
-    .enum(["NUMBER", "STRING", "BOOLEAN", "ARRAY", "OBJECT"])
-    .optional()
-    .default("NUMBER"),
+  dataType: z.enum(["NUMBER", "STRING", "BOOLEAN", "ARRAY", "OBJECT"]),
   value: z.any().optional(),
-  useWorker: z.boolean().optional(),
 });
 
 const formulaSchema = z.object({
@@ -92,13 +88,19 @@ const formulaSchema = z.object({
   outputVariable: variableSchema,
   reference: z.string().optional(),
   sourceStandard: z.string().optional(),
-  yearIntroduced: z.coerce
-    .number()
-    .int()
-    .min(1900)
-    .max(2099)
-    .optional()
-    .nullable(),
+  yearIntroduced: z.preprocess(
+    (val) => {
+      if (val === "" || val === undefined || val === null) return null;
+      return val;
+    },
+    z.coerce
+      .number()
+      .int()
+      .min(1900)
+      .max(2099)
+      .optional()
+      .nullable()
+  ),
   region: z.string().optional(),
   applicability: z.string().optional(),
   limitations: z.string().optional(),
@@ -106,8 +108,8 @@ const formulaSchema = z.object({
   visibility: z.enum(["PRIVATE", "PUBLIC"]),
   isSystem: z.boolean().optional(),
   isPublished: z.boolean().optional(),
+  use_worker: z.boolean().optional(),
   intermediateSteps: z.array(z.any()).optional(),
-  useWorker: z.boolean().optional(),
 });
 
 export type FormulaFormValues = z.infer<typeof formulaSchema>;
@@ -168,7 +170,7 @@ function Section({
 
 // ─── Variable row ─────────────────────────────────────────────────────────────
 
-type RHFRegister = ReturnType<typeof useForm>["register"];
+type RHFRegister = any;
 
 function VariableRow({
   prefix,
@@ -288,7 +290,7 @@ export function FormulaForm({
     setValue,
     formState: { errors, isDirty },
   } = useForm<FormulaFormValues>({
-    resolver: zodResolver(formulaSchema),
+    resolver: zodResolver(formulaSchema) as any,
     defaultValues: {
       visibility: "PRIVATE",
       inputVariables: [
@@ -306,12 +308,11 @@ export function FormulaForm({
         unit: "",
         description: "",
         dataType: "NUMBER",
-        useWorker: false,
       },
       tags: [],
       isSystem: false,
       isPublished: false,
-      useWorker: false,
+      use_worker: true,
       ...initialValues,
     },
   });
@@ -565,6 +566,11 @@ export function FormulaForm({
                   </Select>
                 )}
               />
+              {errors.category && (
+                <p className="mt-1 text-[11px] text-destructive">
+                  {errors.category.message}
+                </p>
+              )}
             </div>
             <div>
               <Label className="text-xs">Sub-category</Label>
@@ -662,7 +668,7 @@ export function FormulaForm({
                     }
                     register={register}
                     errors={
-                      (errors.inputVariables?.[index] ?? {}) as Record<
+                      ((errors.inputVariables as any)?.[index] ?? {}) as Record<
                         string,
                         unknown
                       >
@@ -703,24 +709,6 @@ export function FormulaForm({
                   (errors.outputVariable ?? {}) as Record<string, unknown>
                 }
               />
-              <div className="mt-4 flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3">
-                <div className="flex flex-col pr-2">
-                  <p className="text-sm font-medium">Background Heavy Task</p>
-                  <p className="text-xs text-muted-foreground">
-                    If this custom formula performs heavy computations or matrix loops, run it in an isolated worker thread sandbox.
-                  </p>
-                </div>
-                <Controller
-                  name="useWorker"
-                  control={control}
-                  render={({ field }) => (
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  )}
-                />
-              </div>
             </div>
           </div>
         </Section>
@@ -768,6 +756,11 @@ export function FormulaForm({
                 placeholder="1965"
                 className="mt-1 h-8 text-sm"
               />
+              {errors.yearIntroduced && (
+                <p className="mt-1 text-[11px] text-destructive">
+                  {errors.yearIntroduced.message}
+                </p>
+              )}
             </div>
             <div>
               <Label className="text-xs">Region</Label>
@@ -876,6 +869,24 @@ export function FormulaForm({
                 render={({ field }) => (
                   <Switch
                     checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border/60 p-3">
+              <div>
+                <p className="text-sm font-medium">Run on Worker Thread</p>
+                <p className="text-xs text-muted-foreground">
+                  Execute using Piscina worker pool (disable to bypass and run locally on main thread)
+                </p>
+              </div>
+              <Controller
+                name="use_worker"
+                control={control}
+                render={({ field }) => (
+                  <Switch
+                    checked={field.value ?? true}
                     onCheckedChange={field.onChange}
                   />
                 )}

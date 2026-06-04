@@ -122,7 +122,7 @@ export function FormulaConfig({
   const [precision, setPrecision] = useState(config.result_precision ?? 3);
   const [reference, setReference] = useState(config.reference ?? "");
   const [registryId, setRegistryId] = useState(config.registry_id ?? "");
-  const [useWorker, setUseWorker] = useState(config.use_worker ?? false);
+  const [useWorker, setUseWorker] = useState<boolean>(config.use_worker ?? true);
 
   const [registryInputs, setRegistryInputs] = useState<RegistryVariable[]>(
     config.registry_inputs ?? [],
@@ -179,7 +179,6 @@ export function FormulaConfig({
       result_variable: resultVar,
       result_unit: resultUnit,
       result_precision: precision,
-      use_worker: useWorker,
       reference,
       variable_bindings: effectiveBindings,
       registry_inputs: source === "registry" ? registryInputs : undefined,
@@ -195,6 +194,7 @@ export function FormulaConfig({
           unit: av?.unit || regVar?.unit || "",
         };
       }),
+      use_worker: useWorker,
       ...(source === "registry" ? { registry_id: registryId } : {}),
     });
   }, [
@@ -204,7 +204,6 @@ export function FormulaConfig({
     resultVar,
     resultUnit,
     precision,
-    useWorker,
     reference,
     effectiveBindings,
     requiredVars,
@@ -212,6 +211,7 @@ export function FormulaConfig({
     registryId,
     registryInputs,
     registryOutput,
+    useWorker,
     onSave,
   ]);
 
@@ -472,21 +472,23 @@ export function FormulaConfig({
               />
             </ConfigField>
           </div>
-          <div className="mt-4 rounded-lg border border-slate-200/60 bg-slate-50/50 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col pr-2">
-                <span className="text-[11px] font-semibold text-slate-700">
-                  Background Heavy Task
-                </span>
-                <span className="text-[9px] text-slate-400">
-                  Execute in isolated background worker sandbox
-                </span>
-              </div>
-              <Switch
-                checked={useWorker}
-                onCheckedChange={setUseWorker}
-              />
+        </ConfigSection>
+
+        <ConfigSection
+          title="Execution Settings"
+          description="Control how this node executes"
+        >
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
+            <div className="mr-4">
+              <p className="text-xs font-semibold text-slate-700">Run on Worker Thread</p>
+              <p className="text-[10px] text-slate-500">
+                Offload execution to Piscina worker pool (recommended). Disable to bypass and run locally on the main thread.
+              </p>
             </div>
+            <Switch
+              checked={useWorker}
+              onCheckedChange={setUseWorker}
+            />
           </div>
         </ConfigSection>
 

@@ -61,9 +61,9 @@ export default function FormulaEditor({
         limitations: existing.limitations ?? undefined,
         tags: (existing.tags as string[]) ?? [],
         visibility: existing.visibility as any,
-        useWorker: existing.useWorker,
         isSystem: existing.isSystem,
         isPublished: existing.isPublished,
+        use_worker: existing.useWorker ?? true,
       }
     : undefined;
 

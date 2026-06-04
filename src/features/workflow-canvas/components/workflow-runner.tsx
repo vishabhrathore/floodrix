@@ -26,6 +26,7 @@ import {
   SkipForward,
   StepForward,
   X,
+  FileText,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useExecution } from "@/features/workflow-canvas/hooks/use-execution";
 import MarkdownContent from "@/web/components/MarkdownContent";
+import { TypewriterMarkdown } from "@/features/workflow-canvas/components/typewriter-markdown";
+import { WorkflowReport } from "@/features/workflow-canvas/components/workflow-report";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
+import { SequentialTypewriter } from "./sequential-typewriter";
 
 interface WorkflowRunnerProps {
   workflowId: string;
@@ -50,9 +56,25 @@ export function WorkflowRunner({
   onClose,
   execution,
 }: WorkflowRunnerProps) {
+  const trpc = useTRPC();
   const internalExec = useExecution(workflowId);
   const exec = execution || internalExec;
   const [autoStarted, setAutoStarted] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  const { data: workflow } = useQuery(
+    trpc.calcWorkflows.getOne.queryOptions({ id: workflowId }),
+  );
+  const meta = workflow?.metadata as Record<string, unknown> | null;
+
+  const executions = Object.values(exec.nodeOutputs ?? {})
+    .filter((n: any) => n.result?.markdown)
+    .map((n: any) => ({
+      nodeId: n.nodeId,
+      nodeLabel: n.nodeLabel || "Calculation",
+      nodeType: n.nodeType,
+      markdown: String(n.result.markdown),
+    }));
 
   // Auto-start when the panel opens
   useEffect(() => {
@@ -63,9 +85,9 @@ export function WorkflowRunner({
   }, [autoStarted, exec, stepMode]);
 
   return (
-    <div className="flex h-full w-[400px] flex-col border-l bg-white overflow-hidden">
+    <div className="flex h-full w-[800px] flex-col border-l bg-white overflow-hidden shadow-2xl z-[9999]">
       {/* ── Header ──────────────────────────────────────── */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex items-center justify-between border-b px-6 py-4 bg-neutral-50/50">
         <div className="flex items-center gap-2">
           <div className="text-sm font-semibold text-neutral-800">
             {stepMode ? "Step Runner" : "Workflow Runner"}
@@ -79,84 +101,172 @@ export function WorkflowRunner({
 
       {/* ── Body ────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="p-4 space-y-4">
-          {exec.isStarting && <LoadingState message="Starting execution…" />}
-
-          {exec.isRunning && !exec.isStarting && (
-            <div className="space-y-4">
-              <LoadingState message="Executing nodes…" />
-              {exec.stepOutput && (
-                <Card className="border-sky-200 bg-sky-50/40 p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-sky-800">
-                      Latest Output: {exec.stepOutput.nodeLabel}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] text-sky-700 border-sky-300">
-                      {exec.stepOutput.nodeType}
-                    </Badge>
-                  </div>
-                  {(exec.stepOutput.result as any)?.markdown && (
-                    <div className="rounded border border-neutral-100 bg-white p-3 text-xs text-neutral-800 shadow-sm max-h-[250px] overflow-y-auto">
-                      <MarkdownContent content={String((exec.stepOutput.result as any).markdown)} />
-                    </div>
-                  )}
-                </Card>
-              )}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          
+          {/* Left Column: Analytical Inputs */}
+          <div className="space-y-4">
+            <div className="font-sans text-[15px] font-bold text-neutral-800 border-b pb-2 mb-2 flex items-center justify-between">
+              <span>Analytical Inputs</span>
+              <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Parameter Specification</span>
             </div>
-          )}
 
-          {exec.isInputPause && exec.pausedNode && (
-            <InputPauseView
-              field={exec.pausedNode}
-              isSubmitting={exec.isSubmitting}
-              onSubmit={exec.submitInput}
-              onCancel={exec.cancel}
-            />
-          )}
+            {/* Input Pause View */}
+            {exec.isInputPause && exec.pausedNode && (
+              <InputPauseView
+                field={exec.pausedNode}
+                isSubmitting={exec.isSubmitting}
+                onSubmit={exec.submitInput}
+                onCancel={exec.cancel}
+              />
+            )}
 
-          {exec.isValidationPause && (
-            <ValidationPauseView
-              message={exec.error ?? "Validation failed"}
-              onCancel={exec.cancel}
-            />
-          )}
+            {/* Validation Pause View */}
+            {exec.isValidationPause && (
+              <ValidationPauseView
+                message={exec.error ?? "Validation failed"}
+                onCancel={exec.cancel}
+              />
+            )}
 
-          {exec.isStepPause && exec.stepOutput && (
-            <StepPauseView
-              output={exec.stepOutput}
-              onNext={exec.stepForward}
-              onCancel={exec.cancel}
-              isStepping={exec.isStepping}
-            />
-          )}
+            {/* Running Loader */}
+            {(exec.isRunning || exec.isStarting) && (
+              <div className="bg-slate-50 border rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-3 py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-[#fb3640]" />
+                <span className="text-xs font-semibold text-neutral-600">
+                  {exec.isStarting ? "Initializing calculation..." : "Executing calculation nodes..."}
+                </span>
+              </div>
+            )}
 
-          {exec.isComplete && (
-            <CompletedView
-              variables={exec.variables}
-              nodeOutputs={exec.nodeOutputs ?? {}}
-              onRunAgain={() => {
-                exec.reset();
-                setAutoStarted(false);
-              }}
-            />
-          )}
+            {/* Step Pause View */}
+            {exec.isStepPause && exec.stepOutput && (
+              <StepPauseView
+                output={exec.stepOutput}
+                onNext={exec.stepForward}
+                onCancel={exec.cancel}
+                isStepping={exec.isStepping}
+              />
+            )}
 
-          {exec.isErrored && (
-            <ErroredView
-              error={exec.error ?? "Unknown error"}
-              onRetry={() => {
-                exec.reset();
-                setAutoStarted(false);
-              }}
-              onClose={onClose}
-            />
-          )}
+            {/* Errored View */}
+            {exec.isErrored && (
+              <ErroredView
+                error={exec.error ?? "Unknown error"}
+                onRetry={() => {
+                  exec.reset();
+                  setAutoStarted(false);
+                }}
+                onClose={onClose}
+              />
+            )}
+
+            {/* Complete Left Side - show success card */}
+            {exec.isComplete && (
+              <div className="space-y-4">
+                <Card className="border-emerald-200 bg-emerald-50/40 p-4 flex items-start gap-3 shadow-sm rounded-xl">
+                  <div className="rounded-full bg-emerald-500 p-1 text-white mt-0.5">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                      Workflow Completed
+                    </div>
+                    <div className="mt-0.5 text-xs text-emerald-700 font-medium">
+                      All calculations ran and outputs resolved successfully.
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Reset & Re-run Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      exec.reset();
+                      setAutoStarted(false);
+                    }}
+                    className="flex-1 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl py-4 font-semibold shadow-sm transition-all"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin-slow" />
+                    Run Calculation Again
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Computational Audit */}
+          <div className="space-y-4">
+            <div className="font-sans text-[15px] font-bold text-neutral-800 border-b pb-2 mb-2 flex items-center justify-between">
+              <span>Computational Audit</span>
+              <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Step-by-Step Derivation</span>
+            </div>
+
+            {/* If idle or starting */}
+            {(!exec.status || exec.isStarting) && (
+              <div className="bg-slate-50 border rounded-xl p-6 text-center text-xs text-neutral-400">
+                Awaiting workflow execution to display analytical audit log.
+              </div>
+            )}
+
+            {/* Completed variables and outputs */}
+            {exec.isComplete && (
+              <div className="space-y-4">
+                {/* Computed Variables Table */}
+                {Object.keys(exec.variables).length > 0 && (
+                  <Card className="border-neutral-100 bg-neutral-50/40 p-4 rounded-xl shadow-sm">
+                    <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                      Computed variables
+                    </div>
+                    <div className="space-y-1.5">
+                      {Object.entries(exec.variables)
+                        .filter(([k]) => !k.startsWith("$"))
+                        .map(([k, v]) => (
+                          <div
+                            key={k}
+                            className="flex items-center justify-between text-xs rounded-lg border border-neutral-100/50 bg-white p-2 shadow-xs"
+                          >
+                            <span className="font-mono font-medium text-neutral-500">{k}</span>
+                            <span className="font-mono font-bold text-neutral-800">
+                              {typeof v === "number" ? v.toLocaleString() : String(v)}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Full Report Button */}
+                <Button
+                  size="sm"
+                  onClick={() => setReportOpen(true)}
+                  className="w-full bg-[#fb3640] hover:bg-[#fb3640]/90 text-white rounded-xl py-5 font-semibold shadow-sm transition-all mb-2.5 flex items-center justify-center gap-1.5"
+                >
+                  <FileText className="h-4 w-4" />
+                  View Full Report
+                </Button>
+              </div>
+            )}
+
+            {/* ═══ SEQUENTIAL TYPEWRITER RECORD ═══ */}
+            {(exec.isRunning || exec.isPaused || exec.isComplete) && executions.length > 0 && (
+              <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 space-y-6">
+                <div className="border-b border-neutral-100 pb-3">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#fb3640] font-mono">
+                    Calculation Record
+                  </span>
+                </div>
+                <SequentialTypewriter executions={executions} speed={2} />
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
       {/* ── Footer ──────────────────────────────────────── */}
       {(exec.isRunning || exec.isPaused) && (
-        <div className="border-t px-4 py-2">
+        <div className="border-t px-4 py-2 bg-neutral-50/50">
           <Button
             size="sm"
             variant="ghost"
@@ -168,6 +278,17 @@ export function WorkflowRunner({
           </Button>
         </div>
       )}
+
+      <WorkflowReport
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        workflowName={workflow?.name ?? "Workflow Calculation"}
+        workflowDescription={workflow?.description ?? undefined}
+        workflowRef={(meta?.reference as string) ?? undefined}
+        workflowRegion={(meta?.region as string) ?? undefined}
+        variables={exec.variables}
+        nodeExecutions={Object.values(exec.nodeOutputs ?? {})}
+      />
     </div>
   );
 }
@@ -446,10 +567,12 @@ function CompletedView({
   variables,
   nodeOutputs,
   onRunAgain,
+  onViewReport,
 }: {
   variables: Record<string, unknown>;
   nodeOutputs: Record<string, any>;
   onRunAgain: () => void;
+  onViewReport: () => void;
 }) {
   // Filter out internal keys ($nodes, $results)
   const visibleVars = Object.entries(variables).filter(
@@ -499,38 +622,43 @@ function CompletedView({
       )}
 
       {markdownOutputs.length > 0 && (
-        <div className="space-y-3">
-          <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider pl-1">
-            Execution Output Timeline
+        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 space-y-6">
+          <div className="border-b border-neutral-100 pb-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#fb3640] font-mono">
+              Calculation Record
+            </span>
           </div>
-          <div className="space-y-4">
-            {markdownOutputs.map((out: any) => (
-              <Card
+          <div className="space-y-6 divide-y divide-neutral-100">
+            {markdownOutputs.map((out: any, idx: number) => (
+              <div
                 key={out.nodeId}
-                className="border-neutral-150 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl overflow-hidden relative"
+                className={idx > 0 ? "pt-6" : ""}
               >
-                {/* Accent indicator line */}
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-400 to-indigo-500" />
-                
-                <div className="flex items-center justify-between mb-3 border-b border-neutral-100 pb-2 pl-1">
-                  <span className="text-xs font-bold text-neutral-700">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-neutral-800">
                     {out.nodeLabel || "Node Output"}
                   </span>
-                  <Badge
-                    variant="outline"
-                    className="text-[9px] font-semibold text-neutral-500 bg-neutral-50/50 border-neutral-200/60 px-1.5 py-0.5 rounded-md"
-                  >
+                  <span className="text-[9px] font-mono font-bold text-neutral-400 px-1.5 py-0.5 bg-neutral-100 rounded-md">
                     {out.nodeType}
-                  </Badge>
+                  </span>
                 </div>
-                <div className="text-xs text-neutral-800 overflow-x-auto pl-1 pr-1">
+                <div className="text-xs text-neutral-800 overflow-x-auto">
                   <MarkdownContent content={String((out.result as any).markdown)} />
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
       )}
+
+      <Button
+        size="sm"
+        onClick={onViewReport}
+        className="w-full bg-[#fb3640] hover:bg-[#fb3640]/90 text-white rounded-xl py-5 font-semibold shadow-sm transition-all mb-2.5 flex items-center justify-center gap-1.5"
+      >
+        <FileText className="h-4 w-4" />
+        View Full Report
+      </Button>
 
       <Button
         size="sm"

@@ -135,7 +135,7 @@ export function ConfigField({
   children,
   className,
 }: {
-  label: string;
+  label: React.ReactNode;
   hint?: string;
   children: React.ReactNode;
   className?: string;

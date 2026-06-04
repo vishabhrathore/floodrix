@@ -82,6 +82,8 @@ export class MetricsListener {
           actorId: event.actorId,
           durationMs: event.durationMs,
           finalVariableCount: event.finalVariables.length,
+          cpuUserMs: event.cpuUserMs,
+          cpuSystemMs: event.cpuSystemMs,
         });
         // Also emit a pure-metric line so histograms are easy to aggregate
         this.sink.emit({
@@ -91,6 +93,8 @@ export class MetricsListener {
           sessionId: event.sessionId,
           workflowId: event.workflowId,
           value: event.durationMs,
+          cpuUserMs: event.cpuUserMs,
+          cpuSystemMs: event.cpuSystemMs,
         });
         break;
 
@@ -149,6 +153,8 @@ export class MetricsListener {
           nodeType: event.nodeType,
           stepNumber: event.stepNumber,
           durationMs: event.durationMs,
+          cpuUserMs: event.cpuUserMs,
+          cpuSystemMs: event.cpuSystemMs,
         });
         this.sink.emit({
           level: "info",
@@ -156,6 +162,8 @@ export class MetricsListener {
           event: "node_duration_ms",
           nodeType: event.nodeType,
           value: event.durationMs,
+          cpuUserMs: event.cpuUserMs,
+          cpuSystemMs: event.cpuSystemMs,
         });
         break;
 

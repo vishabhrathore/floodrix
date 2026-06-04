@@ -27,6 +27,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SessionStatus } from "@/generated/prisma";
 import { useTRPC } from "@/trpc/client";
+import { TypewriterMarkdown } from "./typewriter-markdown";
+import { WorkflowReport } from "./workflow-report";
+import MarkdownContent from "@/web/components/MarkdownContent";
+import { SequentialTypewriter } from "./sequential-typewriter";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -239,6 +243,27 @@ export function WorkflowFormRunner({
   const isComplete = state.status === "COMPLETED";
   const isError = state.status === "ERRORED";
 
+  const [reportOpen, setReportOpen] = useState(false);
+
+  const { data: sessionDetails } = useQuery(
+    trpc.calcExecution.getSession.queryOptions(
+      { sessionId: state.sessionId ?? "" },
+      {
+        enabled: !!state.sessionId,
+        refetchInterval: isRunning || isPolling ? 1000 : undefined,
+      },
+    ),
+  );
+
+  const executions = ((sessionDetails as any)?.nodeExecutions ?? [])
+    .filter((n: any) => n.result?.markdown)
+    .map((n: any) => ({
+      nodeId: n.calcNodeId || n.nodeId,
+      nodeLabel: n.nodeLabel || "Calculation",
+      nodeType: n.nodeType,
+      markdown: String(n.result.markdown),
+    }));
+
   // ── Waterway calculations ────────────────────────────────────────────
 
   const Qd =
@@ -334,250 +359,341 @@ export function WorkflowFormRunner({
       </div>
 
       {mode === "manual" ? (
-        <>
-          {/* ═══ IDLE ═══ */}
-          {isIdle && (
-            <Card
-              icon="⌨"
-              title="Start Calculation"
-              sub={`Run ${workflowName} step by step`}
-              accent="red"
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1.25fr",
+            gap: 32,
+            alignItems: "start",
+          }}
+        >
+          {/* Left Column: Input Side */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div
+              style={{
+                fontFamily: "'Outfit', sans-serif",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#1f2937",
+                borderBottom: "2px solid #f3f4f6",
+                paddingBottom: 8,
+                marginBottom: 4,
+              }}
             >
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <button
-                  onClick={handleStart}
-                  disabled={startMutation.isPending}
-                  style={btnCalcStyle}
-                >
-                  {startMutation.isPending ? "Starting..." : "▶ Calculate"}
-                </button>
+              Analytical Inputs
+              <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>
+                Parameter Specification
               </div>
-            </Card>
-          )}
+            </div>
 
-          {/* ═══ SUBMITTED INPUTS HISTORY ═══ */}
-          {history.map((h, idx) => (
-            <Card
-              key={idx}
-              icon="✓"
-              title={h.label}
-              sub={`Step ${idx + 1} — submitted`}
-              accent="teal"
-            >
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {Object.entries(h.values).map(([k, v]) => (
-                  <VarPill key={k} name={k} value={String(v)} />
-                ))}
-              </div>
-            </Card>
-          ))}
-
-          {/* ═══ RUNNING ═══ */}
-          {(isRunning || isPolling) && (
-            <Card
-              icon="⚙"
-              title="Executing..."
-              sub="Processing nodes"
-              accent="blue"
-            >
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: 16,
-                  color: "#6b7280",
-                  fontSize: 13,
-                }}
+            {/* ═══ IDLE START CARD ═══ */}
+            {isIdle && (
+              <Card
+                icon="⌨"
+                title="Start Calculation"
+                sub={`Run ${workflowName} step by step`}
+                accent="red"
               >
-                <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-blue-500" />
-                Running calculation nodes...
-              </div>
-            </Card>
-          )}
-
-          {/* ═══ PAUSED — INPUT FORM ═══ */}
-          {isPaused && state.pausedNode && (
-            <Card
-              icon="⌨"
-              title={state.pausedNode.nodeLabel}
-              sub="Enter values to continue"
-              accent="red"
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                  gap: 14,
-                }}
-              >
-                {state.pausedNode.fields.map((field) => (
-                  <div
-                    key={field.key}
-                    style={{ display: "flex", flexDirection: "column", gap: 5 }}
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <button
+                    onClick={handleStart}
+                    disabled={startMutation.isPending}
+                    style={btnCalcStyle}
                   >
-                    <label
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#374151",
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      {field.label}
-                    </label>
-                    {field.hint && (
-                      <div style={{ fontSize: 10, color: "#9ca3af" }}>
-                        {field.hint}
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        display: "flex",
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        border: "1.5px solid #d1d5db",
-                      }}
-                    >
-                      <input
-                        type={field.data_type === "number" ? "number" : "text"}
-                        step={field.constraints?.step ?? "any"}
-                        min={field.constraints?.min}
-                        max={field.constraints?.max}
-                        value={inputValues[field.key] ?? ""}
-                        onChange={(e) =>
-                          setInputValues((p) => ({
-                            ...p,
-                            [field.key]: e.target.value,
-                          }))
-                        }
-                        placeholder={
-                          field.default !== undefined ? `${field.default}` : ""
-                        }
-                        style={{
-                          flex: 1,
-                          padding: "9px 11px",
-                          border: "none",
-                          outline: "none",
-                          fontSize: 13,
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontWeight: 600,
-                          color: "#191919",
-                          background: "#fff",
-                        }}
-                      />
-                      {field.unit && field.unit !== "—" && (
-                        <span
-                          style={{
-                            background: "#f9fafb",
-                            padding: "9px 10px",
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: "#6b7280",
-                            borderLeft: "1px solid #d1d5db",
-                            whiteSpace: "nowrap",
-                            letterSpacing: 0.5,
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {field.unit}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitMutation.isPending}
-                  style={btnCalcStyle}
-                >
-                  {submitMutation.isPending ? "Submitting..." : "▶ Calculate"}
-                </button>
-                <button onClick={handleReset} style={btnOutlineStyle}>
-                  ↺ Reset
-                </button>
-              </div>
-            </Card>
-          )}
+                    {startMutation.isPending ? "Starting..." : "▶ Calculate"}
+                  </button>
+                </div>
+              </Card>
+            )}
 
-          {/* ═══ COMPLETE — RESULTS ═══ */}
-          {isComplete && (
-            <>
-              {Qd !== null && (
+            {/* ═══ SUBMITTED INPUTS HISTORY ═══ */}
+            {history.map((h, idx) => (
+              <Card
+                key={idx}
+                icon="✓"
+                title={h.label}
+                sub={`Step ${idx + 1} — submitted`}
+                accent="teal"
+              >
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {Object.entries(h.values).map(([k, v]) => (
+                    <VarPill key={k} name={k} value={String(v)} />
+                  ))}
+                </div>
+              </Card>
+            ))}
+
+            {/* ═══ PAUSED — INPUT FORM ═══ */}
+            {isPaused && state.pausedNode && (
+              <Card
+                icon="⌨"
+                title={state.pausedNode.nodeLabel}
+                sub="Enter values to continue"
+                accent="red"
+              >
                 <div
                   style={{
-                    background: "#111",
-                    borderRadius: 14,
-                    padding: "24px 28px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 20,
-                    flexWrap: "wrap",
-                    gap: 16,
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    gap: 14,
                   }}
                 >
-                  <div>
+                  {state.pausedNode.fields.map((field) => (
                     <div
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        letterSpacing: 2,
-                        textTransform: "uppercase",
-                        color: "#555",
-                        marginBottom: 6,
-                      }}
+                      key={field.key}
+                      style={{ display: "flex", flexDirection: "column", gap: 5 }}
                     >
-                      Design Discharge
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color: "#fff",
-                        fontFamily: "'Outfit', sans-serif",
-                      }}
-                    >
-                      {workflowName}
-                    </div>
-                    {workflowRef && (
-                      <div
-                        style={{ fontSize: 11, color: "#6b7280", marginTop: 3 }}
+                      <label
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#374151",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                        }}
                       >
-                        {workflowRef} · {workflowRegion}
+                        {field.label}
+                      </label>
+                      {field.hint && (
+                        <div style={{ fontSize: 10, color: "#9ca3af" }}>
+                          {field.hint}
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          display: "flex",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          border: "1.5px solid #d1d5db",
+                        }}
+                      >
+                        <input
+                          type={field.data_type === "number" ? "number" : "text"}
+                          step={field.constraints?.step ?? "any"}
+                          min={field.constraints?.min}
+                          max={field.constraints?.max}
+                          value={inputValues[field.key] ?? ""}
+                          onChange={(e) =>
+                            setInputValues((p) => ({
+                              ...p,
+                              [field.key]: e.target.value,
+                            }))
+                          }
+                          placeholder={
+                            field.default !== undefined ? `${field.default}` : ""
+                          }
+                          style={{
+                            flex: 1,
+                            padding: "9px 11px",
+                            border: "none",
+                            outline: "none",
+                            fontSize: 13,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontWeight: 600,
+                            color: "#191919",
+                            background: "#fff",
+                          }}
+                        />
+                        {field.unit && field.unit !== "—" && (
+                          <span
+                            style={{
+                              background: "#f9fafb",
+                              padding: "9px 10px",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: "#6b7280",
+                              borderLeft: "1px solid #d1d5db",
+                              whiteSpace: "nowrap",
+                              letterSpacing: 0.5,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {field.unit}
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "baseline" }}>
-                    <span
-                      style={{
-                        fontFamily: "'Outfit', sans-serif",
-                        fontSize: 52,
-                        fontWeight: 800,
-                        color: "#fb3640",
-                        lineHeight: 1,
-                      }}
-                    >
-                      {fmt(Qd)}
-                    </span>
-                    <span
-                      style={{ fontSize: 16, color: "#6b7280", marginLeft: 6 }}
-                    >
-                      Cumecs
-                    </span>
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+                <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitMutation.isPending}
+                    style={btnCalcStyle}
+                  >
+                    {submitMutation.isPending ? "Submitting..." : "▶ Calculate"}
+                  </button>
+                  <button onClick={handleReset} style={btnOutlineStyle}>
+                    ↺ Reset
+                  </button>
+                </div>
+              </Card>
+            )}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr",
-                  gap: 18,
-                  marginBottom: 20,
-                }}
+            {/* ═══ ERROR ═══ */}
+            {isError && (
+              <Card
+                icon="⚠️"
+                title="Execution Failed"
+                sub={state.error?.type ?? "Error"}
+                accent="red"
               >
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    fontSize: 13,
+                    color: "#991b1b",
+                    marginBottom: 12,
+                  }}
+                >
+                  {state.error?.message ?? "Unknown error"}
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <button onClick={handleReset} style={btnOutlineStyle}>
+                    ↺ Reset
+                  </button>
+                  <button onClick={handleStart} style={btnCalcStyle}>
+                    ▶ Retry
+                  </button>
+                </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Right Column: Output Side */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div
+              style={{
+                fontFamily: "'Outfit', sans-serif",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#1f2937",
+                borderBottom: "2px solid #f3f4f6",
+                paddingBottom: 8,
+                marginBottom: 4,
+              }}
+            >
+              Computational Audit
+              <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 500, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>
+                Detailed Step-by-Step Derivation
+              </div>
+            </div>
+
+            {/* ═══ IDLE PLACEHOLDER ═══ */}
+            {isIdle && (
+              <Card
+                icon="📋"
+                title="Awaiting Execution"
+                sub="Calculation steps not started"
+                accent="neutral"
+              >
+                <div
+                  style={{
+                    padding: "40px 20px",
+                    textAlign: "center",
+                    color: "#9ca3af",
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Configure the analytical inputs on the left and click <strong>Calculate</strong> to start.
+                </div>
+              </Card>
+            )}
+
+            {/* ═══ RUNNING loading state ═══ */}
+            {(isRunning || isPolling) && (
+              <Card
+                icon="⚙️"
+                title="Executing..."
+                sub="Processing nodes"
+                accent="blue"
+              >
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: 16,
+                    color: "#6b7280",
+                    fontSize: 13,
+                  }}
+                >
+                  <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-blue-500" />
+                  Running calculation nodes...
+                </div>
+              </Card>
+            )}
+
+            {/* ═══ COMPLETE — RESULTS ═══ */}
+            {isComplete && (
+              <>
+                {Qd !== null && (
+                  <div
+                    style={{
+                      background: "#111",
+                      borderRadius: 14,
+                      padding: "24px 28px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 16,
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: 2,
+                          textTransform: "uppercase",
+                          color: "#555",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Design Discharge
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: "#fff",
+                          fontFamily: "'Outfit', sans-serif",
+                        }}
+                      >
+                        {workflowName}
+                      </div>
+                      {workflowRef && (
+                        <div
+                          style={{ fontSize: 11, color: "#6b7280", marginTop: 3 }}
+                        >
+                          {workflowRef} · {workflowRegion}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline" }}>
+                      <span
+                        style={{
+                          fontFamily: "'Outfit', sans-serif",
+                          fontSize: 52,
+                          fontWeight: 800,
+                          color: "#fb3640",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {fmt(Qd)}
+                      </span>
+                      <span
+                        style={{ fontSize: 16, color: "#6b7280", marginLeft: 6 }}
+                      >
+                        Cumecs
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <Card
                   icon="ƒ"
                   title="Formula Working"
@@ -622,92 +738,81 @@ export function WorkflowFormRunner({
                     </tbody>
                   </table>
                 </Card>
-              </div>
 
-              {Qd !== null && P_lacey && W_linear && ww_min && (
-                <Card
-                  icon="〜"
-                  title="Waterway Determination"
-                  sub="Article-8, IRC:SP:13-2004"
-                  accent="teal"
-                >
-                  <div
+                {Qd !== null && P_lacey && W_linear && ww_min && (
+                  <Card
+                    icon="〜"
+                    title="Waterway Determination"
+                    sub="Article-8, IRC:SP:13-2004"
+                    accent="teal"
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fill, minmax(165px, 1fr))",
+                        gap: 12,
+                        marginBottom: 16,
+                      }}
+                    >
+                      <WaterwayCard
+                        label="Lacey's Regime Width"
+                        value={P_lacey}
+                        unit="m"
+                        sub="P = 4.8 × √Qd"
+                        best={P_lacey === ww_min}
+                      />
+                      <WaterwayCard
+                        label="Linear Waterway"
+                        value={W_linear}
+                        unit="m"
+                        sub="W = 4.5 × √Qd"
+                        best={W_linear === ww_min}
+                      />
+                      <WaterwayCard
+                        label="Recommended"
+                        value={ww_min}
+                        unit="m"
+                        sub="min(Lacey, Linear)"
+                        best
+                      />
+                    </div>
+                  </Card>
+                )}
+
+                <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                  <button onClick={handleReset} style={btnOutlineStyle}>
+                    ↺ New Run
+                  </button>
+                  <button onClick={handleStart} style={btnCalcStyle}>
+                    ▶ Re-run
+                  </button>
+                  <button
+                    onClick={() => setReportOpen(true)}
                     style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(165px, 1fr))",
-                      gap: 12,
-                      marginBottom: 16,
+                      ...btnCalcStyle,
+                      background: "#0d9488",
                     }}
                   >
-                    <WaterwayCard
-                      label="Lacey's Regime Width"
-                      value={P_lacey}
-                      unit="m"
-                      sub="P = 4.8 × √Qd"
-                      best={P_lacey === ww_min}
-                    />
-                    <WaterwayCard
-                      label="Linear Waterway"
-                      value={W_linear}
-                      unit="m"
-                      sub="W = 4.5 × √Qd"
-                      best={W_linear === ww_min}
-                    />
-                    <WaterwayCard
-                      label="Recommended"
-                      value={ww_min}
-                      unit="m"
-                      sub="min(Lacey, Linear)"
-                      best
-                    />
-                  </div>
-                </Card>
-              )}
+                    📄 View Full Report
+                  </button>
+                </div>
+              </>
+            )}
 
-              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                <button onClick={handleReset} style={btnOutlineStyle}>
-                  ↺ New Run
-                </button>
-                <button onClick={handleStart} style={btnCalcStyle}>
-                  ▶ Re-run
-                </button>
+            {/* ═══ SEQUENTIAL TYPEWRITER RECORD ═══ */}
+            {(isRunning || isPolling || isComplete) && executions.length > 0 && (
+              <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-5 mb-4 shadow-sm">
+                <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#fb3640] font-mono">
+                    Calculation Record
+                  </span>
+                </div>
+                <SequentialTypewriter executions={executions} speed={2} />
               </div>
-            </>
-          )}
-
-          {/* ═══ ERROR ═══ */}
-          {isError && (
-            <Card
-              icon="⚠"
-              title="Execution Failed"
-              sub={state.error?.type ?? "Error"}
-              accent="red"
-            >
-              <div
-                style={{
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 8,
-                  padding: "12px 16px",
-                  fontSize: 13,
-                  color: "#991b1b",
-                  marginBottom: 12,
-                }}
-              >
-                {state.error?.message ?? "Unknown error"}
-              </div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button onClick={handleReset} style={btnOutlineStyle}>
-                  ↺ Reset
-                </button>
-                <button onClick={handleStart} style={btnCalcStyle}>
-                  ▶ Retry
-                </button>
-              </div>
-            </Card>
-          )}
-        </>
+            )}
+          </div>
+        </div>
       ) : (
         /* ═══ BATCH MODE ═══ */
         <BatchPanel
@@ -719,6 +824,17 @@ export function WorkflowFormRunner({
           isIdle={isIdle}
         />
       )}
+
+      <WorkflowReport
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        workflowName={workflowName}
+        workflowDescription={workflowDescription}
+        workflowRef={workflowRef}
+        workflowRegion={workflowRegion}
+        variables={state.variables}
+        nodeExecutions={(sessionDetails as any)?.nodeExecutions ?? []}
+      />
     </div>
   );
 }
@@ -932,10 +1048,11 @@ const ACCENT_COLORS = {
   red: { bg: "rgba(251,54,64,0.1)", color: "#fb3640" },
   blue: { bg: "rgba(36,123,160,0.1)", color: "#247ba0" },
   teal: { bg: "rgba(13,148,136,0.1)", color: "#0d9488" },
+  neutral: { bg: "rgba(107,114,128,0.1)", color: "#6b7280" },
 };
 
 function Card({ icon, title, sub, accent, children }: any) {
-  const a = (ACCENT_COLORS as any)[accent];
+  const a = (ACCENT_COLORS as any)[accent] || { bg: "rgba(107,114,128,0.1)", color: "#6b7280" };
   return (
     <div
       style={{

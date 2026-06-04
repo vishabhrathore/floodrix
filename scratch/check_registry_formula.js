@@ -1,27 +1,18 @@
-const { Client } = require("pg");
-const fs = require("fs");
-const dotenv = require("dotenv");
-
-if (fs.existsSync(".env")) {
-  const envConfig = dotenv.parse(fs.readFileSync(".env"));
-  for (const k in envConfig) {
-    process.env[k] = envConfig[k];
-  }
-}
-
-const client = new Client({ connectionString: process.env.DATABASE_URL });
+import prisma from "../src/lib/db";
 
 async function main() {
-  await client.connect();
+  const wf = await prisma.calcWorkflow.findUnique({
+    where: { id: "wf_dicken" },
+    include: {
+      nodes: true,
+      edges: true,
+    },
+  });
 
-  console.log("=== UPDATING REGISTRY FORMULA ===");
-  const res = await client.query("UPDATE formula_registry SET \"useWorker\" = true WHERE id = 'cmptak0sn000ged3baxoc6ya6'");
-  console.log("Updated rows:", res.rowCount);
-
-  await client.end();
+  console.log("Nodes:");
+  console.log(JSON.stringify(wf?.nodes, null, 2));
+  console.log("Edges:");
+  console.log(JSON.stringify(wf?.edges, null, 2));
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().finally(() => prisma.$disconnect());

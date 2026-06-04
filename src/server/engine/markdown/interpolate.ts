@@ -68,6 +68,10 @@ export function interpolate(template: string, ctx: InterpolationContext): string
     (_match, path, body) => {
       const trimmedPath = path.trim();
       const val = resolvePath(trimmedPath, ctx);
+      const parts = body.split(/\{\{\s*else\s*\}\}/);
+      if (parts.length > 1) {
+        return val ? parts[0] : parts[1];
+      }
       return val ? body : "";
     }
   );

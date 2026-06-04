@@ -15,6 +15,7 @@ interface ResolvedFormula {
   name: string;
   expressionNotation: string;
   displayExpression: string;
+  use_worker: boolean;
   inputVariables: {
     key: string;
     notation: string;
@@ -28,7 +29,6 @@ interface ResolvedFormula {
     label: string;
     unit: string;
     precision: number;
-    useWorker?: boolean;
   };
   intermediateSteps: { key: string; expr: string; label: string }[];
   reference: string | null;
@@ -92,11 +92,11 @@ export function createRegistryResolver() {
           isPublished: true,
           expressionNotation: true,
           displayExpression: true,
+          useWorker: true,
           inputVariables: true,
           outputVariable: true,
           intermediateSteps: true,
           reference: true,
-          useWorker: true,
         },
       });
 
@@ -174,37 +174,37 @@ export function createRegistryResolver() {
         const [formulas, tables] = await Promise.all([
           formulaIds.length > 0
             ? db.formulaRegistryItem.findMany({
-                where: { id: { in: formulaIds } },
-                select: {
-                  id: true,
-                  name: true,
-                  expressionNotation: true,
-                  displayExpression: true,
-                  inputVariables: true,
-                  outputVariable: true,
-                  intermediateSteps: true,
-                  reference: true,
-                  useWorker: true,
-                },
-              })
+              where: { id: { in: formulaIds } },
+              select: {
+                id: true,
+                name: true,
+                expressionNotation: true,
+                displayExpression: true,
+                useWorker: true,
+                inputVariables: true,
+                outputVariable: true,
+                intermediateSteps: true,
+                reference: true,
+              },
+            })
             : [],
           tableIds.length > 0
             ? db.tableRegistryItem.findMany({
-                where: { id: { in: tableIds } },
-                select: {
-                  id: true,
-                  name: true,
-                  tableType: true,
-                  inputKeys: true,
-                  outputKey: true,
-                  columns: true,
-                  data: true,
-                  interpolationConfig: true,
-                  fallbackMode: true,
-                  fallbackValue: true,
-                  reference: true,
-                },
-              })
+              where: { id: { in: tableIds } },
+              select: {
+                id: true,
+                name: true,
+                tableType: true,
+                inputKeys: true,
+                outputKey: true,
+                columns: true,
+                data: true,
+                interpolationConfig: true,
+                fallbackMode: true,
+                fallbackValue: true,
+                reference: true,
+              },
+            })
             : [],
         ]);
 
@@ -261,11 +261,11 @@ function mapFormulaRecord(r: {
   name: string;
   expressionNotation: string;
   displayExpression: string;
+  useWorker: boolean;
   inputVariables: unknown;
   outputVariable: unknown;
   intermediateSteps: unknown;
   reference: string | null;
-  useWorker?: boolean;
 }): ResolvedFormula {
   const inputVarsRaw = (r.inputVariables || []) as any[];
   const inputVariables = inputVarsRaw.map((v) => ({
@@ -283,7 +283,6 @@ function mapFormulaRecord(r: {
     label: outVarRaw.label || "",
     unit: outVarRaw.unit || "",
     precision: outVarRaw.precision ?? 3,
-    useWorker: r.useWorker === true || outVarRaw.useWorker === true || outVarRaw.use_worker === true,
   };
 
   return {
@@ -291,6 +290,7 @@ function mapFormulaRecord(r: {
     name: r.name,
     expressionNotation: r.expressionNotation,
     displayExpression: r.displayExpression,
+    use_worker: r.useWorker,
     inputVariables,
     outputVariable,
     intermediateSteps: (r.intermediateSteps ||

@@ -8,13 +8,12 @@
 //
 //  Routes through safeEvaluate so timeout enforcement applies uniformly.
 // ═══════════════════════════════════════════════════════════════════════════
-import { safeEvaluate, safeEvaluateMultiLine } from "@/features/workflow-canvas/engine/formula-validator";
-
+import { isMainThread } from "worker_threads";
 import type { NodeHandler } from "../NodeHandler";
 import { toErroredOutcome } from "../NodeHandler";
 import { WorkerPoolTimeout } from "../WorkerPoolTimeout";
 import type { ExecutionContext, NodeOutcome, VariableMap } from "../types";
-import { logger } from "../logger";
+import { logger, sanitizeForLog } from "../logger";
 
 interface FormulaConfig {
   source?: "registry" | "inline";
@@ -71,8 +70,8 @@ export class FormulaHandler implements NodeHandler {
             return toErroredOutcome(
               new Error(
                 `${registry.name} requires "${inputVar.notation}" (bound to "${contextKey}") ` +
-                  `but it hasn't been computed yet. ` +
-                  `Add an upstream node that produces "${contextKey}".`,
+                `but it hasn't been computed yet. ` +
+                `Add an upstream node that produces "${contextKey}".`,
               ),
             );
           }
@@ -127,129 +126,63 @@ export class FormulaHandler implements NodeHandler {
       const precision =
         config.overrides?.result_precision ?? config.result_precision ?? 3;
 
-      const useWorkerFromRegistry = registry
-        ? (registry.useWorker === true ||
-           (registry.outputVariable as any)?.useWorker === true ||
-           (registry.outputVariable as any)?.use_worker === true)
-        : false;
-      const finalUseWorker = (config.use_worker === true) || (useWorkerFromRegistry === true);
-
       let value: number;
 
-      if (finalUseWorker) {
-        // Isolated Worker Thread (Background Heavy Task)
-        const pool = new WorkerPoolTimeout();
-        const scope: Record<string, number | boolean | string> = { ...evalScope };
-        
-        // If the expression doesn't contain assignment, rewrite it to assign to the output variable
-        const finalCode = expression.includes("=") ? expression : `${outputNotation} = ${expression}`;
-        
-        logger.info(
-          {
-            sessionId: ctx.sessionId,
-            nodeId: ctx.node.id,
-            nodeLabel: ctx.node.label,
-            expression: finalCode,
-            scope,
-          },
-          `[FormulaHandler] 🧵 Running in WORKER THREAD (Background Heavy Task - Piscina)`
+      // Isolated Worker Thread (Piscina) to prevent blocking the event loop
+      const pool = new WorkerPoolTimeout();
+      const scope: Record<string, number | boolean | string> = { ...evalScope };
+
+      // If the expression doesn't contain assignment, rewrite it to assign to the output variable
+      const finalCode = expression.includes("=") ? expression : `${outputNotation} = ${expression}`;
+
+      const use_worker = config.source === "registry"
+        ? (registry?.use_worker || (config.use_worker ?? false))
+        : (config.use_worker ?? true);
+      const runLocally = !use_worker || (!isMainThread && ctx.isBackgroundRun);
+
+      logger.info(
+        {
+          sessionId: ctx.sessionId,
+          nodeId: ctx.node.id,
+          nodeLabel: ctx.node.label,
+          expression: finalCode,
+          scope: sanitizeForLog(scope),
+          use_worker,
+          runLocally,
+        },
+        `[FormulaHandler] Running evaluation in ${runLocally ? "Main Thread (local)" : "Piscina Worker Thread"}`
+      );
+
+      const workerResult = await pool.runMathEvaluation(finalCode, scope, {
+        timeoutMs: this.timeoutMs,
+        handlerType: "FORMULA_REGISTRY_CUSTOM",
+      }, runLocally);
+
+      logger.info(
+        {
+          sessionId: ctx.sessionId,
+          nodeId: ctx.node.id,
+          workerResult: sanitizeForLog(workerResult.outputs),
+          cpuUserMs: workerResult.cpuUserMs,
+          cpuSystemMs: workerResult.cpuSystemMs,
+        },
+        `[FormulaHandler] Evaluation completed`
+      );
+
+      const rawValue =
+        workerResult.outputs[outputNotation] ??
+        workerResult.outputs[outputKey] ??
+        workerResult.outputs["result"];
+
+      if (rawValue === undefined) {
+        throw new Error(
+          `Custom code formula did not assign a value to the expected output variable "${outputNotation}". ` +
+          `Ensure your script assigns a value to "${outputNotation}" (e.g. ${outputNotation} = ...).`
         );
-
-        const workerResult = (await pool.runMathEvaluation(finalCode, scope, {
-          timeoutMs: this.timeoutMs,
-          handlerType: "FORMULA_REGISTRY_CUSTOM",
-        })) as Record<string, number>;
-
-        logger.info(
-          {
-            sessionId: ctx.sessionId,
-            nodeId: ctx.node.id,
-            workerResult,
-          },
-          `[FormulaHandler] Piscina worker completed execution`
-        );
-
-        const rawValue =
-          workerResult[outputNotation] ??
-          workerResult[outputKey] ??
-          workerResult["result"];
-
-        if (rawValue === undefined) {
-          throw new Error(
-            `Custom code formula did not assign a value to the expected output variable "${outputNotation}". ` +
-              `Ensure your script assigns a value to "${outputNotation}" (e.g. ${outputNotation} = ...).`
-          );
-        }
-
-        const factor = 10 ** precision;
-        value = Math.round(rawValue * factor) / factor;
-      } else {
-        const isMultiLineCustom = expression.includes("\n") || expression.includes("=");
-
-        if (isMultiLineCustom) {
-          // Synchronous Main Thread (Fast 2ms Simple Code) - Multi-line or has =
-          logger.info(
-            {
-              sessionId: ctx.sessionId,
-              nodeId: ctx.node.id,
-              nodeLabel: ctx.node.label,
-              expression,
-              evalScope,
-              outputNotation,
-              outputKey,
-            },
-            `[FormulaHandler] 🧵 Running in MAIN THREAD (Synchronous Multi-Line)`
-          );
-
-          const workerResult = safeEvaluateMultiLine(expression, evalScope, [
-            outputNotation,
-            outputKey,
-            "result",
-          ], {
-            timeoutMs: this.timeoutMs,
-          });
-
-          logger.info(
-            {
-              sessionId: ctx.sessionId,
-              nodeId: ctx.node.id,
-              workerResult,
-            },
-            `[FormulaHandler] Main Thread completed execution`
-          );
-
-          const rawValue =
-            workerResult[outputNotation] ??
-            workerResult[outputKey] ??
-            workerResult["result"];
-
-          if (rawValue === undefined) {
-            throw new Error(
-              `Custom code formula did not assign a value to the expected output variable "${outputNotation}". ` +
-                `Ensure your script assigns a value to "${outputNotation}" (e.g. ${outputNotation} = ...).`
-            );
-          }
-
-          const factor = 10 ** precision;
-          value = Math.round(rawValue * factor) / factor;
-        } else {
-          // Synchronous Main Thread - Single-line standard expression
-          logger.info(
-            {
-              sessionId: ctx.sessionId,
-              nodeId: ctx.node.id,
-              nodeLabel: ctx.node.label,
-              expression,
-              evalScope,
-            },
-            `[FormulaHandler] 🧵 Running simple formula in MAIN THREAD (Synchronous Simple Code)`
-          );
-          value = safeEvaluate(expression, evalScope, {
-            precision,
-            timeoutMs: this.timeoutMs,
-          });
-        }
       }
+
+      const factor = 10 ** precision;
+      value = Math.round(rawValue * factor) / factor;
 
       ctx.variables.set(outputKey, value);
       const outputs: VariableMap = { [outputKey]: value };
@@ -258,6 +191,8 @@ export class FormulaHandler implements NodeHandler {
       return {
         kind: "completed",
         outputs,
+        cpuUserMs: workerResult.cpuUserMs,
+        cpuSystemMs: workerResult.cpuSystemMs,
         result: {
           expression,
           displayExpression,

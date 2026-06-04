@@ -8,13 +8,13 @@
 //
 //  All evaluation goes through safeEvaluateMultiLine or WorkerPoolTimeout.
 // ═══════════════════════════════════════════════════════════════════════════
-import { safeEvaluateMultiLine } from "@/features/workflow-canvas/engine/formula-validator";
 
+import { isMainThread } from "worker_threads";
 import type { NodeHandler } from "../NodeHandler";
 import { toErroredOutcome } from "../NodeHandler";
 import { WorkerPoolTimeout } from "../WorkerPoolTimeout";
 import type { ExecutionContext, NodeOutcome, VariableMap } from "../types";
-import { logger } from "../logger";
+import { logger, sanitizeForLog } from "../logger";
 
 interface CustomCodeConfig {
   code?: string;
@@ -57,47 +57,38 @@ export class CustomCodeHandler implements NodeHandler {
 
       let outputs: Record<string, number>;
 
-      if (config.use_worker) {
-        logger.info(
-          {
-            sessionId: ctx.sessionId,
-            nodeId: ctx.node.id,
-            nodeLabel: ctx.node.label,
-            code,
-            scope,
-          },
-          `[CustomCodeHandler] 🧵 Running custom code in WORKER THREAD (Background Heavy Task)`
-        );
-
-        // Run in isolated Worker Thread (Background Heavy Task)
-        const pool = new WorkerPoolTimeout();
-        outputs = (await pool.runMathEvaluation(code, scope, {
-          timeoutMs: config.timeoutMs ?? this.timeoutMs,
-          handlerType: "CUSTOM_CODE",
-        })) as Record<string, number>;
-      } else {
-        logger.info(
-          {
-            sessionId: ctx.sessionId,
-            nodeId: ctx.node.id,
-            nodeLabel: ctx.node.label,
-            code,
-            scope,
-          },
-          `[CustomCodeHandler] 🧵 Running custom code in MAIN THREAD (Synchronous Simple Code)`
-        );
-
-        // Run Synchronously on the Main Thread (Fast 2ms Simple Code)
-        outputs = safeEvaluateMultiLine(code, scope, outputVarNames, {
-          timeoutMs: config.timeoutMs ?? this.timeoutMs,
-        });
-      }
+      const use_worker = config.use_worker ?? true;
+      const runLocally = !use_worker || (!isMainThread && ctx.isBackgroundRun);
 
       logger.info(
         {
           sessionId: ctx.sessionId,
           nodeId: ctx.node.id,
-          outputs,
+          nodeLabel: ctx.node.label,
+          code,
+          scope: sanitizeForLog(scope),
+          use_worker,
+          runLocally,
+        },
+        `[CustomCodeHandler] Running custom code evaluation in ${runLocally ? "Main Thread (local)" : "Piscina Worker Thread"}`
+      );
+
+      // Run in isolated Worker Thread (Piscina) to prevent blocking the event loop
+      const pool = new WorkerPoolTimeout();
+      const workerResult = await pool.runMathEvaluation(code, scope, {
+        timeoutMs: config.timeoutMs ?? this.timeoutMs,
+        handlerType: "CUSTOM_CODE",
+      }, runLocally);
+
+      outputs = workerResult.outputs;
+
+      logger.info(
+        {
+          sessionId: ctx.sessionId,
+          nodeId: ctx.node.id,
+          outputs: sanitizeForLog(outputs),
+          cpuUserMs: workerResult.cpuUserMs,
+          cpuSystemMs: workerResult.cpuSystemMs,
         },
         `[CustomCodeHandler] Custom code execution completed`
       );
@@ -121,6 +112,8 @@ export class CustomCodeHandler implements NodeHandler {
       return {
         kind: "completed",
         outputs: trackedOutputs,
+        cpuUserMs: workerResult.cpuUserMs,
+        cpuSystemMs: workerResult.cpuSystemMs,
         result: {
           declaredOutputs: outputVarNames,
           producedOutputs: Object.keys(outputs),

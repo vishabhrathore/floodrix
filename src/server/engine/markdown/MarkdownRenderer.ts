@@ -25,111 +25,158 @@ export function renderMarkdown(
 }
 
 export const DEFAULT_TEMPLATES: Record<string, string> = {
-  INPUT: `## 📥 {{node.label}}
-
+  INPUT: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-| Parameter | Value | Unit |
-|-----------|-------|------|{{#each inputs}}
-| {{this.label}} | **{{this.value}}** | {{this.unit}} |{{/each}}
-`,
+#### Input Parameters
+Initialized with inputs:
+{{#each inputs}}
+- **{{this.label}}** (\`{{@key}}\`): **{{this.value}}** {{#if this.unit}}{{this.unit}}{{/if}}
+{{/each}}
 
-  FORMULA: `## 🔢 {{node.label}}
-
-{{#if node.description}}*{{node.description}}*{{/if}}
-
-**Formula:**
-\$\${{outputs.displayExpression}}\$\$
-
-Result: **{{outputs.value}}**
-`,
-
-  MULTI_FORMULA: `## 🔢 {{node.label}}
-
-{{#if node.description}}*{{node.description}}*{{/if}}
-
-### Formulas Applied
-
-{{#each outputs.expressions}}
-**{{this.description}}**
-\$\${{this.expression}}\$\$
-Result: **{{this.value}}**
-
+| Parameter | Key | Value | Unit |
+| :--- | :--- | :--- | :--- |
+{{#each inputs}}
+| {{this.label}} | \`{{@key}}\` | **{{this.value}}** | {{#if this.unit}}{{this.unit}}{{else}}—{{/if}} |
 {{/each}}
 `,
 
-  CUSTOM_CODE: `## ⚙️ {{node.label}}
-
+  FORMULA: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-**Outputs:**
+#### Calculation
+Expression:
+\`\`\`math
+{{#if outputs.displayExpression}}{{outputs.displayExpression}}{{else}}{{outputs.expression}}{{/if}}
+\`\`\`
+
+- Target: **{{outputs.outputKey}}**
+- Result: **{{outputs.value}}**
+
+| Parameter | Value |
+| :--- | :--- |
+| **{{outputs.outputKey}}** | **{{outputs.value}}** |
+`,
+
+  MULTI_FORMULA: `### {{node.label}}
+{{#if node.description}}*{{node.description}}*{{/if}}
+
+#### Calculation Pipeline
+Evaluated sequential formulas:
+{{#each outputs.expressions}}
+- **{{this.description}}**: \`{{this.expression}}\` = **{{this.value}}**
+{{/each}}
+
+| Step | Expression | Value |
+| :--- | :--- | :--- |
+{{#each outputs.expressions}}
+| {{this.description}} | \`{{this.expression}}\` | **{{this.value}}** |
+{{/each}}
+`,
+
+  CUSTOM_CODE: `### {{node.label}}
+{{#if node.description}}*{{node.description}}*{{/if}}
+
+#### Script Output
+Executed custom code block:
 {{#each outputs}}
-- **{{@key}}**: {{this}}
+- **{{@key}}**: **{{this}}**
+{{/each}}
+
+| Variable | Value |
+| :--- | :--- |
+{{#each outputs}}
+| \`{{@key}}\` | **{{this}}** |
 {{/each}}
 
 {{#if error}}
-> ⚠️ Error: {{error}}
+> ⚠️ **Error:** {{error}}
 {{/if}}
 `,
 
-  LOOKUP_TABLE: `## 📋 {{node.label}}
-
+  LOOKUP_TABLE: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-### Lookup Keys
+#### Table Lookup
+Queried registry table using inputs:
+{{#each inputs}}
+- **{{@key}}**: **{{this}}**
+{{/each}}
 
-| Parameter | Value |
-|-----------|-------|{{#each inputs}}
-| {{@key}} | {{this}} |{{/each}}
+Resolved target **{{outputs.outputKey}}** to **{{outputs.value}}**.
 
-**Result:** {{outputs.outputKey}} = **{{outputs.value}}**
+| Filter Key | Value |
+| :--- | :--- |
+{{#each inputs}}
+| \`{{@key}}\` | {{this}} |
+{{/each}}
+| **{{outputs.outputKey}} (Result)** | **{{outputs.value}}** |
 `,
 
-  GRAPH_INTERPOLATION: `## 📋 {{node.label}}
-
+  GRAPH_INTERPOLATION: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-### Interpolation Input
+#### Graphical Interpolation
+Interpolated coordinates:
+{{#each inputs}}
+- **{{@key}}**: **{{this}}**
+{{/each}}
 
-| Parameter | Value |
-|-----------|-------|{{#each inputs}}
-| {{@key}} | {{this}} |{{/each}}
+Resolved coordinate target **{{outputs.outputKey}}** to **{{outputs.value}}**.
 
-**Result:** {{outputs.outputKey}} = **{{outputs.value}}**
+| Coordinate | Value |
+| :--- | :--- |
+{{#each inputs}}
+| \`{{@key}}\` | {{this}} |
+{{/each}}
+| **{{outputs.outputKey}} (Result)** | **{{outputs.value}}** |
 `,
 
-  DECISION: `## 🔀 {{node.label}}
+  DECISION: `### {{node.label}}
 
-**Condition matched:** {{outputs.matchedLabel}}
+#### Routing Decision
+Evaluated conditional branches:
+- **Condition Matched:** "{{outputs.matchedLabel}}"
+- **Action:** Route to node **{{outputs.targetNodeId}}**
 
-**Routing to:** {{outputs.targetNodeId}}
+| Condition | Target |
+| :--- | :--- |
+| {{outputs.matchedLabel}} | {{outputs.targetNodeId}} |
 `,
 
-  DISPLAY: `## 🌉 {{node.label}}
-
+  DISPLAY: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-### Comparison Values
+#### Value Adoption
+Compared outputs:
+{{#each outputs.compareValues}}
+- **{{this.method}}**: **{{this.value}}**
+{{/each}}
 
-| Method / Source | Value |
-|-----------------|-------|{{#each outputs.compareValues}}
-| {{this.method}} | **{{this.value}}** |{{/each}}
+Adoption rule **"{{outputs.selectionRule}}"** resolved to final value: **{{outputs.adopted}}**.
 
-**Selection Rule:** {{outputs.selectionRule}}
-**Adopted Value:** **{{outputs.adopted}}**
+| Source | Value |
+| :--- | :--- |
+{{#each outputs.compareValues}}
+| {{this.method}} | **{{this.value}}** |
+{{/each}}
+| **Adopted Value** | **{{outputs.adopted}}** |
 `,
 
-  VALIDATION: `## ✅ {{node.label}}
-
+  VALIDATION: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-**Validation Status:** Passed
+#### Constraint Verification
+Safety boundaries evaluated:
+- **Status:** Passed
+- **Details:** Checked variables are within design tolerances.
 `,
 
-  UNIT_CONVERSION: `## 🔄 {{node.label}}
-
+  UNIT_CONVERSION: `### {{node.label}}
 {{#if node.description}}*{{node.description}}*{{/if}}
 
-**Converted:** {{outputs.inputValue}} {{outputs.inputUnit}} ➔ **{{outputs.value}} {{outputs.outputUnit}}**
+#### Unit Conversion
+- **Input:** {{outputs.inputValue}} {{outputs.inputUnit}}
+- **Output:** {{outputs.value}} {{outputs.outputUnit}}
 `,
 };

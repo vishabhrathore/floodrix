@@ -118,7 +118,7 @@ function createDefaultNodeData(type: NodeTypeKey): {
     },
     CUSTOM_CODE: {
       label: "Custom Code",
-      config: { code: "", output_variables: [] },
+      config: { code: "", output_variables: [], use_worker: true },
     },
     LOOP: {
       label: "Loop",

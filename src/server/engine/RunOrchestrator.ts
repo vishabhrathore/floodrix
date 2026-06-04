@@ -86,16 +86,12 @@ export class RunOrchestrator {
       ? RunStrategy.INLINE_SYNC
       : strategy;
 
-    // ─── 4. Branch on strategy ────────────────────────────────────
     switch (effectiveStrategy) {
       case RunStrategy.INLINE_SYNC:
         return this.runInlineSync(input, reason);
 
-      case RunStrategy.INLINE_ASYNC:
-        return this.runInlineAsync(input, reason);
-
-      case RunStrategy.BACKGROUND_BATCH:
-        return this.runBackgroundBatch(input, reason);
+      case RunStrategy.BACKGROUND:
+        return this.runBackground(input, reason);
 
       default:
         throw new Error(`Unknown run strategy: ${effectiveStrategy}`);
@@ -123,61 +119,10 @@ export class RunOrchestrator {
   }
 
   /**
-   * Run the sync prefix inline. If we hit an async node, the executor
-   * pauses with background_transition. We then emit an Inngest event
-   * to pick it up and return asyncPending so the client polls.
-   */
-  private async runInlineAsync(
-    input: StartRunInput,
-    reason: string,
-  ): Promise<ExecutionResult> {
-    // Start the run with inlineAsync flag set so the executor knows to
-    // bail on the first async node it encounters.
-    const result = await this.deps.executor.startExecution(
-      input.calcWorkflowId,
-      input.actorId,
-      input.initialValues ?? {},
-      {
-        stepMode: false,
-        liveUpdates: false, // Async inline doesn't need real-time DB highlights
-        inlineAsync: true,
-        runStrategy: RunStrategy.INLINE_ASYNC,
-      },
-      input.idempotencyKey,
-    );
-
-    // If we paused for background_transition, hand off to Inngest
-    if (
-      result.status === "PAUSED" &&
-      result.pauseReason === "background_transition"
-    ) {
-      await this.deps.db.$transaction(async (tx) => {
-        await QueueProducer.dispatchCalcResume(tx, {
-          sessionId: result.sessionId,
-          reason: "async_node_hit",
-        });
-      });
-
-      return {
-        ...result,
-        asyncPending: {
-          pollUrl: this.buildPollUrl(result.sessionId),
-          pollIntervalMs: 1000,
-          strategy: RunStrategy.INLINE_ASYNC,
-        },
-      };
-    }
-
-    // Otherwise it completed / errored / paused-for-user inline — return as-is
-    return result;
-  }
-
-  /**
    * Create the session, emit start-background event, and return asyncPending
-   * immediately. The client polls from step 0. Used for large batches where
-   * running even the sync prefix in-request would eat too much time.
+   * immediately. The client polls from step 0. Used for background runs (async nodes or batches).
    */
-  private async runBackgroundBatch(
+  private async runBackground(
     input: StartRunInput,
     reason: string,
   ): Promise<ExecutionResult> {
@@ -203,7 +148,7 @@ export class RunOrchestrator {
       stepMode: false,
       idempotencyKey: input.idempotencyKey,
       liveUpdates: false,
-      runStrategy: RunStrategy.BACKGROUND_BATCH,
+      runStrategy: RunStrategy.BACKGROUND,
     });
 
     // Emit session:started and await to ensure listener is fully ready
@@ -216,7 +161,7 @@ export class RunOrchestrator {
       executionOrder,
     }).catch(() => {});
 
-    // Always hand off to Inngest for background batch (Outbox Pattern)
+    // Always hand off to Inngest for background execution (Outbox Pattern)
     await this.deps.db.$transaction(async (tx) => {
       await QueueProducer.dispatchCalcStartBackground(tx, {
         sessionId: session.id,
@@ -231,7 +176,7 @@ export class RunOrchestrator {
       asyncPending: {
         pollUrl: this.buildPollUrl(session.id),
         pollIntervalMs: 1000,
-        strategy: RunStrategy.BACKGROUND_BATCH,
+        strategy: RunStrategy.BACKGROUND,
       },
     };
   }

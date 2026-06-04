@@ -16,13 +16,21 @@
 //    via AbortController to release process resources immediately.
 // ═══════════════════════════════════════════════════════════════════════════
 import { join } from "node:path";
-import os from "node:os";
+import * as os from "node:os";
 import { Piscina } from "piscina";
+// @ts-ignore
+import evaluateLocal from "./worker-mathjs-runner.js";
 
 export interface WorkerTimeoutOptions {
   timeoutMs?: number;
   /** Label used in the timeout error message. */
   handlerType?: string;
+}
+
+export interface MathEvaluationResult {
+  outputs: Record<string, number>;
+  cpuUserMs: number;
+  cpuSystemMs: number;
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000; // 30 seconds default timeout limit
@@ -51,13 +59,19 @@ export class WorkerPoolTimeout {
     code: string,
     scope: Record<string, number | boolean | string>,
     opts: WorkerTimeoutOptions = {},
-  ): Promise<unknown> {
+    runLocally = false,
+  ): Promise<MathEvaluationResult> {
+    if (runLocally) {
+      // Evaluate synchronously on the current thread to avoid worker creation overhead
+      return evaluateLocal({ code, scope });
+    }
+
     const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const handlerType = opts.handlerType ?? "math_eval";
 
     const piscina = getPiscinaInstance();
     const controller = new AbortController();
-    
+
     const timer = setTimeout(() => {
       controller.abort();
     }, timeoutMs);
@@ -66,7 +80,7 @@ export class WorkerPoolTimeout {
       return await piscina.run(
         { code, scope },
         { signal: controller.signal }
-      );
+      ) as MathEvaluationResult;
     } catch (err: any) {
       if (
         controller.signal.aborted ||

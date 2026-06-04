@@ -128,7 +128,7 @@ export const formulasRouter = createTRPCRouter({
         visibility: z.nativeEnum(Visibility).default(Visibility.PRIVATE),
         isSystem: z.boolean().optional(),
         isPublished: z.boolean().optional(),
-        useWorker: z.boolean().optional(),
+        use_worker: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -141,7 +141,7 @@ export const formulasRouter = createTRPCRouter({
         });
       }
 
-      const { organizationId, ...formulaData } = input;
+      const { organizationId, use_worker, ...formulaData } = input;
       const finalOrgId = organizationId || reqCtx.organization?.id;
 
       if (!finalOrgId) {
@@ -194,6 +194,7 @@ export const formulasRouter = createTRPCRouter({
           createdBy: reqCtx.actor.id,
           isSystem: input.isSystem && isSuperAdmin(reqCtx) ? true : false,
           isPublished: input.isPublished ?? false,
+          useWorker: use_worker ?? true,
         },
       });
     }),
@@ -223,7 +224,7 @@ export const formulasRouter = createTRPCRouter({
         visibility: z.nativeEnum(Visibility).optional(),
         isSystem: z.boolean().optional(),
         isPublished: z.boolean().optional(),
-        useWorker: z.boolean().optional(),
+        use_worker: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -246,6 +247,10 @@ export const formulasRouter = createTRPCRouter({
       const updateData = { ...data };
       if (updateData.isSystem !== undefined && !isSuperAdmin(reqCtx)) {
         delete updateData.isSystem;
+      }
+      if ("use_worker" in updateData) {
+        (updateData as any).useWorker = updateData.use_worker;
+        delete (updateData as any).use_worker;
       }
 
       const updated = await ctx.db.formulaRegistryItem.update({
@@ -315,7 +320,7 @@ export const formulasRouter = createTRPCRouter({
         outputVariable: z.any(),
         intermediateSteps: z.array(z.any()).optional(),
         tags: z.array(z.string()).optional(),
-        useWorker: z.boolean().optional(),
+        use_worker: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -328,7 +333,7 @@ export const formulasRouter = createTRPCRouter({
         });
       }
 
-      const { organizationId, ...formulaData } = input;
+      const { organizationId, use_worker, ...formulaData } = input;
 
       let systemOrg = await ctx.db.organization.findFirst({
         where: { name: "System Registry" },
@@ -351,6 +356,7 @@ export const formulasRouter = createTRPCRouter({
           isSystem: true,
           isPublished: true,
           visibility: Visibility.PUBLIC,
+          useWorker: use_worker ?? true,
         },
       });
     }),

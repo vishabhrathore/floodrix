@@ -18,7 +18,7 @@ const origZeros = math.zeros;
 const origIdentity = math.identity;
 const origRange = math.range;
 
-const MAX_ELEMENTS = 100000000; // Limit to 100 million elements (allows up to a 10,000 x 10,000 matrix size safely)
+const MAX_ELEMENTS = 10000000; // Safe limit of 1 million elements (allows up to 1,000 x 1,000 matrix size safely)
 
 function checkDimensions(args) {
   let size = 1;
@@ -146,7 +146,9 @@ module.exports = function (req) {
   // Shallow copy scope to isolate from input mutations
   const scope = { ...req.scope };
 
+  const startCpu = process.cpuUsage();
   internalEvaluate.call(math, req.code, scope);
+  const diffCpu = process.cpuUsage(startCpu);
 
   const outputScope = {};
   for (const [k, v] of Object.entries(scope)) {
@@ -157,5 +159,9 @@ module.exports = function (req) {
     }
   }
 
-  return outputScope;
+  return {
+    outputs: outputScope,
+    cpuUserMs: Math.round(diffCpu.user / 1000),
+    cpuSystemMs: Math.round(diffCpu.system / 1000),
+  };
 };

@@ -45,7 +45,7 @@ export class RunStrategyResolver {
     // 1. Batch executions always run in background queue
     if (input.batchSize && input.batchSize > 1) {
       return {
-        strategy: RunStrategy.BACKGROUND_BATCH,
+        strategy: RunStrategy.BACKGROUND,
         firstAsyncIndex: -1,
         reason: `batch size ${input.batchSize} is greater than 1`,
       };
@@ -55,7 +55,7 @@ export class RunStrategyResolver {
     const firstAsyncIndex = input.nodeTypes.findIndex(isAsyncNodeType);
     if (firstAsyncIndex !== -1) {
       return {
-        strategy: RunStrategy.BACKGROUND_BATCH,
+        strategy: RunStrategy.BACKGROUND,
         firstAsyncIndex,
         reason: `workflow contains async node "${input.nodeTypes[firstAsyncIndex]}" at index ${firstAsyncIndex}`,
       };

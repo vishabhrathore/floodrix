@@ -22,7 +22,7 @@ async function main() {
   await AppCache.invalidateSession(sessionId);
   await AppCache.setSessionStatus(sessionId, "PAUSED");
   
-  // Clear registry prefetch cache to reload with useWorker selected
+  // Clear registry prefetch cache to reload with use_worker selected
   await AppCache.del(`wf:${workflowId}:registry-prefetch`);
   await AppCache.del(`f:${formulaId}`);
   await prisma.formulaRegistryItem.update({

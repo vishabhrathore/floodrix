@@ -62,18 +62,20 @@ export type PauseReason =
 
 export type NodeOutcome =
   | {
-      kind: "completed";
-      outputs: VariableMap;
-      result: Record<string, unknown>;
-      sideEffects?: { skipNodes?: string[] };
-    }
+    kind: "completed";
+    outputs: VariableMap;
+    result: Record<string, unknown>;
+    sideEffects?: { skipNodes?: string[] };
+    cpuUserMs?: number;
+    cpuSystemMs?: number;
+  }
   | {
-      kind: "paused";
-      reason: PauseReason;
-      fields?: InputFieldDef[];
-      nodeLabel?: string;
-      pauseMessage?: string;
-    }
+    kind: "paused";
+    reason: PauseReason;
+    fields?: InputFieldDef[];
+    nodeLabel?: string;
+    pauseMessage?: string;
+  }
   | { kind: "skipped" }
   | { kind: "errored"; error: Error };
 
@@ -111,93 +113,96 @@ export interface ExecutionContext {
 
 export type ExecutionEvent =
   | {
-      type: "session:started";
-      sessionId: string;
-      workflowId: string;
-      actorId: string;
-      nodeCount: number;
-      executionOrder: string[];
-    }
+    type: "session:started";
+    sessionId: string;
+    workflowId: string;
+    actorId: string;
+    nodeCount: number;
+    executionOrder: string[];
+  }
   | {
-      type: "node:started";
-      sessionId: string;
-      nodeId: string;
-      nodeLabel: string;
-      nodeType: CalcNodeType;
-      stepNumber: number;
-    }
+    type: "node:started";
+    sessionId: string;
+    nodeId: string;
+    nodeLabel: string;
+    nodeType: CalcNodeType;
+    stepNumber: number;
+  }
   | {
-      type: "node:completed";
-      sessionId: string;
-      nodeId: string;
-      nodeLabel: string;
-      nodeType: CalcNodeType;
-      stepNumber: number;
-      outputs: VariableMap;
-      result: Record<string, unknown>;
-      durationMs: number;
-    }
+    type: "node:completed";
+    sessionId: string;
+    nodeId: string;
+    nodeLabel: string;
+    nodeType: CalcNodeType;
+    stepNumber: number;
+    outputs: VariableMap;
+    result: Record<string, unknown>;
+    durationMs: number;
+    cpuUserMs?: number;
+    cpuSystemMs?: number;
+  }
   | {
-      type: "node:skipped";
-      sessionId: string;
-      nodeId: string;
-      reason: "decision_branch" | "structural" | "no_handler";
-    }
+    type: "node:skipped";
+    sessionId: string;
+    nodeId: string;
+    reason: "decision_branch" | "structural" | "no_handler";
+  }
   | {
-      type: "node:errored";
-      sessionId: string;
-      nodeId: string;
-      nodeLabel: string;
-      error: Error;
-      errorType: string;
-      durationMs: number;
-    }
+    type: "node:errored";
+    sessionId: string;
+    nodeId: string;
+    nodeLabel: string;
+    error: Error;
+    errorType: string;
+    durationMs: number;
+  }
   | {
-      type: "node:waiting";
-      sessionId: string;
-      nodeId: string;
-      nodeLabel: string;
-      pauseReason: PauseReason;
-      stepNumber: number;
-    }
+    type: "node:waiting";
+    sessionId: string;
+    nodeId: string;
+    nodeLabel: string;
+    pauseReason: PauseReason;
+    stepNumber: number;
+  }
   | {
-      type: "session:paused";
-      sessionId: string;
-      workflowId: string;
-      nodeId: string;
-      pauseReason: PauseReason;
-      skippedNodes: string[];
-      stepMode: boolean;
-    }
+    type: "session:paused";
+    sessionId: string;
+    workflowId: string;
+    nodeId: string;
+    pauseReason: PauseReason;
+    skippedNodes: string[];
+    stepMode: boolean;
+  }
   | {
-      type: "session:completed";
-      sessionId: string;
-      workflowId: string;
-      actorId: string;
-      durationMs: number;
-      finalVariables: string[];
-    }
+    type: "session:completed";
+    sessionId: string;
+    workflowId: string;
+    actorId: string;
+    durationMs: number;
+    finalVariables: string[];
+    cpuUserMs?: number;
+    cpuSystemMs?: number;
+  }
   | {
-      type: "session:errored";
-      sessionId: string;
-      workflowId: string;
-      actorId: string;
-      nodeId: string;
-      error: string;
-    }
+    type: "session:errored";
+    sessionId: string;
+    workflowId: string;
+    actorId: string;
+    nodeId: string;
+    error: string;
+  }
   | {
-      type: "session:cancelled";
-      sessionId: string;
-      workflowId: string;
-      actorId: string;
-    };
+    type: "session:cancelled";
+    sessionId: string;
+    workflowId: string;
+    actorId: string;
+  };
 
 // ─── Run Options & Result ─────────────────────────────────────────────────
 
 export interface ExecutionOptions {
   stepMode?: boolean;
   liveUpdates?: boolean;
-  inlineAsync?: boolean;
   asyncPollBaseUrl?: string;
   isBackgroundRun?: boolean;
   parentSessionId?: string;
@@ -331,19 +336,13 @@ export interface Clock {
  * INLINE_SYNC   — Entire workflow is sync-only; runs in the request path.
  *                 Returns the final result to the client in one response.
  *
- * INLINE_ASYNC  — Run sync prefix inline; when we hit an async node, pause
- *                 the session, emit an Inngest event, and return
- *                 asyncPending to the client so it starts polling. Inngest
- *                 picks up and continues the run.
- *
- * BACKGROUND_BATCH — For large batch jobs (100+ rows). Creates the session
- *                 and immediately hands off to Inngest; client polls from
- *                 the start. Used by batch-executor.ts path, not single runs.
+ * BACKGROUND    — Workflow runs asynchronously (either because it contains async nodes
+ *                 or because it is a batch/background execution). Handed off to the
+ *                 background queue immediately; client polls from the start.
  */
 export enum RunStrategy {
   INLINE_SYNC = "INLINE_SYNC",
-  INLINE_ASYNC = "INLINE_ASYNC",
-  BACKGROUND_BATCH = "BACKGROUND_BATCH",
+  BACKGROUND = "BACKGROUND",
 }
 
 /**

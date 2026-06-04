@@ -282,7 +282,7 @@ export class WorkflowExecutor {
       actorId,
       nodeCount: executionOrder.length,
       executionOrder,
-    }).catch(() => {});
+    }).catch(() => { });
 
     return this._continueExecutionWithSession(session, options);
   }
@@ -317,7 +317,7 @@ export class WorkflowExecutor {
     if (currentIdx === -1) {
       throw new Error(
         `Session ${sessionId}: paused node ${nodeId} not found in execution order. ` +
-          `Workflow may have been edited while session was paused.`,
+        `Workflow may have been edited while session was paused.`,
       );
     }
 
@@ -386,7 +386,7 @@ export class WorkflowExecutor {
     if (session.pauseReason !== "step_complete") {
       throw new Error(
         `stepForward: session is paused for "${session.pauseReason}", ` +
-          `not step_complete. Use resumeWithInput instead.`,
+        `not step_complete. Use resumeWithInput instead.`,
       );
     }
 
@@ -446,7 +446,7 @@ export class WorkflowExecutor {
     if (targetIndex >= session.currentIndex) {
       throw new Error(
         `stepBack: target node is at or after current position ` +
-          `(target=${targetIndex}, current=${session.currentIndex}). Use stepForward instead.`,
+        `(target=${targetIndex}, current=${session.currentIndex}). Use stepForward instead.`,
       );
     }
 
@@ -458,7 +458,7 @@ export class WorkflowExecutor {
       if (n && IRREVERSIBLE_NODE_TYPES.has(n.type)) {
         throw new Error(
           `stepBack blocked: node "${n.label}" (${n.type}) between target and current position ` +
-            `has irreversible external side effects. Cancel and restart if you need to re-run it.`,
+          `has irreversible external side effects. Cancel and restart if you need to re-run it.`,
         );
       }
     }
@@ -535,6 +535,7 @@ export class WorkflowExecutor {
     options: ExecutionOptions = {},
   ): Promise<ExecutionResult> {
     const sessionId = session.id;
+    const sessionStartCpu = process.cpuUsage();
     if (!options.bypassLock) {
       const locked = await this.deps.repo.acquireExecutionLock(session.id, session.lockVersion);
       if (!locked) {
@@ -550,122 +551,369 @@ export class WorkflowExecutor {
 
     try {
       const wf = await this.deps.repo.loadWorkflow(session.calcWorkflowId);
-    
-    // Immutability protection (shallow freeze on core structures)
-    Object.freeze(wf);
-    Object.freeze(wf.nodes);
-    wf.nodes.forEach((n) => Object.freeze(n));
 
-    const skipSet = new Set(session.metadata.skippedNodes);
-    const stepMode = session.metadata.stepMode || (options.stepMode ?? false);
+      // Immutability protection (shallow freeze on core structures)
+      Object.freeze(wf);
+      Object.freeze(wf.nodes);
+      wf.nodes.forEach((n) => Object.freeze(n));
 
-    const variableStore = new DefaultVariableStore(session.variables);
-    const registry: RegistryResolver = createRegistryResolver();
+      const skipSet = new Set(session.metadata.skippedNodes);
+      const stepMode = session.metadata.stepMode || (options.stepMode ?? false);
 
-    try {
-      await registry.prefetchForWorkflow(this.deps.db, session.calcWorkflowId);
-    } catch {
-      /* prefetch is optional */
-    }
+      const variableStore = new DefaultVariableStore(session.variables);
+      const registry: RegistryResolver = createRegistryResolver();
 
-    const nodeMap = new Map(wf.nodes.map((n) => [n.id, n]));
-    const totalSteps = session.executionOrder.length;
-    let currentIndex = session.currentIndex;
-
-    // Load existing executions cache from Redis to keep them warm
-    let nodeExecs = await AppCache.getSessionExecutions(sessionId) || [];
-
-    const syncNodeExecsToRedis = async () => {
-      await AppCache.setSessionExecutions(sessionId, nodeExecs);
-    };
-
-    while (currentIndex < session.executionOrder.length) {
-      // Cancel-mid-execution check
-      const liveStatus = await this.deps.repo.getStatus(sessionId);
-      if (liveStatus === "CANCELLED") {
-        await syncNodeExecsToRedis();
-        return await this.buildResult(
-          sessionId,
-          "CANCELLED",
-          variableStore.snapshot(),
-        );
+      try {
+        await registry.prefetchForWorkflow(this.deps.db, session.calcWorkflowId);
+      } catch {
+        /* prefetch is optional */
       }
 
-      const nodeId = session.executionOrder[currentIndex];
-      const node = nodeMap.get(nodeId);
-      if (node) {
-        logger.info(
-          { sessionId, nodeId, type: node.type, label: node.label, currentIndex, totalSteps },
-          `[WorkflowExecutor.continueExecution] 📝 Evaluating node`
-        );
-      }
+      const nodeMap = new Map(wf.nodes.map((n) => [n.id, n]));
+      const totalSteps = session.executionOrder.length;
+      let currentIndex = session.currentIndex;
 
-      if (!node) {
-        currentIndex++;
-        continue;
-      }
+      // Load existing executions cache from Redis to keep them warm
+      let nodeExecs = await AppCache.getSessionExecutions(sessionId) || [];
 
-      if (skipSet.has(nodeId)) {
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
+      const syncNodeExecsToRedis = async () => {
+        await AppCache.setSessionExecutions(sessionId, nodeExecs);
+      };
 
-        await this.deps.emitter.emit({
-          type: "node:skipped",
-          sessionId,
-          nodeId,
-          reason: "decision_branch",
-        }).catch(() => {});
-
-        if (options.liveUpdates) {
-          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
-        }
-
-        currentIndex++;
-        continue;
-      }
-
-      if (isStructuralNodeType(node.type)) {
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
-
-        await this.deps.emitter.emit({
-          type: "node:skipped",
-          sessionId,
-          nodeId,
-          reason: "structural",
-        }).catch(() => {});
-
-        if (options.liveUpdates) {
-          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
-        }
-
-        currentIndex++;
-        continue;
-      }
-
-      if (
-        isAsyncNodeType(node.type) &&
-        node.type !== "SUBWORKFLOW" &&
-        !options.isBackgroundRun
-      ) {
-        if (options.inlineAsync) {
-          logger.info(
-            { sessionId, nodeId, type: node.type },
-            `[WorkflowExecutor.continueExecution] 🚀 Hitting async node in inlineAsync mode, initiating background transition`
+      while (currentIndex < session.executionOrder.length) {
+        // Cancel-mid-execution check
+        const liveStatus = await this.deps.repo.getStatus(sessionId);
+        if (liveStatus === "CANCELLED") {
+          await syncNodeExecsToRedis();
+          return await this.buildResult(
+            sessionId,
+            "CANCELLED",
+            variableStore.snapshot(),
           );
+        }
+
+        const nodeId = session.executionOrder[currentIndex];
+        const node = nodeMap.get(nodeId);
+        if (node) {
+          logger.info(
+            { sessionId, nodeId, type: node.type, label: node.label, currentIndex, totalSteps },
+            `[WorkflowExecutor.continueExecution] 📝 Evaluating node`
+          );
+        }
+
+        if (!node) {
+          currentIndex++;
+          continue;
+        }
+
+        if (skipSet.has(nodeId)) {
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
+
+          await this.deps.emitter.emit({
+            type: "node:skipped",
+            sessionId,
+            nodeId,
+            reason: "decision_branch",
+          }).catch(() => { });
+
+          if (options.liveUpdates) {
+            await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+          }
+
+          currentIndex++;
+          continue;
+        }
+
+        if (isStructuralNodeType(node.type)) {
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
+
+          await this.deps.emitter.emit({
+            type: "node:skipped",
+            sessionId,
+            nodeId,
+            reason: "structural",
+          }).catch(() => { });
+
+          if (options.liveUpdates) {
+            await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+          }
+
+          currentIndex++;
+          continue;
+        }
+
+        if (
+          isAsyncNodeType(node.type) &&
+          node.type !== "SUBWORKFLOW" &&
+          !options.isBackgroundRun
+        ) {
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "ERRORED";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "ERRORED" });
 
           await syncNodeExecsToRedis();
 
-          // Synchronously update Redis cache state in 0ms for instant API polling
+          return this.errorOut(
+            sessionId,
+            session,
+            wf,
+            node,
+            currentIndex,
+            variableStore,
+            new Error(
+              `Async node type ${node.type} requires background queue (BullMQ) to execute`,
+            ),
+            options,
+          );
+        }
+
+        const handler = this.deps.registry.get(node.type);
+        if (!handler) {
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
+
+          await this.deps.emitter.emit({
+            type: "node:skipped",
+            sessionId,
+            nodeId,
+            reason: "no_handler",
+          }).catch(() => { });
+
+          if (options.liveUpdates) {
+            await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+          }
+
+          currentIndex++;
+          continue;
+        }
+
+        const startTime = this.deps.clock.now();
+
+        await this.deps.emitter.emit({
+          type: "node:started",
+          sessionId,
+          nodeId,
+          nodeLabel: node.label,
+          nodeType: node.type,
+          stepNumber: currentIndex,
+        }).catch(() => { });
+
+        const ctx: ExecutionContext = {
+          node,
+          edges: wf.edges,
+          variables: variableStore,
+          db: this.deps.db,
+          registry,
+          sessionId,
+          workflowId: session.calcWorkflowId,
+          actorId: session.actorId,
+          isBackgroundRun: options.isBackgroundRun ?? false,
+          liveUpdates: options.liveUpdates ?? false,
+        };
+
+        const startCpu = process.cpuUsage();
+        const outcome = await this.runHandlerWithTimeout(handler, ctx);
+        const diffCpu = process.cpuUsage(startCpu);
+        const cpuUserMs = (outcome.kind === "completed" && outcome.cpuUserMs !== undefined)
+          ? outcome.cpuUserMs
+          : Math.round(diffCpu.user / 1000);
+        const cpuSystemMs = (outcome.kind === "completed" && outcome.cpuSystemMs !== undefined)
+          ? outcome.cpuSystemMs
+          : Math.round(diffCpu.system / 1000);
+        const durationMs = this.deps.clock.now() - startTime;
+
+        // ── errored ───────────────────────────────────────────────
+        if (outcome.kind === "errored") {
+          logger.error(
+            { sessionId, nodeId, nodeType: node.type, nodeLabel: node.label, err: outcome.error },
+            `[WorkflowExecutor.continueExecution] ❌ Node failed`
+          );
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "ERRORED";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "ERRORED" });
+
+          await syncNodeExecsToRedis();
+
+          return this.errorOut(
+            sessionId,
+            session,
+            wf,
+            node,
+            currentIndex,
+            variableStore,
+            outcome.error,
+            options,
+            durationMs,
+          );
+        }
+
+        if (outcome.kind === "skipped") {
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
+
+          await this.deps.emitter.emit({
+            type: "node:skipped",
+            sessionId,
+            nodeId,
+            reason: "no_handler",
+          }).catch(() => { });
+
+          if (options.liveUpdates) {
+            await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
+          }
+
+          currentIndex++;
+          continue;
+        }
+
+        // ── paused (awaiting input / validation error) ───────────
+        if (outcome.kind === "paused") {
+          logger.info(
+            { sessionId, nodeId, type: node.type, label: node.label, reason: outcome.reason },
+            `[WorkflowExecutor.continueExecution] ⏸️ Session paused`
+          );
+          const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+          if (idx !== -1) nodeExecs[idx].status = "WAITING";
+          else nodeExecs.push({ calcNodeId: nodeId, status: "WAITING" });
+
+          await syncNodeExecsToRedis();
+
           const updatedSession: LoadedSession = {
             ...session,
             status: "PAUSED",
             currentNodeId: nodeId,
             currentIndex,
             variables: variableStore.snapshot(),
-            pauseReason: "background_transition",
+            pauseReason: outcome.reason,
+          };
+          await AppCache.setSessionState(sessionId, updatedSession);
+          await AppCache.setSessionStatus(sessionId, "PAUSED");
+
+          // Schedule slow database updates and await them to prevent race conditions
+          WriteSerializer.enqueue(sessionId, () =>
+            Promise.all([
+              this.deps.emitter.emit({
+                type: "node:waiting",
+                sessionId,
+                nodeId,
+                nodeLabel: node.label,
+                pauseReason: outcome.reason,
+                stepNumber: currentIndex,
+              }),
+              this.deps.emitter.emit({
+                type: "session:paused",
+                sessionId,
+                workflowId: session.calcWorkflowId,
+                nodeId,
+                pauseReason: outcome.reason,
+                skippedNodes: [...skipSet],
+                stepMode,
+              }),
+              this.deps.repo.pauseSession({
+                sessionId,
+                nodeId,
+                currentIndex,
+                variables: variableStore.snapshot(),
+                pauseReason: outcome.reason,
+                skippedNodes: [...skipSet],
+                stepMode,
+              }),
+            ])
+          ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] paused handler failed`));
+
+          return {
+            sessionId,
+            status: "PAUSED",
+            variables: variableStore.snapshot(),
+            pauseReason: outcome.reason,
+            pausedNode: outcome.fields
+              ? {
+                nodeId,
+                nodeLabel: outcome.nodeLabel ?? node.label,
+                fields: outcome.fields,
+                message: outcome.pauseMessage,
+              }
+              : null,
+          };
+        }
+
+        // ── completed ────────────────────────────────────────────
+        if (outcome.kind === "completed") {
+          this.enrichOutcomeWithMarkdown(node, outcome, variableStore.snapshot());
+        }
+
+        if (outcome.sideEffects?.skipNodes) {
+          for (const id of outcome.sideEffects.skipNodes) skipSet.add(id);
+        }
+
+        await this.deps.emitter.emit({
+          type: "node:completed",
+          sessionId,
+          nodeId,
+          nodeLabel: node.label,
+          nodeType: node.type,
+          stepNumber: currentIndex,
+          outputs: outcome.outputs,
+          result: outcome.result,
+          durationMs,
+          cpuUserMs,
+          cpuSystemMs,
+        }).catch(() => { });
+
+        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
+        if (idx !== -1) nodeExecs[idx].status = "COMPLETED";
+        else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
+
+        if (options.liveUpdates) {
+          await this.deps.repo.updateNodeCompleted({
+            sessionId,
+            nodeId,
+            outputs: outcome.outputs,
+            result: outcome.result,
+            durationMs,
+          });
+          WriteBufferManager.update(sessionId, variableStore.snapshot(), currentIndex + 1);
+          if (WriteBufferManager.shouldFlush(sessionId)) {
+            const buffered = WriteBufferManager.get(sessionId);
+            if (buffered) {
+              await this.deps.repo.updateProgress(sessionId, buffered.variables, buffered.currentIndex);
+              WriteBufferManager.markFlushed(sessionId);
+            }
+          }
+        }
+
+        // ── CHUNK 3: stepMode pause after each completed node ────
+        if (stepMode) {
+          const stepOutput: StepOutput = {
+            nodeId,
+            nodeLabel: node.label,
+            nodeType: node.type,
+            outputs: outcome.outputs,
+            result: outcome.result,
+            durationMs,
+            stepNumber: currentIndex,
+            totalSteps,
+          };
+
+          logger.info(
+            { sessionId, nodeId, type: node.type, label: node.label, stepNumber: currentIndex },
+            `[WorkflowExecutor.continueExecution] ⏸️ stepMode Pause`
+          );
+          await syncNodeExecsToRedis();
+
+          const updatedSession: LoadedSession = {
+            ...session,
+            status: "PAUSED",
+            currentNodeId: nodeId,
+            currentIndex,
+            variables: variableStore.snapshot(),
+            pauseReason: "step_complete",
           };
           await AppCache.setSessionState(sessionId, updatedSession);
           await AppCache.setSessionStatus(sessionId, "PAUSED");
@@ -678,377 +926,89 @@ export class WorkflowExecutor {
                 sessionId,
                 workflowId: session.calcWorkflowId,
                 nodeId,
-                pauseReason: "background_transition",
+                pauseReason: "step_complete",
                 skippedNodes: [...skipSet],
-                stepMode: false,
+                stepMode: true,
               }),
               this.deps.repo.pauseSession({
                 sessionId,
                 nodeId,
                 currentIndex,
                 variables: variableStore.snapshot(),
-                pauseReason: "background_transition",
+                pauseReason: "step_complete",
                 skippedNodes: [...skipSet],
-                stepMode: false,
+                stepMode: true,
               }),
             ])
-          ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] background transition failed`));
+          ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] stepMode paused failed`));
+
+          let execs = await AppCache.getSessionExecutions(sessionId) || [];
+          if (execs.length === 0) {
+            execs = await this.deps.db.calcNodeExecution.findMany({
+              where: { sessionId },
+              select: { calcNodeId: true, status: true },
+            });
+          }
 
           return {
             sessionId,
             status: "PAUSED",
             variables: variableStore.snapshot(),
-            pauseReason: "background_transition",
-            pausedNode: null,
+            pauseReason: "step_complete",
+            stepOutput,
+            nodeExecutions: execs as any[],
           };
         }
 
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "ERRORED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "ERRORED" });
-
-        await syncNodeExecsToRedis();
-
-        return this.errorOut(
-          sessionId,
-          session,
-          wf,
-          node,
-          currentIndex,
-          variableStore,
-          new Error(
-            `Async node type ${node.type} requires Chunk 4 (Inngest) to execute`,
-          ),
-          options,
-        );
-      }
-
-      const handler = this.deps.registry.get(node.type);
-      if (!handler) {
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
-
-        await this.deps.emitter.emit({
-          type: "node:skipped",
-          sessionId,
-          nodeId,
-          reason: "no_handler",
-        }).catch(() => {});
-
-        if (options.liveUpdates) {
-          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
-        }
-
         currentIndex++;
-        continue;
       }
 
-      const startTime = this.deps.clock.now();
+      // ── all done ──────────────────────────────────────────────────
+      logger.info({ sessionId, status: "COMPLETED" }, `[WorkflowExecutor.continueExecution] 🎉 Session Completed`);
+      const finalSnapshot = variableStore.snapshot();
+      const approxDuration = session.startedAt
+        ? this.deps.clock.nowDate().getTime() - session.startedAt.getTime()
+        : 0;
 
-      await this.deps.emitter.emit({
-        type: "node:started",
-        sessionId,
-        nodeId,
-        nodeLabel: node.label,
-        nodeType: node.type,
-        stepNumber: currentIndex,
-      }).catch(() => {});
+      await syncNodeExecsToRedis();
 
-      const ctx: ExecutionContext = {
-        node,
-        edges: wf.edges,
-        variables: variableStore,
-        db: this.deps.db,
-        registry,
-        sessionId,
-        workflowId: session.calcWorkflowId,
-        actorId: session.actorId,
-        isBackgroundRun: options.isBackgroundRun ?? false,
-        liveUpdates: options.liveUpdates ?? false,
+      const updatedSession: LoadedSession = {
+        ...session,
+        status: "COMPLETED",
+        currentNodeId: null,
+        variables: finalSnapshot,
       };
+      await AppCache.setSessionState(sessionId, updatedSession);
+      await AppCache.setSessionStatus(sessionId, "COMPLETED");
 
-      const outcome = await this.runHandlerWithTimeout(handler, ctx);
-      const durationMs = this.deps.clock.now() - startTime;
+      // Schedule slow database updates and await them to prevent race conditions
+      WriteSerializer.enqueue(sessionId, () =>
+        Promise.all([
+          this.deps.repo.completeSession({
+            sessionId,
+            variables: finalSnapshot,
+          }),
+          this.deps.emitter.emit({
+            type: "session:completed",
+            sessionId,
+            workflowId: session.calcWorkflowId,
+            actorId: session.actorId,
+            durationMs: approxDuration,
+            finalVariables: Object.keys(finalSnapshot).filter(
+              (k) => k !== "$nodes" && k !== "$results",
+            ),
+            cpuUserMs: Math.round(process.cpuUsage(sessionStartCpu).user / 1000),
+            cpuSystemMs: Math.round(process.cpuUsage(sessionStartCpu).system / 1000),
+          }),
+        ])
+      ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] completion failed`));
 
-      // ── errored ───────────────────────────────────────────────
-      if (outcome.kind === "errored") {
-        logger.error(
-          { sessionId, nodeId, nodeType: node.type, nodeLabel: node.label, err: outcome.error },
-          `[WorkflowExecutor.continueExecution] ❌ Node failed`
-        );
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "ERRORED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "ERRORED" });
-
-        await syncNodeExecsToRedis();
-
-        return this.errorOut(
-          sessionId,
-          session,
-          wf,
-          node,
-          currentIndex,
-          variableStore,
-          outcome.error,
-          options,
-          durationMs,
-        );
-      }
-
-      if (outcome.kind === "skipped") {
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "SKIPPED";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "SKIPPED" });
-
-        await this.deps.emitter.emit({
-          type: "node:skipped",
-          sessionId,
-          nodeId,
-          reason: "no_handler",
-        }).catch(() => {});
-
-        if (options.liveUpdates) {
-          await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
-        }
-
-        currentIndex++;
-        continue;
-      }
-
-      // ── paused (awaiting input / validation error) ───────────
-      if (outcome.kind === "paused") {
-        logger.info(
-          { sessionId, nodeId, type: node.type, label: node.label, reason: outcome.reason },
-          `[WorkflowExecutor.continueExecution] ⏸️ Session paused`
-        );
-        const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-        if (idx !== -1) nodeExecs[idx].status = "WAITING";
-        else nodeExecs.push({ calcNodeId: nodeId, status: "WAITING" });
-
-        await syncNodeExecsToRedis();
-
-        const updatedSession: LoadedSession = {
-          ...session,
-          status: "PAUSED",
-          currentNodeId: nodeId,
-          currentIndex,
-          variables: variableStore.snapshot(),
-          pauseReason: outcome.reason,
-        };
-        await AppCache.setSessionState(sessionId, updatedSession);
-        await AppCache.setSessionStatus(sessionId, "PAUSED");
-
-        // Schedule slow database updates and await them to prevent race conditions
-        WriteSerializer.enqueue(sessionId, () =>
-          Promise.all([
-            this.deps.emitter.emit({
-              type: "node:waiting",
-              sessionId,
-              nodeId,
-              nodeLabel: node.label,
-              pauseReason: outcome.reason,
-              stepNumber: currentIndex,
-            }),
-            this.deps.emitter.emit({
-              type: "session:paused",
-              sessionId,
-              workflowId: session.calcWorkflowId,
-              nodeId,
-              pauseReason: outcome.reason,
-              skippedNodes: [...skipSet],
-              stepMode,
-            }),
-            this.deps.repo.pauseSession({
-              sessionId,
-              nodeId,
-              currentIndex,
-              variables: variableStore.snapshot(),
-              pauseReason: outcome.reason,
-              skippedNodes: [...skipSet],
-              stepMode,
-            }),
-          ])
-        ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] paused handler failed`));
-
-        return {
-          sessionId,
-          status: "PAUSED",
-          variables: variableStore.snapshot(),
-          pauseReason: outcome.reason,
-          pausedNode: outcome.fields
-            ? {
-                nodeId,
-                nodeLabel: outcome.nodeLabel ?? node.label,
-                fields: outcome.fields,
-                message: outcome.pauseMessage,
-              }
-            : null,
-        };
-      }
-
-      // ── completed ────────────────────────────────────────────
-      if (outcome.kind === "completed") {
-        this.enrichOutcomeWithMarkdown(node, outcome, variableStore.snapshot());
-      }
-
-      if (outcome.sideEffects?.skipNodes) {
-        for (const id of outcome.sideEffects.skipNodes) skipSet.add(id);
-      }
-
-      await this.deps.emitter.emit({
-        type: "node:completed",
+      return await this.buildResult(
         sessionId,
-        nodeId,
-        nodeLabel: node.label,
-        nodeType: node.type,
-        stepNumber: currentIndex,
-        outputs: outcome.outputs,
-        result: outcome.result,
-        durationMs,
-      }).catch(() => {});
-
-      const idx = nodeExecs.findIndex((n) => n.calcNodeId === nodeId);
-      if (idx !== -1) nodeExecs[idx].status = "COMPLETED";
-      else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
-
-      if (options.liveUpdates) {
-        await this.deps.repo.updateNodeCompleted({
-          sessionId,
-          nodeId,
-          outputs: outcome.outputs,
-          result: outcome.result,
-          durationMs,
-        });
-        WriteBufferManager.update(sessionId, variableStore.snapshot(), currentIndex + 1);
-        if (WriteBufferManager.shouldFlush(sessionId)) {
-          const buffered = WriteBufferManager.get(sessionId);
-          if (buffered) {
-            await this.deps.repo.updateProgress(sessionId, buffered.variables, buffered.currentIndex);
-            WriteBufferManager.markFlushed(sessionId);
-          }
-        }
-      }
-
-      // ── CHUNK 3: stepMode pause after each completed node ────
-      if (stepMode) {
-        const stepOutput: StepOutput = {
-          nodeId,
-          nodeLabel: node.label,
-          nodeType: node.type,
-          outputs: outcome.outputs,
-          result: outcome.result,
-          durationMs,
-          stepNumber: currentIndex,
-          totalSteps,
-        };
-
-        logger.info(
-          { sessionId, nodeId, type: node.type, label: node.label, stepNumber: currentIndex },
-          `[WorkflowExecutor.continueExecution] ⏸️ stepMode Pause`
-        );
-        await syncNodeExecsToRedis();
-
-        const updatedSession: LoadedSession = {
-          ...session,
-          status: "PAUSED",
-          currentNodeId: nodeId,
-          currentIndex,
-          variables: variableStore.snapshot(),
-          pauseReason: "step_complete",
-        };
-        await AppCache.setSessionState(sessionId, updatedSession);
-        await AppCache.setSessionStatus(sessionId, "PAUSED");
-
-        // Schedule slow database updates and await them to prevent race conditions
-        WriteSerializer.enqueue(sessionId, () =>
-          Promise.all([
-            this.deps.emitter.emit({
-              type: "session:paused",
-              sessionId,
-              workflowId: session.calcWorkflowId,
-              nodeId,
-              pauseReason: "step_complete",
-              skippedNodes: [...skipSet],
-              stepMode: true,
-            }),
-            this.deps.repo.pauseSession({
-              sessionId,
-              nodeId,
-              currentIndex,
-              variables: variableStore.snapshot(),
-              pauseReason: "step_complete",
-              skippedNodes: [...skipSet],
-              stepMode: true,
-            }),
-          ])
-        ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] stepMode paused failed`));
-
-        let execs = await AppCache.getSessionExecutions(sessionId) || [];
-        if (execs.length === 0) {
-          execs = await this.deps.db.calcNodeExecution.findMany({
-            where: { sessionId },
-            select: { calcNodeId: true, status: true },
-          });
-        }
-
-        return {
-          sessionId,
-          status: "PAUSED",
-          variables: variableStore.snapshot(),
-          pauseReason: "step_complete",
-          stepOutput,
-          nodeExecutions: execs as any[],
-        };
-      }
-
-      currentIndex++;
-    }
-
-    // ── all done ──────────────────────────────────────────────────
-    logger.info({ sessionId, status: "COMPLETED" }, `[WorkflowExecutor.continueExecution] 🎉 Session Completed`);
-    const finalSnapshot = variableStore.snapshot();
-    const approxDuration = session.startedAt
-      ? this.deps.clock.nowDate().getTime() - session.startedAt.getTime()
-      : 0;
-
-    await syncNodeExecsToRedis();
-
-    const updatedSession: LoadedSession = {
-      ...session,
-      status: "COMPLETED",
-      currentNodeId: null,
-      variables: finalSnapshot,
-    };
-    await AppCache.setSessionState(sessionId, updatedSession);
-    await AppCache.setSessionStatus(sessionId, "COMPLETED");
-
-    // Schedule slow database updates and await them to prevent race conditions
-    WriteSerializer.enqueue(sessionId, () =>
-      Promise.all([
-        this.deps.repo.completeSession({
-          sessionId,
-          variables: finalSnapshot,
-        }),
-        this.deps.emitter.emit({
-          type: "session:completed",
-          sessionId,
-          workflowId: session.calcWorkflowId,
-          actorId: session.actorId,
-          durationMs: approxDuration,
-          finalVariables: Object.keys(finalSnapshot).filter(
-            (k) => k !== "$nodes" && k !== "$results",
-          ),
-        }),
-      ])
-    ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] completion failed`));
-
-    return await this.buildResult(
-      sessionId,
-      "COMPLETED",
-      finalSnapshot,
-      approxDuration,
-    );
+        "COMPLETED",
+        finalSnapshot,
+        approxDuration,
+      );
     } finally {
       const finalData = WriteBufferManager.get(sessionId);
       if (finalData && finalData.pendingCount > 0) {
@@ -1120,7 +1080,7 @@ export class WorkflowExecutor {
       error,
       errorType,
       durationMs,
-    }).catch(() => {});
+    }).catch(() => { });
 
     const updatedSession: LoadedSession = {
       ...session,
@@ -1144,12 +1104,12 @@ export class WorkflowExecutor {
         }),
         options?.liveUpdates
           ? this.deps.repo.updateNodeErrored({
-              sessionId,
-              nodeId: node.id,
-              message: error.message,
-              errorType,
-              durationMs,
-            })
+            sessionId,
+            nodeId: node.id,
+            message: error.message,
+            errorType,
+            durationMs,
+          })
           : Promise.resolve(),
         this.deps.emitter.emit({
           type: "session:errored",
@@ -1254,6 +1214,7 @@ export class WorkflowExecutor {
       case "FORMULA": {
         outputs.displayExpression = outcome.result.displayExpression ?? outcome.result.expression;
         outputs.value = outcome.result.value;
+        outputs.outputKey = outcome.result.outputKey;
         outputs.expressions = [
           {
             outputKey: outcome.result.outputKey,

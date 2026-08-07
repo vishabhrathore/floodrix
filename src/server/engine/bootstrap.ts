@@ -18,6 +18,7 @@ import { SessionRepository } from "./SessionRepository";
 // CHUNK 5
 import { WorkflowExecutor } from "./WorkflowExecutor";
 import { CalcContext } from "./calc-context";
+import { ChartHandler } from "./handlers/ChartHandler";
 import { CustomCodeHandler } from "./handlers/CustomCodeHandler";
 import { DecisionHandler } from "./handlers/DecisionHandler";
 import { DisplayHandler } from "./handlers/DisplayHandler";
@@ -66,6 +67,7 @@ function registerAllHandlers(
   registry.register(new UnitConversionHandler());
   registry.register(new CustomCodeHandler());
   registry.register(new SubworkflowHandler());
+  registry.register(new ChartHandler());
   return registry;
 }
 

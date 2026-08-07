@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import MarkdownContent from "@/web/components/MarkdownContent";
 
 interface NodeOutput {
@@ -13,17 +13,23 @@ interface NodeOutput {
 interface SequentialTypewriterProps {
   executions: NodeOutput[];
   speed?: number; // millisecond delay per character tick
+  charsPerTick?: number; // number of characters appended per tick
+  immediate?: boolean;
   onAllCompleted?: () => void;
 }
 
 export function SequentialTypewriter({
   executions,
   speed = 2,
+  charsPerTick = 8,
+  immediate = false,
   onAllCompleted,
 }: SequentialTypewriterProps) {
-  const [displayedTexts, setDisplayedTexts] = useState<Record<string, string>>({});
+  const [displayedTexts, setDisplayedTexts] = useState<Record<string, string>>(
+    {},
+  );
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-  
+
   const executionsRef = useRef(executions);
   executionsRef.current = executions;
 
@@ -31,6 +37,19 @@ export function SequentialTypewriter({
   displayedTextsRef.current = displayedTexts;
 
   useEffect(() => {
+    if (immediate) {
+      const allTexts: Record<string, string> = {};
+      for (const exec of executionsRef.current) {
+        allTexts[exec.nodeId] = exec.markdown;
+      }
+      setDisplayedTexts(allTexts);
+      setActiveNodeId(null);
+      if (onAllCompleted) {
+        onAllCompleted();
+      }
+      return;
+    }
+
     let isCancelled = false;
     let timer: NodeJS.Timeout | null = null;
 
@@ -44,25 +63,29 @@ export function SequentialTypewriter({
         // If this node's text has not been fully typed yet
         if (currentText.length < fullText.length) {
           setActiveNodeId(exec.nodeId);
-          
+
           let typed = currentText;
-          // Step character by character
+          // Step by chunk to simulate fast ChatGPT-style streaming
           while (typed.length < fullText.length) {
             if (isCancelled) return;
-            typed += fullText.charAt(typed.length);
-            
+            const nextLength = Math.min(
+              typed.length + charsPerTick,
+              fullText.length,
+            );
+            typed += fullText.substring(typed.length, nextLength);
+
             setDisplayedTexts((prev) => ({
               ...prev,
               [exec.nodeId]: typed,
             }));
-            
+
             await new Promise((resolve) => {
               timer = setTimeout(resolve, speed);
             });
           }
         }
       }
-      
+
       setActiveNodeId(null);
       if (onAllCompleted) {
         onAllCompleted();
@@ -75,7 +98,7 @@ export function SequentialTypewriter({
       isCancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [executions, speed]);
+  }, [executions, speed, charsPerTick, immediate, onAllCompleted]);
 
   return (
     <div className="space-y-6 divide-y divide-neutral-100">

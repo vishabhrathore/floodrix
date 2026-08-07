@@ -1,0 +1,1246 @@
+{
+    "version": "1.0",
+    "domain": "Hydrology \u2014 SUH / PMP / PMF",
+    "source_workbook": "SUH_S1_19082025.xlsm",
+    "notes": "Seed each `formulas` entry as a row keyed by `id`. `expression` is a mathjs string. `inputs` are the named variables it reads; `output` is the named variable it writes. Lookup tables live in `tables`. Helper functions used: pow, max, sum, lerp, interp1d, trapzXY, convolve, arrScale, arrAdd, roundTo.",
+    "formulas": [
+        {
+            "id": "equiv-slope",
+            "category": "Catchment",
+            "name": "Equivalent Stream Slope",
+            "expression": "sum_li_di_prev_di / pow(stream_length, 2)",
+            "math_form": "S = \u03a3 L\u1d62 \u00b7 (D\u1d62\u208b\u2081 + D\u1d62) / L\u00b2",
+            "inputs": [
+                {
+                    "key": "sum_li_di_prev_di",
+                    "label": "\u03a3 L\u1d62(D\u1d62\u208b\u2081+D\u1d62)",
+                    "unit": "km\u00b7m"
+                },
+                {
+                    "key": "stream_length",
+                    "label": "Stream Length L",
+                    "unit": "km"
+                }
+            ],
+            "output": {
+                "key": "equiv_slope",
+                "label": "Equivalent Slope S",
+                "unit": "m/km"
+            },
+            "source": "CWC SUH method, Table 1"
+        },
+        {
+            "id": "suh-tp",
+            "category": "SUH",
+            "name": "Time to Peak",
+            "expression": "a_tp * pow(qp, b_tp)",
+            "math_form": "tp = a_tp \u00b7 qp^b_tp",
+            "inputs": [
+                {
+                    "key": "a_tp",
+                    "label": "tp linear coefficient"
+                },
+                {
+                    "key": "b_tp",
+                    "label": "tp power exponent"
+                },
+                {
+                    "key": "qp",
+                    "label": "Peak Unit Discharge qp",
+                    "unit": "cumec/sqkm"
+                }
+            ],
+            "output": {
+                "key": "tp",
+                "label": "Time to Peak",
+                "unit": "hr"
+            },
+            "source": "CWC sub-zone regression"
+        },
+        {
+            "id": "suh-qp",
+            "category": "SUH",
+            "name": "Peak Unit Discharge",
+            "expression": "a_qp * pow(stream_length / equiv_slope, b_qp)",
+            "math_form": "qp = a_qp \u00b7 (L/S)^b_qp",
+            "inputs": [
+                {
+                    "key": "a_qp"
+                },
+                {
+                    "key": "b_qp"
+                },
+                {
+                    "key": "stream_length",
+                    "unit": "km"
+                },
+                {
+                    "key": "equiv_slope",
+                    "unit": "m/km"
+                }
+            ],
+            "output": {
+                "key": "qp",
+                "label": "Peak Unit Discharge",
+                "unit": "cumec/sqkm"
+            }
+        },
+        {
+            "id": "suh-Qp",
+            "category": "SUH",
+            "name": "Peak Discharge",
+            "expression": "qp * catchment_area",
+            "math_form": "Qp = qp \u00b7 A",
+            "inputs": [
+                {
+                    "key": "qp",
+                    "unit": "cumec/sqkm"
+                },
+                {
+                    "key": "catchment_area",
+                    "unit": "sq.km"
+                }
+            ],
+            "output": {
+                "key": "Qp",
+                "label": "Peak Discharge",
+                "unit": "cumec"
+            }
+        },
+        {
+            "id": "suh-Tm",
+            "category": "SUH",
+            "name": "Time to Rise",
+            "expression": "tp + tr / 2",
+            "math_form": "Tm = tp + tr/2",
+            "inputs": [
+                {
+                    "key": "tp",
+                    "unit": "hr"
+                },
+                {
+                    "key": "tr",
+                    "label": "Unit rainfall duration",
+                    "unit": "hr"
+                }
+            ],
+            "output": {
+                "key": "Tm",
+                "label": "Time to Rise",
+                "unit": "hr"
+            }
+        },
+        {
+            "id": "suh-W50",
+            "category": "SUH",
+            "name": "Width at 50% Qp",
+            "expression": "a_W50 * pow(qp, b_W50)",
+            "math_form": "W50 = a_W50 \u00b7 qp^b_W50",
+            "inputs": [
+                {
+                    "key": "a_W50"
+                },
+                {
+                    "key": "b_W50"
+                },
+                {
+                    "key": "qp"
+                }
+            ],
+            "output": {
+                "key": "W50",
+                "unit": "hr"
+            }
+        },
+        {
+            "id": "suh-W75",
+            "category": "SUH",
+            "name": "Width at 75% Qp",
+            "expression": "a_W75 * pow(qp, b_W75)",
+            "math_form": "W75 = a_W75 \u00b7 qp^b_W75",
+            "inputs": [
+                {
+                    "key": "a_W75"
+                },
+                {
+                    "key": "b_W75"
+                },
+                {
+                    "key": "qp"
+                }
+            ],
+            "output": {
+                "key": "W75",
+                "unit": "hr"
+            }
+        },
+        {
+            "id": "suh-WR50",
+            "category": "SUH",
+            "name": "Rising Limb Width at 50%",
+            "expression": "a_WR50 * pow(qp, b_WR50)",
+            "math_form": "WR50 = a_WR50 \u00b7 qp^b_WR50",
+            "inputs": [
+                {
+                    "key": "a_WR50"
+                },
+                {
+                    "key": "b_WR50"
+                },
+                {
+                    "key": "qp"
+                }
+            ],
+            "output": {
+                "key": "WR50",
+                "unit": "hr"
+            }
+        },
+        {
+            "id": "suh-WR75",
+            "category": "SUH",
+            "name": "Rising Limb Width at 75%",
+            "expression": "a_WR75 * pow(qp, b_WR75)",
+            "math_form": "WR75 = a_WR75 \u00b7 qp^b_WR75",
+            "inputs": [
+                {
+                    "key": "a_WR75"
+                },
+                {
+                    "key": "b_WR75"
+                },
+                {
+                    "key": "qp"
+                }
+            ],
+            "output": {
+                "key": "WR75",
+                "unit": "hr"
+            }
+        },
+        {
+            "id": "suh-TB",
+            "category": "SUH",
+            "name": "Base Width",
+            "expression": "a_TB * pow(tp, b_TB)",
+            "math_form": "TB = a_TB \u00b7 tp^b_TB",
+            "inputs": [
+                {
+                    "key": "a_TB"
+                },
+                {
+                    "key": "b_TB"
+                },
+                {
+                    "key": "tp"
+                }
+            ],
+            "output": {
+                "key": "TB",
+                "unit": "hr"
+            }
+        },
+        {
+            "id": "weighted-mean-rainfall",
+            "category": "Rainfall",
+            "name": "Weighted Mean Rainfall (Isohyetal)",
+            "expression": "sum_area_x_mean / sum_area",
+            "math_form": "P\u0304 = \u03a3(A\u1d62 \u00b7 mean\u1d62) / \u03a3A\u1d62",
+            "inputs": [
+                {
+                    "key": "sum_area_x_mean",
+                    "label": "\u03a3 Area \u00d7 Mean P"
+                },
+                {
+                    "key": "sum_area",
+                    "label": "\u03a3 Area",
+                    "unit": "sq.km"
+                }
+            ],
+            "output": {
+                "key": "weighted_rainfall_mm",
+                "unit": "mm"
+            },
+            "source": "24hr SPS sheet E5:E8"
+        },
+        {
+            "id": "isohyetal-band-mean",
+            "category": "Rainfall",
+            "name": "Isohyetal Band Mean Rainfall",
+            "expression": "(iso_min_mm + iso_max_mm) / 2",
+            "math_form": "mean\u1d62 = (P_min + P_max) / 2",
+            "inputs": [
+                {
+                    "key": "iso_min_mm",
+                    "unit": "mm"
+                },
+                {
+                    "key": "iso_max_mm",
+                    "unit": "mm"
+                }
+            ],
+            "output": {
+                "key": "iso_band_mean_mm",
+                "unit": "mm"
+            }
+        },
+        {
+            "id": "mm-to-cm",
+            "category": "UnitConversion",
+            "name": "mm \u2192 cm",
+            "expression": "depth_mm / 10",
+            "math_form": "P_cm = P_mm / 10",
+            "inputs": [
+                {
+                    "key": "depth_mm",
+                    "unit": "mm"
+                }
+            ],
+            "output": {
+                "key": "depth_cm",
+                "unit": "cm"
+            }
+        },
+        {
+            "id": "cm-to-mm",
+            "category": "UnitConversion",
+            "name": "cm \u2192 mm",
+            "expression": "depth_cm * 10",
+            "math_form": "P_mm = P_cm \u00b7 10",
+            "inputs": [
+                {
+                    "key": "depth_cm",
+                    "unit": "cm"
+                }
+            ],
+            "output": {
+                "key": "depth_mm",
+                "unit": "mm"
+            }
+        },
+        {
+            "id": "sps-corrected",
+            "category": "PMP",
+            "name": "SPS with Corrections",
+            "expression": "sps_point_cm * clock_hour_corr * areal_reduction",
+            "math_form": "SPS_dur = SPS_point \u00b7 CHC \u00b7 ARF",
+            "inputs": [
+                {
+                    "key": "sps_point_cm",
+                    "label": "Point SPS",
+                    "unit": "cm"
+                },
+                {
+                    "key": "clock_hour_corr",
+                    "label": "Clock-Hour Correction"
+                },
+                {
+                    "key": "areal_reduction",
+                    "label": "Areal Reduction Factor"
+                }
+            ],
+            "output": {
+                "key": "sps_dur_cm",
+                "label": "Storm-duration SPS",
+                "unit": "cm"
+            },
+            "source": "24hr SPS I6 = I2\u00b7I3\u00b7I5"
+        },
+        {
+            "id": "pmp-from-sps",
+            "category": "PMP",
+            "name": "PMP from SPS",
+            "expression": "sps_dur_cm * mmf",
+            "math_form": "PMP = SPS \u00b7 MMF",
+            "inputs": [
+                {
+                    "key": "sps_dur_cm",
+                    "unit": "cm"
+                },
+                {
+                    "key": "mmf",
+                    "label": "Moisture Maximization Factor"
+                }
+            ],
+            "output": {
+                "key": "pmp_cm",
+                "label": "PMP Depth",
+                "unit": "cm"
+            },
+            "source": "24hr SPS I7 = I6\u00b7I4"
+        },
+        {
+            "id": "bell-depth",
+            "category": "BellSplit",
+            "name": "Bell Depth from PMP",
+            "expression": "pmp_total_cm * bell_pct / 100",
+            "math_form": "bell_n = PMP \u00b7 bell% / 100",
+            "inputs": [
+                {
+                    "key": "pmp_total_cm",
+                    "unit": "cm"
+                },
+                {
+                    "key": "bell_pct",
+                    "label": "Bell percentage (e.g. 73 for 1st bell)"
+                }
+            ],
+            "output": {
+                "key": "bell_depth_cm",
+                "unit": "cm"
+            },
+            "source": "PMP 12hr Bell depth sheet I3 = E3\u00b7B27%"
+        },
+        {
+            "id": "bell-residual",
+            "category": "BellSplit",
+            "name": "Bell Residual",
+            "expression": "pmp_total_cm - bell_depth_cm",
+            "math_form": "bell_remainder = PMP_total \u2212 bell_assigned",
+            "inputs": [
+                {
+                    "key": "pmp_total_cm",
+                    "unit": "cm"
+                },
+                {
+                    "key": "bell_depth_cm",
+                    "unit": "cm"
+                }
+            ],
+            "output": {
+                "key": "bell_remainder_cm",
+                "unit": "cm"
+            }
+        },
+        {
+            "id": "excess-rainfall",
+            "category": "Runoff",
+            "name": "Hourly Rainfall Excess",
+            "expression": "max(0, rainfall_cm_hr - loss_rate)",
+            "math_form": "excess = max(0, P \u2212 \u03c6)",
+            "inputs": [
+                {
+                    "key": "rainfall_cm_hr",
+                    "label": "Hourly rainfall",
+                    "unit": "cm/hr"
+                },
+                {
+                    "key": "loss_rate",
+                    "label": "Uniform loss \u03c6",
+                    "unit": "cm/hr"
+                }
+            ],
+            "output": {
+                "key": "rainfall_excess",
+                "unit": "cm/hr"
+            },
+            "source": "24/48/72hr SPS sheets \u2014 IF((P\u2212\u03c6)<0,0,P\u2212\u03c6)"
+        },
+        {
+            "id": "hourly-from-cum-pct",
+            "category": "Runoff",
+            "name": "Hourly Increment from Cumulative %",
+            "expression": "i == 0 ? cum_pct[0] : cum_pct[i] - cum_pct[i-1]",
+            "math_form": "incr\u1d62 = cum\u1d62 \u2212 cum\u1d62\u208b\u2081  (incr\u2080 = cum\u2080)",
+            "inputs": [
+                {
+                    "key": "cum_pct",
+                    "label": "Cumulative % array (Sheet3)"
+                },
+                {
+                    "key": "i",
+                    "label": "Hour index"
+                }
+            ],
+            "output": {
+                "key": "hourly_pct",
+                "label": "Hourly percentage"
+            },
+            "notes": "Loop this for i = 0..11 to build the 12-hr hyetograph distribution"
+        },
+        {
+            "id": "hourly-depth-from-pct",
+            "category": "Runoff",
+            "name": "Hourly Depth from %",
+            "expression": "hourly_pct / 100 * bell_depth_cm",
+            "math_form": "P\u1d62 = (incr\u1d62/100) \u00b7 bell_depth",
+            "inputs": [
+                {
+                    "key": "hourly_pct"
+                },
+                {
+                    "key": "bell_depth_cm",
+                    "unit": "cm"
+                }
+            ],
+            "output": {
+                "key": "hourly_rainfall_cm",
+                "unit": "cm/hr"
+            }
+        },
+        {
+            "id": "trapezoidal-area",
+            "category": "Hydrograph",
+            "name": "Trapezoidal Strip Area",
+            "expression": "(y1 + y0) / 2 * (x1 - x0)",
+            "math_form": "A = ((y\u1d62 + y\u1d62\u208b\u2081)/2) \u00b7 (x\u1d62 \u2212 x\u1d62\u208b\u2081)",
+            "inputs": [
+                {
+                    "key": "x0"
+                },
+                {
+                    "key": "x1"
+                },
+                {
+                    "key": "y0"
+                },
+                {
+                    "key": "y1"
+                }
+            ],
+            "output": {
+                "key": "trap_area"
+            },
+            "source": "SUH sheet (Tables 3 & 4 \u2014 UH area check)"
+        },
+        {
+            "id": "uh-volume-check-cm",
+            "category": "Hydrograph",
+            "name": "UH Volume \u2192 Depth (cm)",
+            "expression": "trapzXY(uh_times, uh_ordinates) * 3600 / (catchment_area * 1e6) * 100",
+            "math_form": "depth = \u222bQ dt \u00b7 3600 / (A \u00b7 10\u2076) \u00b7 100",
+            "inputs": [
+                {
+                    "key": "uh_times",
+                    "label": "UH time array",
+                    "unit": "hr"
+                },
+                {
+                    "key": "uh_ordinates",
+                    "label": "UH discharge array",
+                    "unit": "cumec"
+                },
+                {
+                    "key": "catchment_area",
+                    "unit": "sq.km"
+                }
+            ],
+            "output": {
+                "key": "uh_depth_cm",
+                "label": "UH net volume as depth",
+                "unit": "cm"
+            },
+            "notes": "Should \u2248 1 cm for a valid 1-cm unit hydrograph"
+        },
+        {
+            "id": "base-flow-discharge",
+            "category": "Hydrograph",
+            "name": "Base Flow Discharge",
+            "expression": "base_flow_unit * catchment_area",
+            "math_form": "Qb = qb \u00b7 A",
+            "inputs": [
+                {
+                    "key": "base_flow_unit",
+                    "label": "Unit base flow",
+                    "unit": "cumec/sqkm"
+                },
+                {
+                    "key": "catchment_area",
+                    "unit": "sq.km"
+                }
+            ],
+            "output": {
+                "key": "base_flow_total",
+                "unit": "cumec"
+            }
+        },
+        {
+            "id": "pmf-from-drh",
+            "category": "Hydrograph",
+            "name": "PMF = DRH + Base Flow",
+            "expression": "drh_ordinates + base_flow_total",
+            "math_form": "PMF(t) = DRH(t) + Qb",
+            "inputs": [
+                {
+                    "key": "drh_ordinates",
+                    "label": "DRH array",
+                    "unit": "cumec"
+                },
+                {
+                    "key": "base_flow_total",
+                    "unit": "cumec"
+                }
+            ],
+            "output": {
+                "key": "pmf_ordinates",
+                "unit": "cumec"
+            },
+            "notes": "Vector: use arrAdd(drh, fill(len, Qb))"
+        },
+        {
+            "id": "uh-convolution",
+            "category": "Hydrograph",
+            "name": "UH \u00d7 Rainfall Excess Convolution",
+            "expression": "convolve(uh_ordinates, rainfall_excess, 1)",
+            "math_form": "DRH[t] = \u03a3\u1d62 rain[i] \u00b7 UH[t\u2212i]",
+            "inputs": [
+                {
+                    "key": "uh_ordinates",
+                    "label": "UH array",
+                    "unit": "cumec/cm"
+                },
+                {
+                    "key": "rainfall_excess",
+                    "label": "Rainfall excess array",
+                    "unit": "cm/hr"
+                }
+            ],
+            "output": {
+                "key": "drh_ordinates",
+                "unit": "cumec"
+            },
+            "notes": "Discrete linear convolution, dt = 1 hr"
+        },
+        {
+            "id": "critical-sequencing-desc",
+            "category": "Hydrograph",
+            "name": "Critical Storm Sequencing (descending)",
+            "expression": "sort(rainfall_excess, 'desc')",
+            "math_form": "rain_sorted = LARGE(rain, k) for k = 1..n",
+            "inputs": [
+                {
+                    "key": "rainfall_excess"
+                }
+            ],
+            "output": {
+                "key": "rainfall_excess_critical"
+            },
+            "source": "24/48/72hr SPS sheets \u2014 LARGE($..,RANK.AVG(...))",
+            "notes": "Place largest excess hours where UH ordinates peak to maximize PMF"
+        },
+        {
+            "id": "areal-reduction-interp",
+            "category": "PMP",
+            "name": "Areal Reduction Factor (interpolated)",
+            "expression": "interp1d(arf_table_area, arf_table_factor, catchment_area)",
+            "math_form": "ARF = piecewise-linear(area, factor) at A",
+            "inputs": [
+                {
+                    "key": "arf_table_area",
+                    "label": "ARF table \u2014 area column"
+                },
+                {
+                    "key": "arf_table_factor",
+                    "label": "ARF table \u2014 factor column"
+                },
+                {
+                    "key": "catchment_area",
+                    "unit": "sq.km"
+                }
+            ],
+            "output": {
+                "key": "areal_reduction"
+            },
+            "source": "FORECAST.LINEAR over Table 3-84"
+        }
+    ],
+    "tables": [
+        {
+            "id": "cwc-subzone-coefficients",
+            "name": "CWC Sub-zone SUH Coefficients",
+            "match_column": "sub_zone",
+            "lookup_type": "EXACT",
+            "columns": [
+                "sub_zone",
+                "a_tp",
+                "a_qp",
+                "a_TB",
+                "a_W50",
+                "a_W75",
+                "a_WR50",
+                "a_WR75",
+                "b_tp",
+                "b_qp",
+                "b_TB",
+                "b_W50",
+                "b_W75",
+                "b_WR50",
+                "b_WR75",
+                "loss_rate_default"
+            ],
+            "data": [
+                {
+                    "sub_zone": "3a",
+                    "a_tp": 0.433,
+                    "a_qp": 1.161,
+                    "a_TB": 8.375,
+                    "a_W50": 2.284,
+                    "a_W75": 1.331,
+                    "a_WR50": 0.827,
+                    "a_WR75": 0.561,
+                    "b_tp": 0.704,
+                    "b_qp": 0.635,
+                    "b_TB": 0.512,
+                    "b_W50": 1.0,
+                    "b_W75": 0.991,
+                    "b_WR50": 1.023,
+                    "b_WR75": 1.037,
+                    "loss_rate_default": 0.45
+                },
+                {
+                    "sub_zone": "3b",
+                    "a_tp": 0.523,
+                    "a_qp": 1.915,
+                    "a_TB": 6.908,
+                    "a_W50": 1.83,
+                    "a_W75": 0.924,
+                    "a_WR50": 0.745,
+                    "a_WR75": 0.434,
+                    "b_tp": 0.323,
+                    "b_qp": -0.78,
+                    "b_TB": 0.592,
+                    "b_W50": -0.97,
+                    "b_W75": -0.792,
+                    "b_WR50": -0.725,
+                    "b_WR75": -0.616,
+                    "loss_rate_default": 0.5
+                },
+                {
+                    "sub_zone": "3c",
+                    "a_tp": 0.854,
+                    "a_qp": 2.009,
+                    "a_TB": 4.84,
+                    "a_W50": 2.259,
+                    "a_W75": 1.519,
+                    "a_WR50": 0.844,
+                    "a_WR75": 0.583,
+                    "b_tp": 0.28,
+                    "b_qp": -0.85,
+                    "b_TB": 0.74,
+                    "b_W50": -1.08,
+                    "b_W75": -0.99,
+                    "b_WR50": -1.24,
+                    "b_WR75": -1.19,
+                    "loss_rate_default": 0.3
+                },
+                {
+                    "sub_zone": "3d",
+                    "a_tp": 1.757,
+                    "a_qp": 1.26,
+                    "a_TB": 5.411,
+                    "a_W50": 1.974,
+                    "a_W75": 0.961,
+                    "a_WR50": 1.15,
+                    "a_WR75": 0.527,
+                    "b_tp": 0.261,
+                    "b_qp": -0.725,
+                    "b_TB": 0.826,
+                    "b_W50": -1.104,
+                    "b_W75": -1.125,
+                    "b_WR50": -0.829,
+                    "b_WR75": -0.932,
+                    "loss_rate_default": null
+                },
+                {
+                    "sub_zone": "3e",
+                    "a_tp": 0.727,
+                    "a_qp": 2.02,
+                    "a_TB": 5.485,
+                    "a_W50": 2.228,
+                    "a_W75": 1.301,
+                    "a_WR50": 0.88,
+                    "a_WR75": 0.54,
+                    "b_tp": 0.59,
+                    "b_qp": 0.88,
+                    "b_TB": 0.73,
+                    "b_W50": 1.04,
+                    "b_W75": 0.96,
+                    "b_WR50": 1.01,
+                    "b_WR75": 0.96,
+                    "loss_rate_default": 0.5
+                },
+                {
+                    "sub_zone": "3f",
+                    "a_tp": 0.348,
+                    "a_qp": 1.842,
+                    "a_TB": 4.589,
+                    "a_W50": 2.353,
+                    "a_W75": 1.351,
+                    "a_WR50": 0.936,
+                    "a_WR75": 0.579,
+                    "b_tp": 0.454,
+                    "b_qp": -0.804,
+                    "b_TB": 0.894,
+                    "b_W50": -1.005,
+                    "b_W75": -0.992,
+                    "b_WR50": -1.047,
+                    "b_WR75": -1.004,
+                    "loss_rate_default": 0.2
+                },
+                {
+                    "sub_zone": "3h",
+                    "a_tp": 0.325,
+                    "a_qp": 0.996,
+                    "a_TB": 7.392,
+                    "a_W50": 2.389,
+                    "a_W75": 1.415,
+                    "a_WR50": 0.755,
+                    "a_WR75": 0.558,
+                    "b_tp": 0.447,
+                    "b_qp": -0.497,
+                    "b_TB": 0.524,
+                    "b_W50": -1.065,
+                    "b_W75": -1.067,
+                    "b_WR50": -1.229,
+                    "b_WR75": -1.088,
+                    "loss_rate_default": 0.1
+                },
+                {
+                    "sub_zone": "3i",
+                    "a_tp": 0.553,
+                    "a_qp": 2.043,
+                    "a_TB": 5.083,
+                    "a_W50": 2.197,
+                    "a_W75": 1.325,
+                    "a_WR50": 0.799,
+                    "a_WR75": 0.536,
+                    "b_tp": 0.405,
+                    "b_qp": 0.872,
+                    "b_TB": 0.733,
+                    "b_W50": 1.067,
+                    "b_W75": 1.088,
+                    "b_WR50": 1.138,
+                    "b_WR75": 1.109,
+                    "loss_rate_default": 0.5
+                },
+                {
+                    "sub_zone": "2a",
+                    "a_tp": 2.164,
+                    "a_qp": 2.272,
+                    "a_TB": 5.428,
+                    "a_W50": 2.084,
+                    "a_W75": 1.028,
+                    "a_WR50": 0.856,
+                    "a_WR75": 0.44,
+                    "b_tp": -0.94,
+                    "b_qp": -0.409,
+                    "b_TB": 0.852,
+                    "b_W50": -1.065,
+                    "b_W75": -1.071,
+                    "b_WR50": -0.865,
+                    "b_WR75": -0.918,
+                    "loss_rate_default": 0.24
+                },
+                {
+                    "sub_zone": "5a",
+                    "a_tp": 1.5607,
+                    "a_qp": 0.9178,
+                    "a_TB": 7.38,
+                    "a_W50": 1.925,
+                    "a_W75": 1.019,
+                    "a_WR50": 0.579,
+                    "a_WR75": 0.347,
+                    "b_tp": -1.0814,
+                    "b_qp": -0.4313,
+                    "b_TB": 0.734,
+                    "b_W50": -1.09,
+                    "b_W75": -1.044,
+                    "b_WR50": -1.107,
+                    "b_WR75": -1.054,
+                    "loss_rate_default": 0.19
+                },
+                {
+                    "sub_zone": "7",
+                    "a_tp": 2.498,
+                    "a_qp": 1.048,
+                    "a_TB": 7.845,
+                    "a_W50": 1.954,
+                    "a_W75": 0.972,
+                    "a_WR50": 0.189,
+                    "a_WR75": 0.419,
+                    "b_tp": 0.156,
+                    "b_qp": -0.178,
+                    "b_TB": 0.453,
+                    "b_W50": 0.099,
+                    "b_W75": 0.124,
+                    "b_WR50": 1.769,
+                    "b_WR75": 1.246,
+                    "loss_rate_default": 0.25
+                },
+                {
+                    "sub_zone": "1b",
+                    "a_tp": 0.339,
+                    "a_qp": 1.251,
+                    "a_TB": 6.662,
+                    "a_W50": 2.215,
+                    "a_W75": 1.19,
+                    "a_WR50": 0.834,
+                    "a_WR75": 0.502,
+                    "b_tp": 0.826,
+                    "b_qp": -0.61,
+                    "b_TB": 0.613,
+                    "b_W50": -1.034,
+                    "b_W75": -1.057,
+                    "b_WR50": -1.077,
+                    "b_WR75": -1.065,
+                    "loss_rate_default": 0.17
+                },
+                {
+                    "sub_zone": "1c",
+                    "a_tp": 2.195,
+                    "a_qp": 1.331,
+                    "a_TB": 3.917,
+                    "a_W50": 2.04,
+                    "a_W75": 1.25,
+                    "a_WR50": 0.739,
+                    "a_WR75": 0.5,
+                    "b_tp": -0.944,
+                    "b_qp": -0.492,
+                    "b_TB": 0.99,
+                    "b_W50": -1.026,
+                    "b_W75": -0.864,
+                    "b_WR50": -0.968,
+                    "b_WR75": -0.813,
+                    "loss_rate_default": 0.23
+                }
+            ],
+            "source": "SUH sheet A5:R19"
+        },
+        {
+            "id": "arf-24hr",
+            "name": "Areal Reduction Factor \u2014 24 hr storm",
+            "match_column": "area_sqkm",
+            "lookup_type": "INTERPOLATION_1D",
+            "x_col": "area_sqkm",
+            "y_col": "factor",
+            "data": [
+                {
+                    "area_sqkm": 500,
+                    "factor": 0.94
+                },
+                {
+                    "area_sqkm": 1000,
+                    "factor": 0.91
+                },
+                {
+                    "area_sqkm": 1500,
+                    "factor": 0.9
+                },
+                {
+                    "area_sqkm": 2000,
+                    "factor": 0.88
+                },
+                {
+                    "area_sqkm": 3000,
+                    "factor": 0.86
+                },
+                {
+                    "area_sqkm": 4000,
+                    "factor": 0.83
+                },
+                {
+                    "area_sqkm": 5000,
+                    "factor": 0.81
+                }
+            ],
+            "source": "24hr SPS sheet N4:O10"
+        },
+        {
+            "id": "arf-48hr",
+            "name": "Areal Reduction Factor \u2014 48 hr storm",
+            "match_column": "area_sqkm",
+            "lookup_type": "INTERPOLATION_1D",
+            "x_col": "area_sqkm",
+            "y_col": "factor",
+            "data": [
+                {
+                    "area_sqkm": 500,
+                    "factor": 0.95
+                },
+                {
+                    "area_sqkm": 1000,
+                    "factor": 0.92
+                },
+                {
+                    "area_sqkm": 1500,
+                    "factor": 0.91
+                },
+                {
+                    "area_sqkm": 2000,
+                    "factor": 0.89
+                },
+                {
+                    "area_sqkm": 3000,
+                    "factor": 0.87
+                },
+                {
+                    "area_sqkm": 4000,
+                    "factor": 0.85
+                },
+                {
+                    "area_sqkm": 5000,
+                    "factor": 0.83
+                }
+            ],
+            "source": "48hr SPS sheet"
+        },
+        {
+            "id": "arf-72hr",
+            "name": "Areal Reduction Factor \u2014 72 hr storm",
+            "match_column": "area_sqkm",
+            "lookup_type": "INTERPOLATION_1D",
+            "x_col": "area_sqkm",
+            "y_col": "factor",
+            "data": [
+                {
+                    "area_sqkm": 500,
+                    "factor": 0.96
+                },
+                {
+                    "area_sqkm": 1000,
+                    "factor": 0.94
+                },
+                {
+                    "area_sqkm": 1500,
+                    "factor": 0.93
+                },
+                {
+                    "area_sqkm": 2000,
+                    "factor": 0.92
+                },
+                {
+                    "area_sqkm": 3000,
+                    "factor": 0.9
+                },
+                {
+                    "area_sqkm": 4000,
+                    "factor": 0.88
+                },
+                {
+                    "area_sqkm": 5000,
+                    "factor": 0.86
+                }
+            ],
+            "source": "72hr SPS sheet"
+        },
+        {
+            "id": "bell-distribution-408-betwa",
+            "name": "12-hr Bell Cumulative % \u2014 Catchment 408-Betwa",
+            "match_column": "hour",
+            "lookup_type": "ARRAY",
+            "data_array": [
+                15.1,
+                25.5,
+                31.6,
+                36.9,
+                42.2,
+                47.1,
+                51.8,
+                56.4,
+                60.8,
+                65.2,
+                69.3,
+                73.0
+            ],
+            "source": "Sheet3 column N"
+        }
+    ],
+    "recipes": [
+        {
+            "id": "suh-to-pmf",
+            "name": "SUH \u2192 PMF (24/48/72 hr storm)",
+            "steps": [
+                {
+                    "step": 1,
+                    "formula_id": "equiv-slope",
+                    "writes": [
+                        "equiv_slope"
+                    ]
+                },
+                {
+                    "step": 2,
+                    "lookup_table_id": "cwc-subzone-coefficients",
+                    "writes": [
+                        "a_tp",
+                        "b_tp",
+                        "a_qp",
+                        "b_qp",
+                        "a_TB",
+                        "b_TB",
+                        "a_W50",
+                        "b_W50",
+                        "a_W75",
+                        "b_W75",
+                        "a_WR50",
+                        "b_WR50",
+                        "a_WR75",
+                        "b_WR75",
+                        "loss_rate_default"
+                    ]
+                },
+                {
+                    "step": 3,
+                    "formula_id": "suh-tp",
+                    "writes": [
+                        "tp"
+                    ]
+                },
+                {
+                    "step": 4,
+                    "formula_id": "suh-qp",
+                    "writes": [
+                        "qp"
+                    ]
+                },
+                {
+                    "step": 5,
+                    "formula_id": "suh-Qp",
+                    "writes": [
+                        "Qp"
+                    ]
+                },
+                {
+                    "step": 6,
+                    "formula_id": "suh-Tm",
+                    "writes": [
+                        "Tm"
+                    ]
+                },
+                {
+                    "step": 7,
+                    "formula_id": "suh-W50",
+                    "writes": [
+                        "W50"
+                    ]
+                },
+                {
+                    "step": 8,
+                    "formula_id": "suh-W75",
+                    "writes": [
+                        "W75"
+                    ]
+                },
+                {
+                    "step": 9,
+                    "formula_id": "suh-WR50",
+                    "writes": [
+                        "WR50"
+                    ]
+                },
+                {
+                    "step": 10,
+                    "formula_id": "suh-WR75",
+                    "writes": [
+                        "WR75"
+                    ]
+                },
+                {
+                    "step": 11,
+                    "formula_id": "suh-TB",
+                    "writes": [
+                        "TB"
+                    ]
+                },
+                {
+                    "step": 12,
+                    "formula_id": "weighted-mean-rainfall",
+                    "writes": [
+                        "weighted_rainfall_mm"
+                    ]
+                },
+                {
+                    "step": 13,
+                    "formula_id": "mm-to-cm",
+                    "writes": [
+                        "sps_point_cm"
+                    ]
+                },
+                {
+                    "step": 14,
+                    "lookup_table_id": "arf-24hr",
+                    "writes": [
+                        "areal_reduction"
+                    ]
+                },
+                {
+                    "step": 15,
+                    "formula_id": "sps-corrected",
+                    "writes": [
+                        "sps_dur_cm"
+                    ]
+                },
+                {
+                    "step": 16,
+                    "formula_id": "pmp-from-sps",
+                    "writes": [
+                        "pmp_cm"
+                    ]
+                },
+                {
+                    "step": 17,
+                    "formula_id": "bell-depth",
+                    "writes": [
+                        "bell_depth_cm"
+                    ]
+                },
+                {
+                    "step": 18,
+                    "formula_id": "bell-residual",
+                    "writes": [
+                        "bell_remainder_cm"
+                    ]
+                },
+                {
+                    "step": 19,
+                    "formula_id": "hourly-from-cum-pct",
+                    "writes": [
+                        "hourly_pct"
+                    ],
+                    "loop": "hours_0_to_11"
+                },
+                {
+                    "step": 20,
+                    "formula_id": "hourly-depth-from-pct",
+                    "writes": [
+                        "hourly_rainfall_cm"
+                    ]
+                },
+                {
+                    "step": 21,
+                    "formula_id": "excess-rainfall",
+                    "writes": [
+                        "rainfall_excess"
+                    ]
+                },
+                {
+                    "step": 22,
+                    "formula_id": "critical-sequencing-desc",
+                    "writes": [
+                        "rainfall_excess_critical"
+                    ]
+                },
+                {
+                    "step": 23,
+                    "formula_id": "uh-convolution",
+                    "writes": [
+                        "drh_ordinates"
+                    ]
+                },
+                {
+                    "step": 24,
+                    "formula_id": "base-flow-discharge",
+                    "writes": [
+                        "base_flow_total"
+                    ]
+                },
+                {
+                    "step": 25,
+                    "formula_id": "pmf-from-drh",
+                    "writes": [
+                        "pmf_ordinates"
+                    ]
+                }
+            ]
+        }
+    ]
+}

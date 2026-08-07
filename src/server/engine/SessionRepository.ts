@@ -48,7 +48,7 @@ export interface LoadedWorkflow {
   >[];
   variables: Pick<
     CalcVariable,
-    "contextKey" | "defaultValue" | "unit" | "dataType"
+    "contextKey" | "defaultValue" | "unit" | "dataType" | "sourceType"
   >[];
 }
 
@@ -125,6 +125,7 @@ export class SessionRepository {
             defaultValue: true,
             unit: true,
             dataType: true,
+            sourceType: true,
           },
         },
       },

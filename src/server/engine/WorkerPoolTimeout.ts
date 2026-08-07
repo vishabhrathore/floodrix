@@ -25,10 +25,11 @@ export interface WorkerTimeoutOptions {
   timeoutMs?: number;
   /** Label used in the timeout error message. */
   handlerType?: string;
+  isJS?: boolean;
 }
 
 export interface MathEvaluationResult {
-  outputs: Record<string, number>;
+  outputs: Record<string, any>;
   cpuUserMs: number;
   cpuSystemMs: number;
 }
@@ -57,13 +58,13 @@ export class WorkerPoolTimeout {
    */
   async runMathEvaluation(
     code: string,
-    scope: Record<string, number | boolean | string>,
+    scope: Record<string, any>,
     opts: WorkerTimeoutOptions = {},
     runLocally = false,
   ): Promise<MathEvaluationResult> {
     if (runLocally) {
       // Evaluate synchronously on the current thread to avoid worker creation overhead
-      return evaluateLocal({ code, scope });
+      return evaluateLocal({ code, scope, isJS: opts.isJS });
     }
 
     const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -78,7 +79,7 @@ export class WorkerPoolTimeout {
 
     try {
       return await piscina.run(
-        { code, scope },
+        { code, scope, isJS: opts.isJS },
         { signal: controller.signal }
       ) as MathEvaluationResult;
     } catch (err: any) {

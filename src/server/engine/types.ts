@@ -84,7 +84,7 @@ export type NodeOutcome =
 export interface InputFieldDef {
   key: string;
   label: string;
-  data_type?: "number" | "string" | "boolean" | "select";
+  data_type?: "number" | "string" | "boolean" | "select" | "mcq";
   unit?: string;
   default?: number | string | boolean;
   hint?: string;
@@ -92,6 +92,10 @@ export interface InputFieldDef {
   constraints?: { min?: number; max?: number; step?: number };
   validation_expr?: string;
   options?: string[];
+  mcq_options?: {
+    label: string;
+    variables: { key: string; value: string | number | boolean }[];
+  }[];
 }
 
 // ─── Execution Context ────────────────────────────────────────────────────
@@ -284,6 +288,7 @@ export const SYNC_NODE_TYPES = [
   "VALIDATION",
   "UNIT_CONVERSION",
   "CUSTOM_CODE",
+  "CHART",
 ] as const satisfies readonly CalcNodeType[];
 
 export const ASYNC_NODE_TYPES = [

@@ -11,11 +11,13 @@ import { useTRPC } from "@/trpc/client";
 
 import { useWorkflowCanvasStore } from "../store/workflow-canvas-store";
 import { ConfigDrawer } from "./config-drawer";
+import { CustomCodeConfig } from "./custom-code-config";
 import { DecisionConfig } from "./decision-config";
 import { DisplayConfig } from "./display-config";
 import { FormulaConfig } from "./formula-config";
 import { InputConfig } from "./input-config";
 import { LookupConfig } from "./lookup-config";
+import { ChartConfig } from "./chart-config";
 
 // ─── Collect available variables from all nodes in the store ─────────────
 
@@ -39,6 +41,11 @@ function collectAvailableVariables(
         key: string;
         label: string;
         unit?: string;
+        data_type?: string;
+        mcq_options?: {
+          label: string;
+          variables: { key: string; value: any }[];
+        }[];
       }[];
       for (const f of fields) {
         vars.push({
@@ -47,6 +54,22 @@ function collectAvailableVariables(
           unit: f.unit,
           sourceNode: nodeLabel,
         });
+
+        if (f.data_type === "mcq" && f.mcq_options) {
+          for (const opt of f.mcq_options) {
+            if (opt.variables) {
+              for (const v of opt.variables) {
+                if (v.key) {
+                  vars.push({
+                    key: v.key,
+                    label: `${v.key} (injected by ${f.label} → ${opt.label})`,
+                    sourceNode: nodeLabel,
+                  });
+                }
+              }
+            }
+          }
+        }
       }
     }
 
@@ -125,6 +148,26 @@ function collectAvailableVariables(
         }
       }
     }
+
+    // CUSTOM_CODE → output_variables
+    if (node.type === "CUSTOM_CODE" && Array.isArray(config.output_variables)) {
+      for (const v of config.output_variables) {
+        vars.push({
+          key: v,
+          label: `${nodeLabel} output`,
+          sourceNode: nodeLabel,
+        });
+      }
+    }
+
+    // CHART → output_variable
+    if (node.type === "CHART" && config.output_variable) {
+      vars.push({
+        key: config.output_variable as string,
+        label: `${nodeLabel} chart SVG`,
+        sourceNode: nodeLabel,
+      });
+    }
   }
 
   // Deduplicate by key
@@ -166,6 +209,16 @@ function getConfigComponent(
       return <DecisionConfig config={config as any} onSave={onSave} />;
     case "DISPLAY":
       return <DisplayConfig config={config as any} onSave={onSave} />;
+    case "CUSTOM_CODE":
+      return <CustomCodeConfig config={config as any} onSave={onSave} />;
+    case "CHART":
+      return (
+        <ChartConfig
+          config={config as any}
+          availableVariables={availableVariables}
+          onSave={onSave}
+        />
+      );
     default:
       return null;
   }

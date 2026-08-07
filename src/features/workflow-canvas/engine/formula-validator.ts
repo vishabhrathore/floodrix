@@ -394,15 +394,21 @@ export function safeEvaluate(
     );
   }
 
-  if (typeof result !== "number") {
+  let coercedResult = result;
+  if (typeof result === "boolean") {
+    coercedResult = result ? 1 : 0;
+  }
+
+  if (typeof coercedResult !== "number") {
     throw new Error(
       `Expression "${expression}" returned ${typeof result} (expected number). Got: ${JSON.stringify(result)}`,
     );
   }
-  if (!Number.isFinite(result)) {
-    const label = Number.isNaN(result)
+  const numericResult = coercedResult;
+  if (!Number.isFinite(numericResult)) {
+    const label = Number.isNaN(numericResult)
       ? "NaN"
-      : result > 0
+      : numericResult > 0
         ? "+Infinity"
         : "-Infinity";
     throw new Error(
@@ -411,7 +417,7 @@ export function safeEvaluate(
   }
 
   const factor = 10 ** precision;
-  return Math.round(result * factor) / factor;
+  return Math.round(numericResult * factor) / factor;
 }
 
 /**

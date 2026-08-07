@@ -412,6 +412,141 @@ class WorkflowCanvasStore {
     this.selectedNodeId = nodeId;
   }
 
+  autoLayout() {
+    if (this.nodes.length === 0) return;
+
+    const inDegree: Record<string, number> = {};
+    const adj: Record<string, string[]> = {};
+
+    // Initialize
+    this.nodes.forEach((n) => {
+      inDegree[n.id] = 0;
+      adj[n.id] = [];
+    });
+
+    this.edges.forEach((e) => {
+      if (adj[e.source] && inDegree[e.target] !== undefined) {
+        adj[e.source].push(e.target);
+        inDegree[e.target]++;
+      }
+    });
+
+    // BFS topological layers
+    const levels: Record<string, number> = {};
+    const queue: string[] = [];
+
+    // Roots have inDegree 0
+    this.nodes.forEach((n) => {
+      if (inDegree[n.id] === 0) {
+        levels[n.id] = 0;
+        queue.push(n.id);
+      }
+    });
+
+    // If there's a cycle or no roots, pick first node as level 0
+    if (queue.length === 0 && this.nodes.length > 0) {
+      levels[this.nodes[0].id] = 0;
+      queue.push(this.nodes[0].id);
+    }
+
+    let head = 0;
+    while (head < queue.length) {
+      const u = queue[head++];
+      const currentLevel = levels[u] ?? 0;
+
+      (adj[u] || []).forEach((v) => {
+        const oldLevel = levels[v];
+        const newLevel = currentLevel + 1;
+        if (oldLevel === undefined || newLevel > oldLevel) {
+          levels[v] = newLevel;
+          if (!queue.includes(v)) {
+            queue.push(v);
+          }
+        }
+      });
+    }
+
+    // Assign any remaining unvisited nodes to level 0
+    this.nodes.forEach((n) => {
+      if (levels[n.id] === undefined) {
+        levels[n.id] = 0;
+      }
+    });
+
+    // Group by level
+    const levelsMap: Record<number, string[]> = {};
+    this.nodes.forEach((n) => {
+      const lvl = levels[n.id];
+      levelsMap[lvl] = levelsMap[lvl] || [];
+      levelsMap[lvl].push(n.id);
+    });
+
+    const levelHeight = 220;
+    const nodeWidth = 320;
+    const levelNumbers = Object.keys(levelsMap)
+      .map(Number)
+      .sort((a, b) => a - b);
+    const finalPositions: Record<string, { x: number; y: number }> = {};
+
+    levelNumbers.forEach((lvl) => {
+      const nodeIds = levelsMap[lvl];
+
+      // Sort nodeIds to minimize crossing lines
+      if (lvl > 0) {
+        nodeIds.sort((a, b) => {
+          const getAvgParentX = (nodeId: string) => {
+            const parentIds = this.edges
+              .filter((e) => e.target === nodeId)
+              .map((e) => e.source);
+
+            const parentXPositions = parentIds
+              .map((pId) => finalPositions[pId]?.x)
+              .filter((x): x is number => x !== undefined);
+
+            if (parentXPositions.length === 0) {
+              const originalNode = this.nodes.find((n) => n.id === nodeId);
+              return originalNode?.position.x ?? 0;
+            }
+
+            return (
+              parentXPositions.reduce((sum, x) => sum + x, 0) /
+              parentXPositions.length
+            );
+          };
+
+          return getAvgParentX(a) - getAvgParentX(b);
+        });
+      } else {
+        nodeIds.sort((a, b) => {
+          const nodeA = this.nodes.find((n) => n.id === a);
+          const nodeB = this.nodes.find((n) => n.id === b);
+          return (nodeA?.position.x ?? 0) - (nodeB?.position.x ?? 0);
+        });
+      }
+
+      // Position nodes horizontally centered around X = 0
+      const totalWidth = (nodeIds.length - 1) * nodeWidth;
+      const startX = -totalWidth / 2;
+
+      nodeIds.forEach((nodeId, idx) => {
+        finalPositions[nodeId] = {
+          x: startX + idx * nodeWidth,
+          y: lvl * levelHeight,
+        };
+      });
+    });
+
+    runInAction(() => {
+      this.history.pushHistory();
+      this.nodes = this.nodes.map((n) => {
+        const pos = finalPositions[n.id];
+        return pos ? { ...n, position: pos } : n;
+      });
+      this.isPositionOnlyDirty = true;
+      this.scheduleSave(true);
+    });
+  }
+
   // ── Save / dirty ─────────────────────────────────────────────────────────
   markDirty(positionOnly = false) {
     if (positionOnly) {

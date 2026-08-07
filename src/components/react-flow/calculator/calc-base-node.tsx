@@ -133,10 +133,10 @@ function BaseNodeInner({
       style={{
         width,
         borderRadius: 10,
-        borderTop: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
+        borderTop: `3px solid ${accent.accent}`,
         borderRight: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
         borderBottom: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
-        borderLeft: `3px solid ${accent.accent}`,
+        borderLeft: `1px solid ${selected ? accent.accent : "#e5e7eb"}`,
         backgroundColor: "white",
         boxShadow: selected
           ? `0 0 0 2px ${accent.accent}20, 0 4px 16px rgba(0,0,0,0.08)`
@@ -147,27 +147,29 @@ function BaseNodeInner({
       }}
     >
       {/* Input Handles */}
-      {handles.inputs.map((h) => (
+      {handles.inputs.map((h, i) => (
         <NodeHandle
           key={h.id}
           id={h.id}
           type="target"
           dataType={h.dataType}
           label={h.label}
-          position={Position.Left}
+          position={Position.Top}
+          offsetPercent={((i + 1) / (handles.inputs.length + 1)) * 100}
           required={h.required}
         />
       ))}
 
       {/* Output Handles */}
-      {handles.outputs.map((h) => (
+      {handles.outputs.map((h, i) => (
         <NodeHandle
           key={h.id}
           id={h.id}
           type="source"
           dataType={h.dataType}
           label={h.label}
-          position={Position.Right}
+          position={Position.Bottom}
+          offsetPercent={((i + 1) / (handles.outputs.length + 1)) * 100}
         />
       ))}
 
@@ -180,7 +182,7 @@ function BaseNodeInner({
           padding: "8px 10px",
           borderBottom: "1px solid #f3f4f6",
           backgroundColor: accent.bg,
-          borderRadius: "7px 10px 0 0",
+          borderRadius: "7px 7px 0 0",
           minHeight: 40,
         }}
       >

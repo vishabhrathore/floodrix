@@ -51,8 +51,10 @@ function InputNodeInner({ id, data, selected }: NodeProps) {
     key: string;
     label: string;
     unit?: string;
-    default?: number;
+    default?: any;
     hint?: string;
+    data_type?: string;
+    mcq_options?: { label: string }[];
   }[];
 
   return (
@@ -80,9 +82,15 @@ function InputNodeInner({ id, data, selected }: NodeProps) {
                     color: "#1e293b",
                   }}
                 >
-                  {f.default ?? "—"}
+                  {f.data_type === "mcq"
+                    ? `${f.mcq_options?.length || 0} options`
+                    : typeof f.default === "object" && f.default !== null
+                      ? Array.isArray(f.default)
+                        ? `Array(${f.default.length})`
+                        : "Object"
+                      : (f.default ?? "—")}
                 </span>
-                {f.unit && (
+                {f.unit && f.data_type !== "mcq" && (
                   <span
                     style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}
                   >

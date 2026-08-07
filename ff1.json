@@ -1,0 +1,1495 @@
+{
+    "workbook": "SUH_S1_19082025.xlsm",
+    "domain": "Hydrology - Synthetic Unit Hydrograph (SUH) & Probable Maximum Precipitation (PMP) (CWC sub-zone 3 method)",
+    "sheets_in_workbook": [
+        "SUH",
+        "24hr SPS",
+        "48hr SPS ",
+        "72hr SPS  ",
+        "Sheet3",
+        "PMP 12hr Bell depth"
+    ],
+    "notation": {
+        "variables": "a, b, c, ... = cell references (order of first appearance in each template)",
+        "ranges": "R1, R2, ... = Excel ranges (A1:B2 style)",
+        "cross_sheet": "ext_<SheetName>_n = reference to another sheet",
+        "operators_unchanged": "+  -  *  /  ^   (mathjs uses ^ for power, same as Excel)",
+        "mathjs_helpers_needed": {
+            "round(x, n)": "Excel ROUND",
+            "sum(array)": "Excel SUM",
+            "cond(test, a, b)": "Excel IF (mathjs ternary: test ? a : b)",
+            "kthLargest(array, k)": "Excel LARGE (sort desc then [k-1])",
+            "rankAvg(x, arr, order)": "Excel RANK.AVG (custom)",
+            "forecastLinear(x, y, x_data)": "Excel FORECAST.LINEAR (linear regression / interpolation)",
+            "forecast(x, y, x_data)": "Excel FORECAST",
+            "vlookup(key, table, col, exact)": "Excel VLOOKUP",
+            "offset(rng, rows, cols, h, w)": "Excel OFFSET",
+            "match(value, rng, mode)": "Excel MATCH"
+        }
+    },
+    "sheets": {
+        "SUH": {
+            "unique_formula_templates": 42,
+            "total_formula_cells": 179,
+            "formulas": [
+                {
+                    "excel_template": "=(@REF@+@REF@)/2*(@REF@-@REF@)",
+                    "mathjs": "(a+b)/2*(c-d)",
+                    "description": "Trapezoidal area under hydrograph: ((y_i+y_{i-1})/2) * (x_i-x_{i-1})",
+                    "occurrences": 39,
+                    "examples": [
+                        {
+                            "cell": "W71",
+                            "formula": "=(V71+V70)/2*(U71-U70)"
+                        },
+                        {
+                            "cell": "W72",
+                            "formula": "=(V72+V71)/2*(U72-U71)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=FORECAST(@REF@,OFFSET( @RANGE@,MATCH(@REF@,@RANGE@,1)-1,0,2),OFFSET(@RANGE@,MATCH(@REF@,@RANGE@,1)-1,0,2))",
+                    "mathjs": "forecast(a,offset( R1,match(a,R2,1)-1,0,2),offset(R2,match(a,R2,1)-1,0,2))",
+                    "description": "Piecewise linear interpolation: 2-point local linear FORECAST around matched x",
+                    "occurrences": 33,
+                    "examples": [
+                        {
+                            "cell": "V79",
+                            "formula": "=FORECAST(U79,OFFSET( $V$70:$V$76,MATCH(U79,$U$70:$U$76,1)-1,0,2),OFFSET($U$70:$U$76,MATCH(U79,$U$70:$U$76,1)-1,0,2))"
+                        },
+                        {
+                            "cell": "V80",
+                            "formula": "=FORECAST(U80,OFFSET( $V$70:$V$76,MATCH(U80,$U$70:$U$76,1)-1,0,2),OFFSET($U$70:$U$76,MATCH(U80,$U$70:$U$76,1)-1,0,2))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@-@REF@",
+                    "mathjs": "a-b",
+                    "description": "Subtraction: a - b",
+                    "occurrences": 24,
+                    "examples": [
+                        {
+                            "cell": "W20",
+                            "formula": "=U20-U19"
+                        },
+                        {
+                            "cell": "X20",
+                            "formula": "=$V$19-V20"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@",
+                    "mathjs": "a*b",
+                    "description": "Multiplication: a * b",
+                    "occurrences": 13,
+                    "examples": [
+                        {
+                            "cell": "Z19",
+                            "formula": "=W19*Y19"
+                        },
+                        {
+                            "cell": "Z20",
+                            "formula": "=W20*Y20"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+@REF@",
+                    "mathjs": "a+b",
+                    "description": "Addition: a + b",
+                    "occurrences": 11,
+                    "examples": [
+                        {
+                            "cell": "Y20",
+                            "formula": "=X20+X19"
+                        },
+                        {
+                            "cell": "Y21",
+                            "formula": "=X21+X20"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+7.5",
+                    "mathjs": "a+7.5",
+                    "description": "Time-step shift: a + 7.5 (SUH time-base increment)",
+                    "occurrences": 10,
+                    "examples": [
+                        {
+                            "cell": "U21",
+                            "formula": "=U20+7.5"
+                        },
+                        {
+                            "cell": "U22",
+                            "formula": "=U21+7.5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@",
+                    "mathjs": "a",
+                    "description": "Direct cell reference (pass-through value)",
+                    "occurrences": 6,
+                    "examples": [
+                        {
+                            "cell": "Y19",
+                            "formula": "=X19"
+                        },
+                        {
+                            "cell": "U73",
+                            "formula": "=AA44"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=ROUND((@REF@*(@REF@^(@REF@))),4)",
+                    "mathjs": "round((a*(b^(c))),4)",
+                    "description": "SUH power equation: round(a * b^c, 4) - e.g. qp = a*(L/S)^b",
+                    "occurrences": 3,
+                    "examples": [
+                        {
+                            "cell": "Z47",
+                            "formula": "=ROUND((X47*(Z42^(Y47))),4)"
+                        },
+                        {
+                            "cell": "Z48",
+                            "formula": "=ROUND((X48*(Z42^(Y48))),4)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUM(@RANGE@)",
+                    "mathjs": "sum(R1)",
+                    "description": "Summation over range",
+                    "occurrences": 2,
+                    "examples": [
+                        {
+                            "cell": "Z31",
+                            "formula": "=SUM(Z19:Z30)"
+                        },
+                        {
+                            "cell": "W113",
+                            "formula": "=SUM(W79:W112)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=ROUND((@REF@*(@REF@^(@REF@))),3)",
+                    "mathjs": "round((a*(b^(c))),3)",
+                    "description": "SUH power equation rounded to 3 decimals",
+                    "occurrences": 2,
+                    "examples": [
+                        {
+                            "cell": "Z45",
+                            "formula": "=ROUND((X45*(Z42^(Y45))),3)"
+                        },
+                        {
+                            "cell": "Z46",
+                            "formula": "=ROUND((X46*(Z42^(Y46))),3)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"@REF@=\"&@REF@& \"x (qp)\"&@REF@",
+                    "mathjs": "\"a=\" + b +  \"x (qp)\" + c",
+                    "description": "String label for SUH parameter (concatenation)",
+                    "occurrences": 2,
+                    "examples": [
+                        {
+                            "cell": "W46",
+                            "formula": "=\"W75=\"&X46& \"x (qp)\"&Y46"
+                        },
+                        {
+                            "cell": "W47",
+                            "formula": "=\"WR50=\"&X47& \"x (qp)\"&Y47"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/2",
+                    "mathjs": "a/2",
+                    "description": "Half value",
+                    "occurrences": 2,
+                    "examples": [
+                        {
+                            "cell": "V71",
+                            "formula": "=AA43/2"
+                        },
+                        {
+                            "cell": "V75",
+                            "formula": "=AA43/2"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*0.75",
+                    "mathjs": "a*0.75",
+                    "description": "75% of value (W75 / WR75 distribution)",
+                    "occurrences": 2,
+                    "examples": [
+                        {
+                            "cell": "V72",
+                            "formula": "=AA43*0.75"
+                        },
+                        {
+                            "cell": "V74",
+                            "formula": "=AA43*0.75"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+(@REF@-@REF@)",
+                    "mathjs": "a+(b-c)",
+                    "description": "Linear projection: a + (b - c)",
+                    "occurrences": 2,
+                    "examples": [
+                        {
+                            "cell": "U74",
+                            "formula": "=AA44+(AA46-AA48)"
+                        },
+                        {
+                            "cell": "U75",
+                            "formula": "=AA44+(AA45-AA47)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@-75",
+                    "mathjs": "a-75",
+                    "description": "Constant offset -75",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "U20",
+                            "formula": "=Y12-75"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@-82.5",
+                    "mathjs": "a-82.5",
+                    "description": "Constant offset -82.5",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "AH20",
+                            "formula": "=Y12-82.5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/(@REF@)^2",
+                    "mathjs": "a/(b)^2",
+                    "description": "a / b^2  (used for slope S = L/Lc^2 style expressions)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y33",
+                            "formula": "=Z31/(Y12)^2"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"tp =\"&@REF@&\"x (qp)\"&@REF@",
+                    "mathjs": "\"tp =\" + a + \"x (qp)\" + b",
+                    "description": "String label for tp",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "W41",
+                            "formula": "=\"tp =\"&X41&\"x (qp)\"&Y41"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,2,0)",
+                    "mathjs": "vlookup(a,R1,2,0)",
+                    "description": "Subzone parameter lookup (col 2), exact match",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X41",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,2,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,9,0)",
+                    "mathjs": "vlookup(a,R1,9,0)",
+                    "description": "Subzone parameter lookup (col 9)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y41",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,9,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=ROUND((@REF@*((@REF@)^(@REF@))),3)",
+                    "mathjs": "round((a*((b)^(c))),3)",
+                    "description": "SUH power equation (alt parens), 3 decimals",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Z41",
+                            "formula": "=ROUND((X41*((Z42)^(Y41))),3)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"qp = \"&@REF@&\"x (L/S)\"&@REF@",
+                    "mathjs": "\"qp = \" + a + \"x (L/S)\" + b",
+                    "description": "String label for qp",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "W42",
+                            "formula": "=\"qp = \"&X42&\"x (L/S)\"&Y42"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,3,0)",
+                    "mathjs": "vlookup(a,R1,3,0)",
+                    "description": "Subzone parameter lookup (col 3)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X42",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,3,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,10,0)",
+                    "mathjs": "vlookup(a,R1,10,0)",
+                    "description": "Subzone parameter lookup (col 10)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y42",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,10,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*(@REF@/@REF@)^@REF@",
+                    "mathjs": "a*(b/c)^d",
+                    "description": "tp power relation: a * (L / S)^b",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Z42",
+                            "formula": "=X42*(Y12/Y33)^Y42"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+@REF@/2",
+                    "mathjs": "a+b/2",
+                    "description": "a + b/2",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Z44",
+                            "formula": "=Z41+Z40/2"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"@REF@= \"&@REF@&\"x (qp)\"&@REF@",
+                    "mathjs": "\"a= \" + b + \"x (qp)\" + c",
+                    "description": "String label for W parameters",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "W45",
+                            "formula": "=\"W50= \"&X45&\"x (qp)\"&Y45"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,5,0)",
+                    "mathjs": "vlookup(a,R1,5,0)",
+                    "description": "Subzone parameter lookup (col 5)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X45",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,5,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,12,0)",
+                    "mathjs": "vlookup(a,R1,12,0)",
+                    "description": "Subzone parameter lookup (col 12)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y45",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,12,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,6,0)",
+                    "mathjs": "vlookup(a,R1,6,0)",
+                    "description": "Subzone parameter lookup (col 6)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X46",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,6,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,13,0)",
+                    "mathjs": "vlookup(a,R1,13,0)",
+                    "description": "Subzone parameter lookup (col 13)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y46",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,13,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,7,0)",
+                    "mathjs": "vlookup(a,R1,7,0)",
+                    "description": "Subzone parameter lookup (col 7)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X47",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,7,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,14,0)",
+                    "mathjs": "vlookup(a,R1,14,0)",
+                    "description": "Subzone parameter lookup (col 14)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y47",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,14,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"@REF@= \"&@REF@&\" x (qp)\"&@REF@",
+                    "mathjs": "\"a= \" + b + \" x (qp)\" + c",
+                    "description": "String label for WR parameters",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "W48",
+                            "formula": "=\"WR75= \"&X48&\" x (qp)\"&Y48"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,8,0)",
+                    "mathjs": "vlookup(a,R1,8,0)",
+                    "description": "Subzone parameter lookup (col 8)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X48",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,8,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,15,0)",
+                    "mathjs": "vlookup(a,R1,15,0)",
+                    "description": "Subzone parameter lookup (col 15)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y48",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,15,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"TB =\"&@REF@&\"x (tp)\"&@REF@",
+                    "mathjs": "\"TB =\" + a + \"x (tp)\" + b",
+                    "description": "String label for TB",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "W49",
+                            "formula": "=\"TB =\"&X49&\"x (tp)\"&Y49"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,4,0)",
+                    "mathjs": "vlookup(a,R1,4,0)",
+                    "description": "Subzone parameter lookup (col 4)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "X49",
+                            "formula": "=VLOOKUP(U4,$A$5:$H$19,4,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=VLOOKUP(@REF@,@RANGE@,11,0)",
+                    "mathjs": "vlookup(a,R1,11,0)",
+                    "description": "Subzone parameter lookup (col 11)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Y49",
+                            "formula": "=VLOOKUP(U4,$A$5:$O$19,11,0)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*1.1",
+                    "mathjs": "a*1.1",
+                    "description": "10% uplift: a * 1.1",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "Z50",
+                            "formula": "=Z41*1.1"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*60*60/10000",
+                    "mathjs": "a*60*60/10000",
+                    "description": "Unit conversion: cumec*3600/10000 (depth from flow*time/area)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "U162",
+                            "formula": "=U161*60*60/10000"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/@REF@",
+                    "mathjs": "a/b",
+                    "description": "Division: a / b",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "U163",
+                            "formula": "=U162/Y11"
+                        }
+                    ]
+                }
+            ]
+        },
+        "24hr SPS": {
+            "unique_formula_templates": 17,
+            "total_formula_cells": 404,
+            "formulas": [
+                {
+                    "excel_template": "=SUH!@REF@",
+                    "mathjs": "ext_SUH_0",
+                    "description": "Cross-sheet reference to SUH sheet",
+                    "occurrences": 81,
+                    "examples": [
+                        {
+                            "cell": "K34",
+                            "formula": "=SUH!$Y$14"
+                        },
+                        {
+                            "cell": "H35",
+                            "formula": "=SUH!V85"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@",
+                    "mathjs": "a",
+                    "description": "Direct cell reference (pass-through value)",
+                    "occurrences": 62,
+                    "examples": [
+                        {
+                            "cell": "H16",
+                            "formula": "=D16"
+                        },
+                        {
+                            "cell": "I16",
+                            "formula": "=H16"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUH!@REF@*SUH!@REF@",
+                    "mathjs": "ext_SUH_0*ext_SUH_1",
+                    "description": "Cross-sheet product from SUH (UH ordinate * excess rainfall increment)",
+                    "occurrences": 57,
+                    "examples": [
+                        {
+                            "cell": "AB53",
+                            "formula": "=SUH!$Y$11*SUH!$Y$15"
+                        },
+                        {
+                            "cell": "AB54",
+                            "formula": "=SUH!$Y$11*SUH!$Y$15"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+@REF@",
+                    "mathjs": "a+b",
+                    "description": "Addition: a + b",
+                    "occurrences": 57,
+                    "examples": [
+                        {
+                            "cell": "AC53",
+                            "formula": "=AA53+AB53"
+                        },
+                        {
+                            "cell": "AC54",
+                            "formula": "=AA54+AB54"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@-@REF@",
+                    "mathjs": "a-b",
+                    "description": "Subtraction: a - b",
+                    "occurrences": 35,
+                    "examples": [
+                        {
+                            "cell": "I9",
+                            "formula": "=I7-I8"
+                        },
+                        {
+                            "cell": "J17",
+                            "formula": "=H17-H16"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=Sheet3!@REF@",
+                    "mathjs": "ext_Sheet3_0",
+                    "description": "Pull sub-duration value from Sheet3 (smoothened durations table)",
+                    "occurrences": 24,
+                    "examples": [
+                        {
+                            "cell": "B16",
+                            "formula": "=Sheet3!N4"
+                        },
+                        {
+                            "cell": "B17",
+                            "formula": "=Sheet3!N5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=(@REF@*@REF@)/100",
+                    "mathjs": "(a*b)/100",
+                    "description": "Apply % distribution to depth: (a*b)/100",
+                    "occurrences": 24,
+                    "examples": [
+                        {
+                            "cell": "L16",
+                            "formula": "=(J16*$I$8)/100"
+                        },
+                        {
+                            "cell": "M16",
+                            "formula": "=(K16*$I$9)/100"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=LARGE(@RANGE@,_xlfn.RANK.AVG(@REF@,@RANGE@,0))",
+                    "mathjs": "kthLargest(R1,rankAvg(a,R2,0))",
+                    "description": "Arrange descending: kth-LARGE by ranking",
+                    "occurrences": 24,
+                    "examples": [
+                        {
+                            "cell": "I35",
+                            "formula": "=LARGE($L$16:$L$27,_xlfn.RANK.AVG(H35,$H$35:$H$46,0))"
+                        },
+                        {
+                            "cell": "J35",
+                            "formula": "=LARGE($M$16:$M$27,_xlfn.RANK.AVG(H35,$H$35:$H$46,0))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/@REF@",
+                    "mathjs": "a/b",
+                    "description": "Division: a / b",
+                    "occurrences": 12,
+                    "examples": [
+                        {
+                            "cell": "C16",
+                            "formula": "=B16/$B$27"
+                        },
+                        {
+                            "cell": "C17",
+                            "formula": "=B17/$B$27"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=IF((@REF@-@REF@)<0,0,(@REF@-@REF@))",
+                    "mathjs": "cond((a-b)<0,0,(a-b))",
+                    "description": "Excess rainfall after loss: max(0, a - b)",
+                    "occurrences": 12,
+                    "examples": [
+                        {
+                            "cell": "M35",
+                            "formula": "=IF((J35-K35)<0,0,(J35-K35))"
+                        },
+                        {
+                            "cell": "M36",
+                            "formula": "=IF((J36-K36)<0,0,(J36-K36))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUM(@RANGE@)",
+                    "mathjs": "sum(R1)",
+                    "description": "Summation over range",
+                    "occurrences": 10,
+                    "examples": [
+                        {
+                            "cell": "J28",
+                            "formula": "=SUM(J16:J27)"
+                        },
+                        {
+                            "cell": "K28",
+                            "formula": "=SUM(K16:K27)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/10",
+                    "mathjs": "a/10",
+                    "description": "mm -> cm (depth/10)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I2",
+                            "formula": "=E8/10"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=_xlfn.FORECAST.LINEAR(SUH!@REF@,'24hr SPS'!@RANGE@,'24hr SPS'!@RANGE@)",
+                    "mathjs": "forecastLinear(ext_SUH_0,'24hr SPS'!R1,'24hr SPS'!R2)",
+                    "description": "Areal-reduction factor: linear interpolation on Area vs Reduction-factor",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I5",
+                            "formula": "=_xlfn.FORECAST.LINEAR(SUH!$Y$11,'24hr SPS'!$O$4:$O$10,'24hr SPS'!$N$4:$N$10)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@*@REF@",
+                    "mathjs": "a*b*c",
+                    "description": "PMP chain: SPS_point * ClockHourCorr * MMF (and AreaReduction)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I6",
+                            "formula": "=I2*I3*I5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@",
+                    "mathjs": "a*b",
+                    "description": "Multiplication: a * b",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I7",
+                            "formula": "=I6*I4"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@/100",
+                    "mathjs": "a*b/100",
+                    "description": "1st 12-hr bell PMP depth: PMP * bell% / 100",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I8",
+                            "formula": "=I7*B27/100"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"Excess rainfall arrangement with consideration of uniform loss at \"&SUH!@REF@&\" cm/hr\"",
+                    "mathjs": "\"Excess rainfall arrangement with consideration of uniform loss at \" + ext_SUH_0 + \" cm/hr\"",
+                    "description": "Header text using SUH loss-rate",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "G31",
+                            "formula": "=\"Excess rainfall arrangement with consideration of uniform loss at \"&SUH!Y14&\" cm/hr\""
+                        }
+                    ]
+                }
+            ]
+        },
+        "48hr SPS ": {
+            "unique_formula_templates": 18,
+            "total_formula_cells": 621,
+            "formulas": [
+                {
+                    "excel_template": "='24hr SPS'!@REF@",
+                    "mathjs": "ext_24hr_SPS_0",
+                    "description": "Cross-sheet reference to 24-hr SPS sheet",
+                    "occurrences": 141,
+                    "examples": [
+                        {
+                            "cell": "H35",
+                            "formula": "='24hr SPS'!H35"
+                        },
+                        {
+                            "cell": "H36",
+                            "formula": "='24hr SPS'!H36"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@",
+                    "mathjs": "a",
+                    "description": "Direct cell reference (pass-through value)",
+                    "occurrences": 86,
+                    "examples": [
+                        {
+                            "cell": "J16",
+                            "formula": "=D16"
+                        },
+                        {
+                            "cell": "K16",
+                            "formula": "=D16"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUH!@REF@*SUH!@REF@",
+                    "mathjs": "ext_SUH_0*ext_SUH_1",
+                    "description": "Cross-sheet product from SUH (UH ordinate * excess rainfall increment)",
+                    "occurrences": 81,
+                    "examples": [
+                        {
+                            "cell": "AZ53",
+                            "formula": "=SUH!$Y$11*SUH!$Y$15"
+                        },
+                        {
+                            "cell": "AZ54",
+                            "formula": "=SUH!$Y$11*SUH!$Y$15"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+@REF@",
+                    "mathjs": "a+b",
+                    "description": "Addition: a + b",
+                    "occurrences": 81,
+                    "examples": [
+                        {
+                            "cell": "BA53",
+                            "formula": "=AY53+AZ53"
+                        },
+                        {
+                            "cell": "BA54",
+                            "formula": "=AY54+AZ54"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=(@REF@*@REF@)/100",
+                    "mathjs": "(a*b)/100",
+                    "description": "Apply % distribution to depth: (a*b)/100",
+                    "occurrences": 48,
+                    "examples": [
+                        {
+                            "cell": "R16",
+                            "formula": "=(N16*$I$8)/100"
+                        },
+                        {
+                            "cell": "S16",
+                            "formula": "=(O16*$I$9)/100"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=LARGE(@RANGE@,_xlfn.RANK.AVG(@REF@,@RANGE@,0))",
+                    "mathjs": "kthLargest(R1,rankAvg(a,R2,0))",
+                    "description": "Arrange descending: kth-LARGE by ranking",
+                    "occurrences": 48,
+                    "examples": [
+                        {
+                            "cell": "I35",
+                            "formula": "=LARGE($R$16:$R$27,_xlfn.RANK.AVG(H35,$H$35:$H$46,0))"
+                        },
+                        {
+                            "cell": "J35",
+                            "formula": "=LARGE($S$16:$S$27,_xlfn.RANK.AVG(H35,$H$35:$H$46,0))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=IF((@REF@-@REF@)<0,0,(@REF@-@REF@))",
+                    "mathjs": "cond((a-b)<0,0,(a-b))",
+                    "description": "Excess rainfall after loss: max(0, a - b)",
+                    "occurrences": 48,
+                    "examples": [
+                        {
+                            "cell": "N35",
+                            "formula": "=IF((I35-M35)<0,0,(I35-M35))"
+                        },
+                        {
+                            "cell": "O35",
+                            "formula": "=IF((J35-M35)<0,0,(J35-M35))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=Sheet3!@REF@",
+                    "mathjs": "ext_Sheet3_0",
+                    "description": "Pull sub-duration value from Sheet3 (smoothened durations table)",
+                    "occurrences": 24,
+                    "examples": [
+                        {
+                            "cell": "B16",
+                            "formula": "=Sheet3!N4"
+                        },
+                        {
+                            "cell": "B17",
+                            "formula": "=Sheet3!N5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@-@REF@",
+                    "mathjs": "a-b",
+                    "description": "Subtraction: a - b",
+                    "occurrences": 22,
+                    "examples": [
+                        {
+                            "cell": "N17",
+                            "formula": "=K17-K16"
+                        },
+                        {
+                            "cell": "O17",
+                            "formula": "=K17-K16"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUM(@RANGE@)",
+                    "mathjs": "sum(R1)",
+                    "description": "Summation over range",
+                    "occurrences": 20,
+                    "examples": [
+                        {
+                            "cell": "N28",
+                            "formula": "=SUM(N16:N27)"
+                        },
+                        {
+                            "cell": "O28",
+                            "formula": "=SUM(O16:O27)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/@REF@",
+                    "mathjs": "a/b",
+                    "description": "Division: a / b",
+                    "occurrences": 12,
+                    "examples": [
+                        {
+                            "cell": "C16",
+                            "formula": "=B16/$B$27"
+                        },
+                        {
+                            "cell": "C17",
+                            "formula": "=B17/$B$27"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "='PMP 12hr Bell depth'!@REF@*0.1",
+                    "mathjs": "ext_PMP_12hr_Bell_depth_0*0.1",
+                    "description": "Pull depth from PMP-12hr-Bell sheet and scale mm->cm",
+                    "occurrences": 4,
+                    "examples": [
+                        {
+                            "cell": "I8",
+                            "formula": "='PMP 12hr Bell depth'!I3*0.1"
+                        },
+                        {
+                            "cell": "I9",
+                            "formula": "='PMP 12hr Bell depth'!J3*0.1"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/10",
+                    "mathjs": "a/10",
+                    "description": "mm -> cm (depth/10)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I2",
+                            "formula": "=E11/10"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=_xlfn.FORECAST.LINEAR(SUH!@REF@,@RANGE@,@RANGE@)",
+                    "mathjs": "forecastLinear(ext_SUH_0,R1,R2)",
+                    "description": "Areal-reduction factor: linear interpolation (local sheet table)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I5",
+                            "formula": "=_xlfn.FORECAST.LINEAR(SUH!$Y$11,$O$4:$O$10,$N$4:$N$10)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@*@REF@",
+                    "mathjs": "a*b*c",
+                    "description": "PMP chain: SPS_point * ClockHourCorr * MMF (and AreaReduction)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I6",
+                            "formula": "=I2*I3*I5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@",
+                    "mathjs": "a*b",
+                    "description": "Multiplication: a * b",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I7",
+                            "formula": "=I6*I4"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"Excess rainfall arrangement with consideration of uniform loss at \"&SUH!@REF@& \" cm/hr\"",
+                    "mathjs": "\"Excess rainfall arrangement with consideration of uniform loss at \" + ext_SUH_0 +  \" cm/hr\"",
+                    "description": "Header text using SUH loss-rate (alt spacing)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "G31",
+                            "formula": "=\"Excess rainfall arrangement with consideration of uniform loss at \"&SUH!$Y$14& \" cm/hr\""
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUH!@REF@",
+                    "mathjs": "ext_SUH_0",
+                    "description": "Cross-sheet reference to SUH sheet",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "M34",
+                            "formula": "=SUH!$Y$14"
+                        }
+                    ]
+                }
+            ]
+        },
+        "72hr SPS  ": {
+            "unique_formula_templates": 18,
+            "total_formula_cells": 800,
+            "formulas": [
+                {
+                    "excel_template": "='24hr SPS'!@REF@",
+                    "mathjs": "ext_24hr_SPS_0",
+                    "description": "Cross-sheet reference to 24-hr SPS sheet",
+                    "occurrences": 140,
+                    "examples": [
+                        {
+                            "cell": "H36",
+                            "formula": "='24hr SPS'!H35"
+                        },
+                        {
+                            "cell": "H37",
+                            "formula": "='24hr SPS'!H36"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "='48hr SPS '!@REF@",
+                    "mathjs": "ext_48hr_SPS_0",
+                    "description": "Cross-sheet reference to 48-hr SPS sheet",
+                    "occurrences": 105,
+                    "examples": [
+                        {
+                            "cell": "BX53",
+                            "formula": "='48hr SPS '!$AZ$53"
+                        },
+                        {
+                            "cell": "BX54",
+                            "formula": "='48hr SPS '!$AZ$53"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@+@REF@",
+                    "mathjs": "a+b",
+                    "description": "Addition: a + b",
+                    "occurrences": 105,
+                    "examples": [
+                        {
+                            "cell": "BY53",
+                            "formula": "=BW53+BX53"
+                        },
+                        {
+                            "cell": "BY54",
+                            "formula": "=BW54+BX54"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@",
+                    "mathjs": "a",
+                    "description": "Direct cell reference (pass-through value)",
+                    "occurrences": 90,
+                    "examples": [
+                        {
+                            "cell": "J17",
+                            "formula": "=D17"
+                        },
+                        {
+                            "cell": "K17",
+                            "formula": "=D17"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=(@REF@*@REF@)/100",
+                    "mathjs": "(a*b)/100",
+                    "description": "Apply % distribution to depth: (a*b)/100",
+                    "occurrences": 72,
+                    "examples": [
+                        {
+                            "cell": "V17",
+                            "formula": "=(P17*$I$8)/100"
+                        },
+                        {
+                            "cell": "W17",
+                            "formula": "=(Q17*$I$9)/100"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=LARGE(@RANGE@,_xlfn.RANK.AVG(@REF@,@RANGE@,0))",
+                    "mathjs": "kthLargest(R1,rankAvg(a,R2,0))",
+                    "description": "Arrange descending: kth-LARGE by ranking",
+                    "occurrences": 72,
+                    "examples": [
+                        {
+                            "cell": "I36",
+                            "formula": "=LARGE($V$17:$V$28,_xlfn.RANK.AVG(H36,$H$36:$H$47,0))"
+                        },
+                        {
+                            "cell": "J36",
+                            "formula": "=LARGE($W$17:$W$28,_xlfn.RANK.AVG(H36,$H$36:$H$47,0))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=IF((@REF@-@REF@)<0,0,(@REF@-@REF@))",
+                    "mathjs": "cond((a-b)<0,0,(a-b))",
+                    "description": "Excess rainfall after loss: max(0, a - b)",
+                    "occurrences": 72,
+                    "examples": [
+                        {
+                            "cell": "P36",
+                            "formula": "=IF((I36-M36)<0,0,(I36-M36))"
+                        },
+                        {
+                            "cell": "Q36",
+                            "formula": "=IF((J36-O36)<0,0,(J36-O36))"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@-@REF@",
+                    "mathjs": "a-b",
+                    "description": "Subtraction: a - b",
+                    "occurrences": 66,
+                    "examples": [
+                        {
+                            "cell": "P18",
+                            "formula": "=K18-K17"
+                        },
+                        {
+                            "cell": "Q18",
+                            "formula": "=K18-K17"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUM(@RANGE@)",
+                    "mathjs": "sum(R1)",
+                    "description": "Summation over range",
+                    "occurrences": 30,
+                    "examples": [
+                        {
+                            "cell": "P29",
+                            "formula": "=SUM(P17:P28)"
+                        },
+                        {
+                            "cell": "Q29",
+                            "formula": "=SUM(Q17:Q28)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=Sheet3!@REF@",
+                    "mathjs": "ext_Sheet3_0",
+                    "description": "Pull sub-duration value from Sheet3 (smoothened durations table)",
+                    "occurrences": 24,
+                    "examples": [
+                        {
+                            "cell": "B17",
+                            "formula": "=Sheet3!N4"
+                        },
+                        {
+                            "cell": "B18",
+                            "formula": "=Sheet3!N5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/@REF@",
+                    "mathjs": "a/b",
+                    "description": "Division: a / b",
+                    "occurrences": 12,
+                    "examples": [
+                        {
+                            "cell": "C17",
+                            "formula": "=B17/$B$28"
+                        },
+                        {
+                            "cell": "C18",
+                            "formula": "=B18/$B$28"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "='PMP 12hr Bell depth'!@REF@*0.1",
+                    "mathjs": "ext_PMP_12hr_Bell_depth_0*0.1",
+                    "description": "Pull depth from PMP-12hr-Bell sheet and scale mm->cm",
+                    "occurrences": 6,
+                    "examples": [
+                        {
+                            "cell": "I8",
+                            "formula": "='PMP 12hr Bell depth'!I3*0.1"
+                        },
+                        {
+                            "cell": "I9",
+                            "formula": "='PMP 12hr Bell depth'!J3*0.1"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@/10",
+                    "mathjs": "a/10",
+                    "description": "mm -> cm (depth/10)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I2",
+                            "formula": "=E8/10"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=_xlfn.FORECAST.LINEAR(SUH!@REF@,@RANGE@,@RANGE@)",
+                    "mathjs": "forecastLinear(ext_SUH_0,R1,R2)",
+                    "description": "Areal-reduction factor: linear interpolation (local sheet table)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I5",
+                            "formula": "=_xlfn.FORECAST.LINEAR(SUH!$Y$11,$O$4:$O$10,$N$4:$N$10)"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@*@REF@",
+                    "mathjs": "a*b*c",
+                    "description": "PMP chain: SPS_point * ClockHourCorr * MMF (and AreaReduction)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I6",
+                            "formula": "=I2*I3*I5"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*@REF@",
+                    "mathjs": "a*b",
+                    "description": "Multiplication: a * b",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "I7",
+                            "formula": "=I6*I4"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=\"Excess rainfall arrangement with consideration of uniform loss at \"&SUH!@REF@& \" cm/hr\"",
+                    "mathjs": "\"Excess rainfall arrangement with consideration of uniform loss at \" + ext_SUH_0 +  \" cm/hr\"",
+                    "description": "Header text using SUH loss-rate (alt spacing)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "G33",
+                            "formula": "=\"Excess rainfall arrangement with consideration of uniform loss at \"&SUH!Y14& \" cm/hr\""
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=SUH!@REF@",
+                    "mathjs": "ext_SUH_0",
+                    "description": "Cross-sheet reference to SUH sheet",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "O35",
+                            "formula": "=SUH!$Y$14"
+                        }
+                    ]
+                }
+            ]
+        },
+        "Sheet3": {
+            "unique_formula_templates": 0,
+            "total_formula_cells": 0,
+            "formulas": []
+        },
+        "PMP 12hr Bell depth": {
+            "unique_formula_templates": 7,
+            "total_formula_cells": 13,
+            "formulas": [
+                {
+                    "excel_template": "=@REF@-@REF@",
+                    "mathjs": "a-b",
+                    "description": "Subtraction: a - b",
+                    "occurrences": 5,
+                    "examples": [
+                        {
+                            "cell": "F3",
+                            "formula": "=C3-B3"
+                        },
+                        {
+                            "cell": "G3",
+                            "formula": "=D3-C3"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@*'24hr SPS'!@REF@%",
+                    "mathjs": "a*(ext_24hr_SPS_0/100)",
+                    "description": "Bell depth = day-PMP * bell-percent",
+                    "occurrences": 3,
+                    "examples": [
+                        {
+                            "cell": "I3",
+                            "formula": "=E3*'24hr SPS'!B27%"
+                        },
+                        {
+                            "cell": "K3",
+                            "formula": "=F3*'24hr SPS'!B27%"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "='24hr SPS'!@REF@*10",
+                    "mathjs": "ext_24hr_SPS_0*10",
+                    "description": "Pull 24-hr SPS value and convert cm->mm",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "B3",
+                            "formula": "='24hr SPS'!I7*10"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "='48hr SPS '!@REF@*10",
+                    "mathjs": "ext_48hr_SPS_0*10",
+                    "description": "Pull 48-hr SPS value and convert cm->mm",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "C3",
+                            "formula": "='48hr SPS '!I7*10"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "='72hr SPS  '!@REF@*10",
+                    "mathjs": "ext_72hr_SPS_0*10",
+                    "description": "Pull 72-hr SPS value and convert cm->mm",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "D3",
+                            "formula": "='72hr SPS  '!I7*10"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=@REF@",
+                    "mathjs": "a",
+                    "description": "Direct cell reference (pass-through value)",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "E3",
+                            "formula": "=B3"
+                        }
+                    ]
+                },
+                {
+                    "excel_template": "=('24hr SPS'!@REF@*'24hr SPS'!@REF@)*10",
+                    "mathjs": "(ext_24hr_SPS_0*ext_24hr_SPS_1)*10",
+                    "description": "24-hr depth (mm) = (SPS * ClockHourCorrection) * 10",
+                    "occurrences": 1,
+                    "examples": [
+                        {
+                            "cell": "H3",
+                            "formula": "=('24hr SPS'!I2*'24hr SPS'!I3)*10"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

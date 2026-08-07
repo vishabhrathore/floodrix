@@ -132,7 +132,7 @@ export class RunOrchestrator {
     // Build initial variables from workflow defaults + caller input
     const variables: VariableMap = {};
     for (const v of wf.variables) {
-      if (v.defaultValue !== null)
+      if (v.defaultValue !== null && v.sourceType !== "USER_INPUT")
         variables[v.contextKey] = v.defaultValue as never;
     }
     Object.assign(variables, input.initialValues ?? {});

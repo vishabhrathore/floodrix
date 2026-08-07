@@ -11,9 +11,9 @@
 // todo -- need to fix previous commit
 "use client";
 
+import { Download, Play, Redo2, Save, Undo2, Wand2 } from "lucide-react";
+import { toJS } from "mobx";
 import { useState } from "react";
-
-import { Play, Redo2, Save, StepForward, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -61,7 +61,30 @@ export function WorkflowToolbar({
   onRedo,
   onOpenRunner,
 }: WorkflowToolbarProps) {
+  const store = useWorkflowCanvasStore();
   const [stepMode, setStepMode] = useState(false);
+
+  const handleDownload = () => {
+    const dataStr = JSON.stringify(
+      {
+        workflowId,
+        name: workflowName,
+        status,
+        nodes: toJS(store.nodes),
+        edges: toJS(store.edges),
+      },
+      null,
+      2,
+    );
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const safeName = workflowName.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    link.download = `${safeName || "workflow"}_export.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex h-12 items-center justify-between border-b bg-white px-4 shadow-sm">
@@ -113,6 +136,20 @@ export function WorkflowToolbar({
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8 text-slate-500 hover:text-slate-700"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Export Workflow (JSON)</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8"
                 onClick={onSave}
               >
@@ -150,6 +187,22 @@ export function WorkflowToolbar({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Redo</TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-4" />
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/50"
+                onClick={() => store.autoLayout()}
+              >
+                <Wand2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Auto-Layout Canvas</TooltipContent>
           </Tooltip>
         </div>
       </div>

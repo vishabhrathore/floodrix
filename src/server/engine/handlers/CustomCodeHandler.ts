@@ -47,15 +47,16 @@ export class CustomCodeHandler implements NodeHandler {
         );
       }
 
-      // Build scope from current numeric/boolean vars
+      // Build scope containing all variable values inside an 'inputs' object
       const snap = ctx.variables.snapshot();
-      const scope: Record<string, number | boolean> = {};
+      const inputs: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(snap)) {
         if (k === "$nodes" || k === "$results") continue;
-        if (typeof v === "number" || typeof v === "boolean") scope[k] = v;
+        inputs[k] = v;
       }
+      const scope = { inputs };
 
-      let outputs: Record<string, number>;
+      let outputs: Record<string, any>;
 
       const use_worker = config.use_worker ?? true;
       const runLocally = !use_worker || (!isMainThread && ctx.isBackgroundRun);
@@ -78,6 +79,7 @@ export class CustomCodeHandler implements NodeHandler {
       const workerResult = await pool.runMathEvaluation(code, scope, {
         timeoutMs: config.timeoutMs ?? this.timeoutMs,
         handlerType: "CUSTOM_CODE",
+        isJS: true,
       }, runLocally);
 
       outputs = workerResult.outputs;

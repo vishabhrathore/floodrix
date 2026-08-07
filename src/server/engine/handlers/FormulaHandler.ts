@@ -41,7 +41,7 @@ export class FormulaHandler implements NodeHandler {
       let expression: string;
       let displayExpression: string;
       let outputKey: string;
-      let evalScope: Record<string, number | boolean>;
+      let evalScope: Record<string, any>;
       let outputNotation = "result";
       let registry: any = null;
 
@@ -75,10 +75,10 @@ export class FormulaHandler implements NodeHandler {
               ),
             );
           }
-          if (typeof value !== "number" && typeof value !== "boolean") {
+          if (typeof value !== "number" && typeof value !== "boolean" && !Array.isArray(value)) {
             return toErroredOutcome(
               new Error(
-                `${registry.name}: variable "${contextKey}" is ${typeof value}, expected number/boolean`,
+                `${registry.name}: variable "${contextKey}" is ${typeof value}, expected number/boolean/array`,
               ),
             );
           }
@@ -109,7 +109,7 @@ export class FormulaHandler implements NodeHandler {
             const value = ctx.variables.get(contextKey);
             if (
               value !== undefined &&
-              (typeof value === "number" || typeof value === "boolean")
+              (typeof value === "number" || typeof value === "boolean" || Array.isArray(value))
             ) {
               evalScope[notation] = value;
             }
@@ -126,7 +126,7 @@ export class FormulaHandler implements NodeHandler {
       const precision =
         config.overrides?.result_precision ?? config.result_precision ?? 3;
 
-      let value: number;
+      let value: any;
 
       // Isolated Worker Thread (Piscina) to prevent blocking the event loop
       const pool = new WorkerPoolTimeout();
@@ -181,8 +181,15 @@ export class FormulaHandler implements NodeHandler {
         );
       }
 
-      const factor = 10 ** precision;
-      value = Math.round(rawValue * factor) / factor;
+      if (typeof rawValue === "number") {
+        const factor = 10 ** precision;
+        value = Math.round(rawValue * factor) / factor;
+      } else if (Array.isArray(rawValue)) {
+        const factor = 10 ** precision;
+        value = rawValue.map(v => typeof v === "number" ? Math.round(v * factor) / factor : v);
+      } else {
+        value = rawValue;
+      }
 
       ctx.variables.set(outputKey, value);
       const outputs: VariableMap = { [outputKey]: value };
@@ -209,18 +216,18 @@ export class FormulaHandler implements NodeHandler {
 
 /**
  * Pull the subset of variables that are usable in mathjs expressions
- * (numbers and booleans). Strings, arrays, and objects are excluded since
- * formulas can't operate on them anyway, and including them would pollute
- * the scope with values that throw confusing errors if accidentally referenced.
+ * (numbers, booleans, and arrays).
  */
 function scopeFromVariables(
   ctx: ExecutionContext,
-): Record<string, number | boolean> {
+): Record<string, any> {
   const snap = ctx.variables.snapshot();
-  const scope: Record<string, number | boolean> = {};
+  const scope: Record<string, any> = {};
   for (const [k, v] of Object.entries(snap)) {
     if (k === "$nodes" || k === "$results") continue;
-    if (typeof v === "number" || typeof v === "boolean") scope[k] = v;
+    if (typeof v === "number" || typeof v === "boolean" || Array.isArray(v)) {
+      scope[k] = v;
+    }
   }
   return scope;
 }

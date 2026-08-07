@@ -87,7 +87,7 @@ export const PLATFORM_DATA: Workspace[] = [
                   {
                     key: "I",
                     label: "Rainfall Intensity",
-                    notation: "i",
+                    notation: "I",
                     unit: "in/hr",
                     defaultValue: 4.2,
                     hint: "Based on Tc and Return Period",
@@ -101,8 +101,8 @@ export const PLATFORM_DATA: Workspace[] = [
                   },
                 ],
                 formula: {
-                  expression: "Q = C * i * A",
-                  displayExpression: "Q = C · i · A",
+                  expression: "Q = C * I * A",
+                  displayExpression: "Q = C · I · A",
                   reference: "ASCE Manual 77",
                   region: "International",
                   logic: (vals) => {
@@ -118,7 +118,7 @@ export const PLATFORM_DATA: Workspace[] = [
                         },
                         {
                           label: "Rainfall Intensity",
-                          notation: "i",
+                          notation: "I",
                           value: vals.I.toString(),
                           unit: "in/hr",
                         },
@@ -137,7 +137,7 @@ export const PLATFORM_DATA: Workspace[] = [
                         },
                       ],
                       chartFn: (x) => vals.C * x * vals.A,
-                      chartXLabel: "Intensity (i) vs Discharge (Q)",
+                      chartXLabel: "Intensity (I) vs Discharge (Q)",
                     };
                   },
                 },

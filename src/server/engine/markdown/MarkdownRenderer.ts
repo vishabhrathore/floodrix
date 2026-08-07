@@ -179,4 +179,19 @@ Safety boundaries evaluated:
 - **Input:** {{outputs.inputValue}} {{outputs.inputUnit}}
 - **Output:** {{outputs.value}} {{outputs.outputUnit}}
 `,
+
+  CHART: `### {{node.label}}
+{{#if node.description}}*{{node.description}}*{{/if}}
+
+\`\`\`chart
+{
+  "title": "{{outputs.title}}",
+  "chartType": "{{outputs.chartType}}",
+  "xLabel": "{{outputs.xLabel}}",
+  "yLabel": "{{outputs.yLabel}}",
+  "xValues": {{outputs.xValues}},
+  "yDataSeries": {{outputs.yDataSeries}}
+}
+\`\`\`
+`,
 };

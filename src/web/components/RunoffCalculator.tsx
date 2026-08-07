@@ -155,7 +155,7 @@ const RunoffCalculator: React.FC = () => {
                   </div>
                   <div className="bg-brand-red/10 px-3 md:px-4 py-2 rounded-lg border border-brand-red/20 shrink-0">
                     <span className="text-brand-red font-mono font-bold text-[11px] md:text-sm whitespace-nowrap">
-                      Q = CiA / 360
+                      Q = C · I · A / 360
                     </span>
                   </div>
                 </div>
@@ -185,7 +185,7 @@ const RunoffCalculator: React.FC = () => {
 
                     <div className="space-y-4">
                       <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-white/40 font-mono">
-                        <span>Intensity (mm/h)</span>
+                        <span>Intensity (I, mm/hr)</span>
                         <span className="text-brand-red">{intensity}</span>
                       </div>
                       <input
@@ -201,7 +201,7 @@ const RunoffCalculator: React.FC = () => {
 
                     <div className="space-y-4">
                       <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-white/40 font-mono">
-                        <span>Area (ha)</span>
+                        <span>Area (A, ha)</span>
                         <span className="text-brand-red">{area}</span>
                       </div>
                       <input

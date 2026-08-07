@@ -13,6 +13,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TRPCReactProvider } from "@/trpc/client";
+import { Agentation } from "agentation";
 
 import "./globals.css";
 
@@ -128,6 +129,9 @@ export default function RootLayout({
             <Provider>
               {children}
               <Toaster />
+              {process.env.NODE_ENV === "development" && (
+                <Agentation endpoint="http://localhost:4747" />
+              )}
             </Provider>
           </NuqsAdapter>
         </TRPCReactProvider>

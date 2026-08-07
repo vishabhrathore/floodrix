@@ -463,9 +463,11 @@ export const CommentNode = memo(CommentNodeInner);
 function ChartNodeInner({ id, data, selected }: NodeProps) {
   const d = data as NodeData;
   const config = d.config;
+  const result = d.executionResult;
 
   const chartType = config.chart_type as string | undefined;
   const title = config.title as string | undefined;
+  const svgChart = result?.svgChart as string | undefined;
 
   return (
     <BaseNode
@@ -475,22 +477,42 @@ function ChartNodeInner({ id, data, selected }: NodeProps) {
       subtitle={chartType || "line"}
       selected={selected}
       executionStatus={d.executionStatus}
+      width={320}
     >
-      <div
-        style={{
-          height: 48,
-          borderRadius: 6,
-          backgroundColor: "#f8fafc",
-          border: "1px dashed #e2e8f0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#94a3b8",
-          fontSize: 11,
-        }}
-      >
-        {title || "Chart preview renders at runtime"}
-      </div>
+      {d.executionStatus === "completed" && svgChart ? (
+        <div
+          style={{
+            width: "100%",
+            height: 180,
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+            backgroundColor: "#ffffff",
+          }}
+          dangerouslySetInnerHTML={{ __html: svgChart }}
+        />
+      ) : (
+        <div
+          style={{
+            height: 64,
+            borderRadius: 6,
+            backgroundColor: "#f8fafc",
+            border: "1px dashed #e2e8f0",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#94a3b8",
+            fontSize: 11,
+            gap: 4,
+          }}
+        >
+          <span style={{ fontWeight: 600 }}>{title || "Chart Visualizer"}</span>
+          <span style={{ fontSize: 9, color: "#cbd5e1" }}>
+            Chart preview will render after execution
+          </span>
+        </div>
+      )}
     </BaseNode>
   );
 }

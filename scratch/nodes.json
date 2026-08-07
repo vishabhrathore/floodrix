@@ -1,0 +1,1159 @@
+[
+  {
+    "id": "node_cc_slope",
+    "type": "CUSTOM_CODE",
+    "label": "Equivalent Stream Slope",
+    "config": {
+      "code": "const pts = typeof inputs.stream_profile === 'string' ? JSON.parse(inputs.stream_profile) : inputs.stream_profile;\nconst L   = inputs.stream_length;\nconst last = pts[pts.length - 1].rl;\nlet sum = 0;\nfor (let i = 1; i < pts.length; i++) {\n  const Li      = pts[i].chainage - pts[i-1].chainage;\n  const Di_prev = pts[i-1].rl - last;\n  const Di      = pts[i].rl    - last;\n  sum += Li * (Di_prev + Di);\n}\nreturn {\n  equiv_slope: sum / (L * L),\n  sum_li_di_prev_di: sum\n};",
+      "use_worker": true,
+      "output_variables": [
+        "equiv_slope",
+        "sum_li_di_prev_di"
+      ]
+    }
+  },
+  {
+    "id": "node_f_Qp",
+    "type": "FORMULA",
+    "label": "Peak Discharge (Qp)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "qp",
+          "unit": "cumec/sqkm",
+          "label": "qp"
+        },
+        {
+          "key": "catchment_area",
+          "unit": "sq.km",
+          "label": "catchment_area"
+        }
+      ],
+      "expression": "qp * catchment_area",
+      "use_worker": true,
+      "registry_id": "freg_suh_Qp",
+      "result_unit": "cumec",
+      "registry_inputs": [
+        {
+          "key": "qp",
+          "unit": "cumec/sqkm",
+          "label": "qp"
+        },
+        {
+          "key": "catchment_area",
+          "unit": "sq.km",
+          "label": "catchment_area"
+        }
+      ],
+      "registry_output": {
+        "key": "Qp",
+        "unit": "cumec",
+        "label": "Peak Discharge"
+      },
+      "result_variable": "Qp",
+      "result_precision": 3,
+      "variable_bindings": {
+        "qp": "qp",
+        "catchment_area": "catchment_area"
+      },
+      "display_expression": "Qp = qp · A"
+    }
+  },
+  {
+    "id": "node_cc_lookup",
+    "type": "CUSTOM_CODE",
+    "label": "Lookup Sub-zone Coefficients",
+    "config": {
+      "code": "// CWC sub-zone regression coefficients\nconst table = {\n  \"1b\": {a_tp:1.56, b_tp:-0.81, a_qp:1.85, b_qp:-0.48, a_TB:4.20, b_TB:0.87, a_W50:2.10, b_W50:-0.95, a_W75:1.30, b_W75:-0.80, a_WR50:0.75, b_WR50:-0.90, a_WR75:0.52, b_WR75:-0.78},\n  \"1c\": {a_tp:2.195, b_tp:-0.944, a_qp:1.331, b_qp:-0.492, a_TB:3.917, b_TB:0.99, a_W50:2.04, b_W50:-1.026, a_W75:1.25, b_W75:-0.864, a_WR50:0.739, b_WR50:-0.968, a_WR75:0.5, b_WR75:-0.813},\n  \"2a\": {a_tp:1.25, b_tp:-0.75, a_qp:1.95, b_qp:-0.52, a_TB:4.50, b_TB:0.82, a_W50:2.15, b_W50:-0.92, a_W75:1.35, b_W75:-0.78, a_WR50:0.78, b_WR50:-0.88, a_WR75:0.54, b_WR75:-0.76},\n  \"3a\": {a_tp:0.433, b_tp:0.704,  a_qp:1.161, b_qp:0.635,  a_TB:8.375, b_TB:0.512, a_W50:2.284, b_W50:1.000, a_W75:1.331, b_W75:0.991, a_WR50:0.827, b_WR50:1.023, a_WR75:0.561, b_WR75:1.037},\n  \"3b\": {a_tp:0.50, b_tp:0.68, a_qp:1.20, b_qp:0.61, a_TB:8.00, b_TB:0.55, a_W50:2.30, b_W50:0.98, a_W75:1.35, b_W75:0.97, a_WR50:0.85, b_WR50:1.00, a_WR75:0.58, b_WR75:1.01},\n  \"3c\": {a_tp:0.48, b_tp:0.72, a_qp:1.15, b_qp:0.65, a_TB:8.50, b_TB:0.50, a_W50:2.25, b_W50:1.02, a_W75:1.32, b_W75:1.00, a_WR50:0.80, b_WR50:1.04, a_WR75:0.55, b_WR75:1.05},\n  \"3d\": {a_tp:0.45, b_tp:0.71, a_qp:1.18, b_qp:0.63, a_TB:8.40, b_TB:0.52, a_W50:2.27, b_W50:1.01, a_W75:1.34, b_W75:0.98, a_WR50:0.83, b_WR50:1.03, a_WR75:0.57, b_WR75:1.03},\n  \"3e\": {a_tp:0.42, b_tp:0.73, a_qp:1.14, b_qp:0.66, a_TB:8.60, b_TB:0.49, a_W50:2.23, b_W50:1.03, a_W75:1.30, b_W75:1.01, a_WR50:0.79, b_WR50:1.05, a_WR75:0.54, b_WR75:1.06},\n  \"3f\": {a_tp:0.47, b_tp:0.69, a_qp:1.19, b_qp:0.62, a_TB:8.20, b_TB:0.53, a_W50:2.29, b_W50:0.99, a_W75:1.34, b_W75:0.98, a_WR50:0.84, b_WR50:1.01, a_WR75:0.57, b_WR75:1.02},\n  \"3h\": {a_tp:0.44, b_tp:0.71, a_qp:1.17, b_qp:0.64, a_TB:8.45, b_TB:0.51, a_W50:2.26, b_W50:1.01, a_W75:1.33, b_W75:0.99, a_WR50:0.82, b_WR50:1.03, a_WR75:0.56, b_WR75:1.04},\n  \"3i\": {a_tp:0.46, b_tp:0.70, a_qp:1.16, b_qp:0.63, a_TB:8.30, b_TB:0.52, a_W50:2.28, b_W50:1.00, a_W75:1.33, b_W75:0.99, a_WR50:0.83, b_WR50:1.02, a_WR75:0.56, b_WR75:1.03},\n  \"5a\": {a_tp:0.40, b_tp:0.75, a_qp:1.10, b_qp:0.68, a_TB:9.00, b_TB:0.45, a_W50:2.20, b_W50:1.05, a_W75:1.28, b_W75:1.03, a_WR50:0.76, b_WR50:1.08, a_WR75:0.52, b_WR75:1.09},\n  \"7\":  {a_tp:0.38, b_tp:0.76, a_qp:1.08, b_qp:0.69, a_TB:9.20, b_TB:0.44, a_W50:2.18, b_W50:1.06, a_W75:1.26, b_W75:1.04, a_WR50:0.74, b_WR50:1.09, a_WR75:0.50, b_WR75:1.10}\n};\nreturn table[inputs.sub_zone] || table[\"3a\"];",
+      "use_worker": true,
+      "output_variables": [
+        "a_tp",
+        "b_tp",
+        "a_qp",
+        "b_qp",
+        "a_TB",
+        "b_TB",
+        "a_W50",
+        "b_W50",
+        "a_W75",
+        "b_W75",
+        "a_WR50",
+        "b_WR50",
+        "a_WR75",
+        "b_WR75"
+      ]
+    }
+  },
+  {
+    "id": "node_f_tp",
+    "type": "FORMULA",
+    "label": "Time to Peak (tp)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_tp",
+          "unit": "",
+          "label": "tp linear coefficient"
+        },
+        {
+          "key": "b_tp",
+          "unit": "",
+          "label": "tp power exponent"
+        },
+        {
+          "key": "stream_length",
+          "unit": "km",
+          "label": "Stream Length L"
+        },
+        {
+          "key": "equiv_slope",
+          "unit": "m/km",
+          "label": "Equivalent Slope S"
+        }
+      ],
+      "expression": "a_tp * pow(stream_length / equiv_slope, b_tp)",
+      "use_worker": true,
+      "registry_id": "freg_suh_tp",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "a_tp",
+          "unit": null,
+          "label": "tp linear coefficient"
+        },
+        {
+          "key": "b_tp",
+          "unit": null,
+          "label": "tp power exponent"
+        },
+        {
+          "key": "stream_length",
+          "unit": "km",
+          "label": "Stream Length L"
+        },
+        {
+          "key": "equiv_slope",
+          "unit": "m/km",
+          "label": "Equivalent Slope S"
+        }
+      ],
+      "registry_output": {
+        "key": "tp",
+        "unit": "hr",
+        "label": "Time to Peak"
+      },
+      "result_variable": "tp",
+      "result_precision": 3,
+      "variable_bindings": {
+        "a_tp": "a_tp",
+        "b_tp": "b_tp",
+        "equiv_slope": "equiv_slope",
+        "stream_length": "stream_length"
+      },
+      "display_expression": "tp = a_tp · (L/S)^b_tp"
+    }
+  },
+  {
+    "id": "node_cc_weighted",
+    "type": "CUSTOM_CODE",
+    "label": "Weighted Mean Rainfall (Isohyetal)",
+    "config": {
+      "code": "const bands = typeof inputs.isohyet_bands === 'string' ? JSON.parse(inputs.isohyet_bands) : inputs.isohyet_bands;\nlet sumAP = 0, sumA = 0;\nfor (const b of bands) {\n  const mean = (b.iso_min_mm + b.iso_max_mm) / 2;\n  sumAP += b.area_sqkm * mean;\n  sumA  += b.area_sqkm;\n}\nconst mm = sumAP / sumA;\nreturn { weighted_rainfall_mm: mm, sps_point_cm: mm / 10 };",
+      "use_worker": true,
+      "output_variables": [
+        "weighted_rainfall_mm",
+        "sps_point_cm"
+      ]
+    }
+  },
+  {
+    "id": "node_cc_arf",
+    "type": "CUSTOM_CODE",
+    "label": "Areal Reduction Factor (interpolated)",
+    "config": {
+      "code": "const tables = {\n  24: [[500,0.94],[1000,0.91],[1500,0.90],[2000,0.88],[3000,0.86],[4000,0.83],[5000,0.81]],\n  48: [[500,0.95],[1000,0.92],[1500,0.91],[2000,0.89],[3000,0.87],[4000,0.85],[5000,0.83]],\n  72: [[500,0.96],[1000,0.94],[1500,0.93],[2000,0.92],[3000,0.90],[4000,0.88],[5000,0.86]]\n};\nconst T = tables[inputs.storm_duration_hr] || tables[24];\nconst A = inputs.catchment_area;\nif (A <= T[0][0])   return { areal_reduction: T[0][1] };\nif (A >= T.at(-1)[0]) return { areal_reduction: T.at(-1)[1] };\nfor (let i = 1; i < T.length; i++) {\n  if (A <= T[i][0]) {\n    const f = (A - T[i-1][0]) / (T[i][0] - T[i-1][0]);\n    return { areal_reduction: T[i-1][1] + f * (T[i][1] - T[i-1][1]) };\n  }\n}\nreturn { areal_reduction: 1.0 };",
+      "use_worker": true,
+      "output_variables": [
+        "areal_reduction"
+      ]
+    }
+  },
+  {
+    "id": "node_in_adj",
+    "type": "INPUT",
+    "label": "PMP Adjustments",
+    "config": {
+      "fields": [
+        {
+          "key": "clock_hour_corr",
+          "unit": "—",
+          "label": "Clock-Hour Correction",
+          "default": 1.15,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "mmf",
+          "unit": "—",
+          "label": "Moisture Maximisation Factor",
+          "default": 1.12,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "bell_pct_1st",
+          "unit": "%",
+          "label": "1st 12-hr bell %",
+          "default": 73,
+          "required": true,
+          "data_type": "number"
+        }
+      ],
+      "pause_execution": true
+    }
+  },
+  {
+    "id": "node_f_Tm",
+    "type": "FORMULA",
+    "label": "Time to Rise (Tm)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "tp",
+          "unit": "hr",
+          "label": "tp"
+        },
+        {
+          "key": "tr",
+          "unit": "hr",
+          "label": "Unit rainfall duration"
+        }
+      ],
+      "expression": "tp + tr / 2",
+      "use_worker": true,
+      "registry_id": "freg_suh_Tm",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "tp",
+          "unit": "hr",
+          "label": "tp"
+        },
+        {
+          "key": "tr",
+          "unit": "hr",
+          "label": "Unit rainfall duration"
+        }
+      ],
+      "registry_output": {
+        "key": "Tm",
+        "unit": "hr",
+        "label": "Time to Rise"
+      },
+      "result_variable": "Tm",
+      "result_precision": 3,
+      "variable_bindings": {
+        "tp": "tp",
+        "tr": "tr"
+      },
+      "display_expression": "Tm = tp + tr/2"
+    }
+  },
+  {
+    "id": "node_in_profile",
+    "type": "INPUT",
+    "label": "Stream Profile (chainage, RL)",
+    "config": {
+      "fields": [
+        {
+          "key": "stream_profile",
+          "unit": "km, m",
+          "label": "Profile points [{chainage, rl}]",
+          "default": [
+            {
+              "rl": 350,
+              "chainage": 0
+            },
+            {
+              "rl": 320,
+              "chainage": 20
+            },
+            {
+              "rl": 300,
+              "chainage": 40
+            },
+            {
+              "rl": 280,
+              "chainage": 60
+            },
+            {
+              "rl": 260,
+              "chainage": 79.367
+            }
+          ],
+          "required": true,
+          "data_type": "array"
+        }
+      ],
+      "pause_execution": true
+    }
+  },
+  {
+    "id": "node_f_qp",
+    "type": "FORMULA",
+    "label": "Peak Unit Discharge (qp)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_qp",
+          "unit": "",
+          "label": "a_qp"
+        },
+        {
+          "key": "b_qp",
+          "unit": "",
+          "label": "b_qp"
+        },
+        {
+          "key": "stream_length",
+          "unit": "km",
+          "label": "stream_length"
+        },
+        {
+          "key": "equiv_slope",
+          "unit": "m/km",
+          "label": "equiv_slope"
+        }
+      ],
+      "expression": "a_qp * pow(stream_length / equiv_slope, b_qp)",
+      "use_worker": true,
+      "registry_id": "freg_suh_qp",
+      "result_unit": "cumec/sqkm",
+      "registry_inputs": [
+        {
+          "key": "a_qp",
+          "unit": null,
+          "label": "a_qp"
+        },
+        {
+          "key": "b_qp",
+          "unit": null,
+          "label": "b_qp"
+        },
+        {
+          "key": "stream_length",
+          "unit": "km",
+          "label": "stream_length"
+        },
+        {
+          "key": "equiv_slope",
+          "unit": "m/km",
+          "label": "equiv_slope"
+        }
+      ],
+      "registry_output": {
+        "key": "qp",
+        "unit": "cumec/sqkm",
+        "label": "Peak Unit Discharge"
+      },
+      "result_variable": "qp",
+      "result_precision": 3,
+      "variable_bindings": {
+        "a_qp": "a_qp",
+        "b_qp": "b_qp",
+        "equiv_slope": "equiv_slope",
+        "stream_length": "stream_length"
+      },
+      "display_expression": "qp = a_qp · (L/S)^b_qp"
+    }
+  },
+  {
+    "id": "node_f_W50",
+    "type": "FORMULA",
+    "label": "Width at 50% Qp (W50)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_W50",
+          "unit": "",
+          "label": "a_W50"
+        },
+        {
+          "key": "b_W50",
+          "unit": "",
+          "label": "b_W50"
+        },
+        {
+          "key": "qp",
+          "unit": "",
+          "label": "qp"
+        }
+      ],
+      "expression": "a_W50 * pow(qp, b_W50)",
+      "use_worker": true,
+      "registry_id": "freg_suh_W50",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "a_W50",
+          "unit": null,
+          "label": "a_W50"
+        },
+        {
+          "key": "b_W50",
+          "unit": null,
+          "label": "b_W50"
+        },
+        {
+          "key": "qp",
+          "unit": null,
+          "label": "qp"
+        }
+      ],
+      "registry_output": {
+        "key": "W50",
+        "unit": "hr",
+        "label": "W50"
+      },
+      "result_variable": "W50",
+      "result_precision": 3,
+      "variable_bindings": {
+        "qp": "qp",
+        "a_W50": "a_W50",
+        "b_W50": "b_W50"
+      },
+      "display_expression": "W50 = a_W50 · qp^b_W50"
+    }
+  },
+  {
+    "id": "node_f_baseflow",
+    "type": "FORMULA",
+    "label": "Total Base Flow",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "base_flow",
+          "unit": "cumec/sqkm",
+          "label": "Unit base flow"
+        },
+        {
+          "key": "catchment_area",
+          "unit": "sq.km",
+          "label": "catchment_area"
+        }
+      ],
+      "expression": "base_flow_unit * catchment_area",
+      "use_worker": true,
+      "registry_id": "freg_base_flow_discharge",
+      "result_unit": "cumec",
+      "registry_inputs": [
+        {
+          "key": "base_flow_unit",
+          "unit": "cumec/sqkm",
+          "label": "Unit base flow"
+        },
+        {
+          "key": "catchment_area",
+          "unit": "sq.km",
+          "label": "catchment_area"
+        }
+      ],
+      "registry_output": {
+        "key": "base_flow_total",
+        "unit": "cumec",
+        "label": "base_flow_total"
+      },
+      "result_variable": "base_flow_total",
+      "result_precision": 3,
+      "variable_bindings": {
+        "base_flow_unit": "base_flow",
+        "catchment_area": "catchment_area"
+      },
+      "display_expression": "Qb = qb · A"
+    }
+  },
+  {
+    "id": "node_f_W75",
+    "type": "FORMULA",
+    "label": "Width at 75% Qp (W75)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_W75",
+          "unit": "",
+          "label": "a_W75"
+        },
+        {
+          "key": "b_W75",
+          "unit": "",
+          "label": "b_W75"
+        },
+        {
+          "key": "qp",
+          "unit": "",
+          "label": "qp"
+        }
+      ],
+      "expression": "a_W75 * pow(qp, b_W75)",
+      "use_worker": true,
+      "registry_id": "freg_suh_W75",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "a_W75",
+          "unit": null,
+          "label": "a_W75"
+        },
+        {
+          "key": "b_W75",
+          "unit": null,
+          "label": "b_W75"
+        },
+        {
+          "key": "qp",
+          "unit": null,
+          "label": "qp"
+        }
+      ],
+      "registry_output": {
+        "key": "W75",
+        "unit": "hr",
+        "label": "W75"
+      },
+      "result_variable": "W75",
+      "result_precision": 3,
+      "variable_bindings": {
+        "qp": "qp",
+        "a_W75": "a_W75",
+        "b_W75": "b_W75"
+      },
+      "display_expression": "W75 = a_W75 · qp^b_W75"
+    }
+  },
+  {
+    "id": "node_f_WR50",
+    "type": "FORMULA",
+    "label": "Rising Limb Width 50% (WR50)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_WR50",
+          "unit": "",
+          "label": "a_WR50"
+        },
+        {
+          "key": "b_WR50",
+          "unit": "",
+          "label": "b_WR50"
+        },
+        {
+          "key": "qp",
+          "unit": "",
+          "label": "qp"
+        }
+      ],
+      "expression": "a_WR50 * pow(qp, b_WR50)",
+      "use_worker": true,
+      "registry_id": "freg_suh_WR50",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "a_WR50",
+          "unit": null,
+          "label": "a_WR50"
+        },
+        {
+          "key": "b_WR50",
+          "unit": null,
+          "label": "b_WR50"
+        },
+        {
+          "key": "qp",
+          "unit": null,
+          "label": "qp"
+        }
+      ],
+      "registry_output": {
+        "key": "WR50",
+        "unit": "hr",
+        "label": "WR50"
+      },
+      "result_variable": "WR50",
+      "result_precision": 3,
+      "variable_bindings": {
+        "qp": "qp",
+        "a_WR50": "a_WR50",
+        "b_WR50": "b_WR50"
+      },
+      "display_expression": "WR50 = a_WR50 · qp^b_WR50"
+    }
+  },
+  {
+    "id": "node_f_WR75",
+    "type": "FORMULA",
+    "label": "Rising Limb Width 75% (WR75)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_WR75",
+          "unit": "",
+          "label": "a_WR75"
+        },
+        {
+          "key": "b_WR75",
+          "unit": "",
+          "label": "b_WR75"
+        },
+        {
+          "key": "qp",
+          "unit": "",
+          "label": "qp"
+        }
+      ],
+      "expression": "a_WR75 * pow(qp, b_WR75)",
+      "use_worker": true,
+      "registry_id": "freg_suh_WR75",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "a_WR75",
+          "unit": null,
+          "label": "a_WR75"
+        },
+        {
+          "key": "b_WR75",
+          "unit": null,
+          "label": "b_WR75"
+        },
+        {
+          "key": "qp",
+          "unit": null,
+          "label": "qp"
+        }
+      ],
+      "registry_output": {
+        "key": "WR75",
+        "unit": "hr",
+        "label": "WR75"
+      },
+      "result_variable": "WR75",
+      "result_precision": 3,
+      "variable_bindings": {
+        "qp": "qp",
+        "a_WR75": "a_WR75",
+        "b_WR75": "b_WR75"
+      },
+      "display_expression": "WR75 = a_WR75 · qp^b_WR75"
+    }
+  },
+  {
+    "id": "node_f_TB",
+    "type": "FORMULA",
+    "label": "Base Width (TB)",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "a_TB",
+          "unit": "",
+          "label": "a_TB"
+        },
+        {
+          "key": "b_TB",
+          "unit": "",
+          "label": "b_TB"
+        },
+        {
+          "key": "tp",
+          "unit": "",
+          "label": "tp"
+        }
+      ],
+      "expression": "a_TB * pow(tp, b_TB)",
+      "use_worker": true,
+      "registry_id": "freg_suh_TB",
+      "result_unit": "hr",
+      "registry_inputs": [
+        {
+          "key": "a_TB",
+          "unit": null,
+          "label": "a_TB"
+        },
+        {
+          "key": "b_TB",
+          "unit": null,
+          "label": "b_TB"
+        },
+        {
+          "key": "tp",
+          "unit": null,
+          "label": "tp"
+        }
+      ],
+      "registry_output": {
+        "key": "TB",
+        "unit": "hr",
+        "label": "TB"
+      },
+      "result_variable": "TB",
+      "result_precision": 3,
+      "variable_bindings": {
+        "tp": "tp",
+        "a_TB": "a_TB",
+        "b_TB": "b_TB"
+      },
+      "display_expression": "TB = a_TB · tp^b_TB"
+    }
+  },
+  {
+    "id": "node_cc_uh",
+    "type": "CUSTOM_CODE",
+    "label": "Build 1-hr UH Ordinate Array",
+    "config": {
+      "code": "const Qp = inputs.Qp;\nconst Tm = inputs.Tm;\nconst TB = inputs.TB;\nconst W50 = inputs.W50;\nconst W75 = inputs.W75;\nconst WR50 = inputs.WR50;\nconst WR75 = inputs.WR75;\nconst catchment_area = inputs.catchment_area;\n\nconst kp = [\n  { t: 0,              q: 0        },\n  { t: Tm - WR75,      q: 0.75*Qp  },\n  { t: Tm - WR50,      q: 0.50*Qp  },\n  { t: Tm,             q: Qp       },\n  { t: Tm + (W75-WR75), q: 0.75*Qp },\n  { t: Tm + (W50-WR50), q: 0.50*Qp },\n  { t: TB,             q: 0        }\n].sort((a,b) => a.t - b.t);\n\nconst maxT = Math.ceil(TB);\nconst t = [], q = [];\nfor (let h = 0; h <= maxT; h++) {\n  t.push(h);\n  let v = 0;\n  for (let i = 0; i < kp.length - 1; i++) {\n    if (h >= kp[i].t && h <= kp[i+1].t) {\n      const f = (h - kp[i].t) / (kp[i+1].t - kp[i].t);\n      v = kp[i].q + f * (kp[i+1].q - kp[i].q);\n      break;\n    }\n  }\n  q.push(Math.max(0, v));\n}\nlet vol = 0;\nfor (let i = 0; i < t.length - 1; i++) {\n  vol += 0.5 * (q[i] + q[i+1]);\n}\nconst depth_cm = vol * 3600 / (catchment_area * 1e6) * 100;\nreturn { uh_times: t, uh_ordinates: q, uh_depth_cm: depth_cm };",
+      "use_worker": true,
+      "output_variables": [
+        "uh_times",
+        "uh_ordinates",
+        "uh_depth_cm"
+      ]
+    }
+  },
+  {
+    "id": "node_f_sps",
+    "type": "FORMULA",
+    "label": "Storm-duration SPS",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "sps_point_cm",
+          "unit": "cm",
+          "label": "Point SPS"
+        },
+        {
+          "key": "clock_hour_corr",
+          "unit": "",
+          "label": "Clock-Hour Correction"
+        },
+        {
+          "key": "areal_reduction",
+          "unit": "",
+          "label": "Areal Reduction Factor"
+        }
+      ],
+      "expression": "sps_point_cm * clock_hour_corr * areal_reduction",
+      "use_worker": true,
+      "registry_id": "freg_sps_corrected",
+      "result_unit": "cm",
+      "registry_inputs": [
+        {
+          "key": "sps_point_cm",
+          "unit": "cm",
+          "label": "Point SPS"
+        },
+        {
+          "key": "clock_hour_corr",
+          "unit": null,
+          "label": "Clock-Hour Correction"
+        },
+        {
+          "key": "areal_reduction",
+          "unit": null,
+          "label": "Areal Reduction Factor"
+        }
+      ],
+      "registry_output": {
+        "key": "sps_dur_cm",
+        "unit": "cm",
+        "label": "Storm-duration SPS"
+      },
+      "result_variable": "sps_dur_cm",
+      "result_precision": 3,
+      "variable_bindings": {
+        "sps_point_cm": "sps_point_cm",
+        "areal_reduction": "areal_reduction",
+        "clock_hour_corr": "clock_hour_corr"
+      },
+      "display_expression": "SPS_dur = SPS_point · CHC · ARF"
+    }
+  },
+  {
+    "id": "node_f_pmp",
+    "type": "FORMULA",
+    "label": "PMP Depth",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "sps_dur_cm",
+          "unit": "cm",
+          "label": "sps_dur_cm"
+        },
+        {
+          "key": "mmf",
+          "unit": "",
+          "label": "Moisture Maximization Factor"
+        }
+      ],
+      "expression": "sps_dur_cm * mmf",
+      "use_worker": true,
+      "registry_id": "freg_pmp_from_sps",
+      "result_unit": "cm",
+      "registry_inputs": [
+        {
+          "key": "sps_dur_cm",
+          "unit": "cm",
+          "label": "sps_dur_cm"
+        },
+        {
+          "key": "mmf",
+          "unit": null,
+          "label": "Moisture Maximization Factor"
+        }
+      ],
+      "registry_output": {
+        "key": "pmp_cm",
+        "unit": "cm",
+        "label": "PMP Depth"
+      },
+      "result_variable": "pmp_cm",
+      "result_precision": 3,
+      "variable_bindings": {
+        "mmf": "mmf",
+        "sps_dur_cm": "sps_dur_cm"
+      },
+      "display_expression": "PMP = SPS · MMF"
+    }
+  },
+  {
+    "id": "node_f_bell1",
+    "type": "FORMULA",
+    "label": "1st 12-hr Bell Depth",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "pmp_cm",
+          "unit": "cm",
+          "label": "pmp_total_cm"
+        },
+        {
+          "key": "bell_pct_1st",
+          "unit": "",
+          "label": "Bell percentage (e.g. 73 for 1st bell)"
+        }
+      ],
+      "expression": "pmp_total_cm * bell_pct / 100",
+      "use_worker": true,
+      "registry_id": "freg_bell_depth",
+      "result_unit": "cm",
+      "registry_inputs": [
+        {
+          "key": "pmp_total_cm",
+          "unit": "cm",
+          "label": "pmp_total_cm"
+        },
+        {
+          "key": "bell_pct",
+          "unit": null,
+          "label": "Bell percentage (e.g. 73 for 1st bell)"
+        }
+      ],
+      "registry_output": {
+        "key": "bell_depth_cm",
+        "unit": "cm",
+        "label": "bell_depth_cm"
+      },
+      "result_variable": "bell1_cm",
+      "result_precision": 3,
+      "variable_bindings": {
+        "bell_pct": "bell_pct_1st",
+        "pmp_total_cm": "pmp_cm"
+      },
+      "display_expression": "bell_n = PMP · bell% / 100"
+    }
+  },
+  {
+    "id": "node_cc_conv",
+    "type": "CUSTOM_CODE",
+    "label": "Convolve UH × Excess → DRH",
+    "config": {
+      "code": "const uh = inputs.uh_ordinates;\nfunction conv(rain) {\n  const out = new Array(uh.length + rain.length - 1).fill(0);\n  for (let i = 0; i < rain.length; i++) {\n    for (let j = 0; j < uh.length; j++) {\n      out[i+j] += rain[i] * uh[j];\n    }\n  }\n  return out;\n}\nconst d1 = conv(inputs.excess_bell1);\nconst d2 = conv(inputs.excess_bell2);\nconst len = Math.max(d1.length, d2.length + 12);\nconst drh = new Array(len).fill(0);\nd1.forEach((v,i) => drh[i]    += v);\nd2.forEach((v,i) => drh[i+12] += v);\nreturn { drh_ordinates: drh };",
+      "use_worker": true,
+      "output_variables": [
+        "drh_ordinates"
+      ]
+    }
+  },
+  {
+    "id": "node_cc_pmf",
+    "type": "CUSTOM_CODE",
+    "label": "PMF = DRH + Base Flow",
+    "config": {
+      "code": "const drh = inputs.drh_ordinates;\nconst Qb  = inputs.base_flow_total;\nconst pmf = drh.map(v => v + Qb);\nlet peak = 0, idx = 0;\npmf.forEach((v,i) => { if (v > peak) { peak = v; idx = i; } });\nreturn { pmf_ordinates: pmf, pmf_peak: peak, pmf_peak_hr: idx };",
+      "use_worker": true,
+      "output_variables": [
+        "pmf_ordinates",
+        "pmf_peak",
+        "pmf_peak_hr"
+      ]
+    }
+  },
+  {
+    "id": "node_in_catchment",
+    "type": "INPUT",
+    "label": "Catchment Parameters",
+    "config": {
+      "fields": [
+        {
+          "key": "catchment_area",
+          "unit": "sq.km",
+          "label": "Catchment area A",
+          "default": 875.41,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "stream_length",
+          "unit": "km",
+          "label": "Length of longest stream L",
+          "default": 79.367,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "centroid_length",
+          "unit": "km",
+          "label": "Length to centroid Lc",
+          "default": 76.044,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "loss_rate",
+          "unit": "cm/hr",
+          "label": "Uniform loss φ",
+          "default": 0.23,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "base_flow",
+          "unit": "cumec/sqkm",
+          "label": "Base flow per sq.km",
+          "default": 0.018,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "tr",
+          "unit": "hr",
+          "label": "Unit rainfall duration tr",
+          "default": 1,
+          "required": true,
+          "data_type": "number"
+        },
+        {
+          "key": "sub_zone",
+          "unit": "—",
+          "label": "CWC sub-zone (MCQ)",
+          "default": "3a",
+          "required": true,
+          "data_type": "string",
+          "mcq_options": [
+            {
+              "label": "1b",
+              "variables": []
+            },
+            {
+              "label": "1c",
+              "variables": []
+            },
+            {
+              "label": "2a",
+              "variables": []
+            },
+            {
+              "label": "3a",
+              "variables": []
+            },
+            {
+              "label": "3b",
+              "variables": []
+            },
+            {
+              "label": "3c",
+              "variables": []
+            },
+            {
+              "label": "3d",
+              "variables": []
+            },
+            {
+              "label": "3e",
+              "variables": []
+            },
+            {
+              "label": "3f",
+              "variables": []
+            },
+            {
+              "label": "3h",
+              "variables": []
+            },
+            {
+              "label": "3i",
+              "variables": []
+            },
+            {
+              "label": "5a",
+              "variables": []
+            },
+            {
+              "label": "7",
+              "variables": []
+            }
+          ]
+        }
+      ],
+      "pause_execution": true
+    }
+  },
+  {
+    "id": "node_in_iso",
+    "type": "INPUT",
+    "label": "Isohyetal Bands",
+    "config": {
+      "fields": [
+        {
+          "key": "isohyet_bands",
+          "unit": "sq.km, mm",
+          "label": "[{area_sqkm, iso_min_mm, iso_max_mm}]",
+          "default": [
+            {
+              "area_sqkm": 200,
+              "iso_max_mm": 120,
+              "iso_min_mm": 100
+            },
+            {
+              "area_sqkm": 300,
+              "iso_max_mm": 140,
+              "iso_min_mm": 120
+            },
+            {
+              "area_sqkm": 375.41,
+              "iso_max_mm": 160,
+              "iso_min_mm": 140
+            }
+          ],
+          "required": true,
+          "data_type": "array"
+        }
+      ],
+      "pause_execution": true
+    }
+  },
+  {
+    "id": "node_in_storm",
+    "type": "INPUT",
+    "label": "Storm Duration",
+    "config": {
+      "fields": [
+        {
+          "key": "storm_duration_hr",
+          "unit": "hr",
+          "label": "Storm duration (MCQ)",
+          "default": 24,
+          "required": true,
+          "data_type": "number",
+          "mcq_options": [
+            {
+              "label": "24",
+              "variables": []
+            },
+            {
+              "label": "48",
+              "variables": []
+            },
+            {
+              "label": "72",
+              "variables": []
+            }
+          ]
+        }
+      ],
+      "pause_execution": true
+    }
+  },
+  {
+    "id": "node_f_bell2",
+    "type": "FORMULA",
+    "label": "2nd 12-hr Bell Depth",
+    "config": {
+      "source": "registry",
+      "showVars": [
+        {
+          "key": "pmp_cm",
+          "unit": "cm",
+          "label": "pmp_total_cm"
+        },
+        {
+          "key": "bell1_cm",
+          "unit": "cm",
+          "label": "bell_depth_cm"
+        }
+      ],
+      "expression": "pmp_total_cm - bell_depth_cm",
+      "use_worker": true,
+      "registry_id": "freg_bell_residual",
+      "result_unit": "cm",
+      "registry_inputs": [
+        {
+          "key": "pmp_total_cm",
+          "unit": "cm",
+          "label": "pmp_total_cm"
+        },
+        {
+          "key": "bell_depth_cm",
+          "unit": "cm",
+          "label": "bell_depth_cm"
+        }
+      ],
+      "registry_output": {
+        "key": "bell_remainder_cm",
+        "unit": "cm",
+        "label": "bell_remainder_cm"
+      },
+      "result_variable": "bell2_cm",
+      "result_precision": 3,
+      "variable_bindings": {
+        "pmp_total_cm": "pmp_cm",
+        "bell_depth_cm": "bell1_cm"
+      },
+      "display_expression": "bell_remainder = PMP_total − bell_assigned"
+    }
+  },
+  {
+    "id": "node_cc_hyeto",
+    "type": "CUSTOM_CODE",
+    "label": "Hyetograph + Loss + Critical Sequencing",
+    "config": {
+      "code": "const cum = [15.1, 25.5, 31.6, 36.9, 42.2, 47.1, 51.8, 56.4, 60.8, 65.2, 69.3, 73.0];\nlet incr = cum.map((v, i) => i === 0 ? v : v - cum[i-1]);\nconst norm = 100 / incr.reduce((s,v) => s+v, 0);\nincr = incr.map(v => v * norm);\n\nfunction critical(depth) {\n  const hourly = incr.map(p => (p/100) * depth);\n  const excess = hourly.map(r => Math.max(0, r - inputs.loss_rate));\n  return [...excess].sort((a,b) => b - a);\n}\nreturn {\n  excess_bell1: critical(inputs.bell1_cm),\n  excess_bell2: critical(inputs.bell2_cm)\n};",
+      "use_worker": true,
+      "output_variables": [
+        "excess_bell1",
+        "excess_bell2"
+      ]
+    }
+  }
+]

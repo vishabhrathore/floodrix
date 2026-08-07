@@ -1,1 +1,7 @@
 ERROR [mprocs::error] Error: channel closed
+ERROR [mprocs::error] Error: I/O error (os error 5)
+ERROR [mprocs::error] Error: channel closed
+ERROR [mprocs::error] Error: No such device or address (os error 6)
+ERROR [mprocs] Got panic. @info:panicked at library/std/src/io/stdio.rs:1165:9:
+failed printing to stderr: I/O error (os error 5)
+@stackTrace:disabled backtrace

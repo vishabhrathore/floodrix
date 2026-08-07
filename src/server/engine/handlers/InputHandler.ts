@@ -54,7 +54,24 @@ export class InputHandler implements NodeHandler {
         ctx.variables.set(f.key, f.default as never);
       }
       const value = ctx.variables.get(f.key);
-      if (value !== undefined) outputs[f.key] = value;
+      if (value !== undefined) {
+        outputs[f.key] = value;
+
+        // If it's an MCQ field, find the matching option and inject its variables
+        if (f.data_type === "mcq" && f.mcq_options) {
+          const selectedOption = f.mcq_options.find(
+            (opt: any) => opt.label === value,
+          );
+          if (selectedOption && selectedOption.variables) {
+            for (const v of selectedOption.variables) {
+              if (v.key) {
+                ctx.variables.set(v.key, v.value);
+                outputs[v.key] = v.value;
+              }
+            }
+          }
+        }
+      }
     }
 
     ctx.variables.trackNodeOutput(ctx.node.id, ctx.node.label, outputs);

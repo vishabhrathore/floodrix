@@ -10,3 +10,6 @@ procs:
 
   studio:
     cmd: ["sh", "-c", "npx prisma studio 2>/dev/null"]
+
+  agentation:
+    cmd: ["npx", "-y", "agentation-mcp", "server"]

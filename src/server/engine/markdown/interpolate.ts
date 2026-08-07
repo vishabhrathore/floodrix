@@ -22,7 +22,10 @@ export interface InterpolationContext {
   error?: string;
 }
 
-export function interpolate(template: string, ctx: InterpolationContext): string {
+export function interpolate(
+  template: string,
+  ctx: InterpolationContext,
+): string {
   let result = template;
 
   // ── Handle {{#each arr}} ... {{/each}} ──────────────────────────────────────
@@ -52,14 +55,14 @@ export function interpolate(template: string, ctx: InterpolationContext): string
             for (const [k, v] of Object.entries(value)) {
               rendered = rendered.replace(
                 new RegExp(`\\{\\{this\\.${k}\\}\\}`, "g"),
-                formatValue(v)
+                formatValue(v),
               );
             }
           }
           return rendered;
         })
         .join(hasNewline ? "\n" : "");
-    }
+    },
   );
 
   // ── Handle {{#if expr}} ... {{/if}} ─────────────────────────────────────────
@@ -73,13 +76,13 @@ export function interpolate(template: string, ctx: InterpolationContext): string
         return val ? parts[0] : parts[1];
       }
       return val ? body : "";
-    }
+    },
   );
 
   // ── Handle {{#if error}} special case ────────────────────────────────────────
   result = result.replace(
     /\{\{#if error\}\}([\s\S]*?)\{\{\/if\}\}/g,
-    (_match, body) => (ctx.error ? body : "")
+    (_match, body) => (ctx.error ? body : ""),
   );
 
   // ── Simple token replacement {{path}} ────────────────────────────────────────
@@ -120,6 +123,6 @@ function formatValue(val: any): string {
   }
   if (typeof val === "boolean") return val ? "Yes" : "No";
   if (Array.isArray(val)) return `[${val.map(formatValue).join(", ")}]`;
-  if (typeof val === "object") return JSON.stringify(val, null, 2);
+  if (typeof val === "object") return JSON.stringify(val);
   return String(val);
 }

@@ -48,16 +48,36 @@ function NodeHandleInner({
 }: NodeHandleProps) {
   const c = HANDLE_COLORS[dataType];
   const size = NODE_LAYOUT.handleSize;
+  const isTop = position === Position.Top;
+  const isBottom = position === Position.Bottom;
   const isLeft = position === Position.Left;
+  const isRight = position === Position.Right;
 
   return (
     <div
       className="group/h"
       style={{
         position: "absolute",
-        top: `${offsetPercent}%`,
-        [isLeft ? "left" : "right"]: -(size / 2),
-        transform: "translateY(-50%)",
+        ...(isTop && {
+          top: -(size / 2),
+          left: `${offsetPercent}%`,
+          transform: "translateX(-50%)",
+        }),
+        ...(isBottom && {
+          bottom: -(size / 2),
+          left: `${offsetPercent}%`,
+          transform: "translateX(-50%)",
+        }),
+        ...(isLeft && {
+          top: `${offsetPercent}%`,
+          left: -(size / 2),
+          transform: "translateY(-50%)",
+        }),
+        ...(isRight && {
+          top: `${offsetPercent}%`,
+          right: -(size / 2),
+          transform: "translateY(-50%)",
+        }),
         zIndex: 10,
       }}
     >
@@ -86,9 +106,26 @@ function NodeHandleInner({
         <div
           style={{
             position: "absolute",
-            top: "50%",
-            [isLeft ? "right" : "left"]: size + 6,
-            transform: "translateY(-50%)",
+            ...(isTop && {
+              bottom: size + 6,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }),
+            ...(isBottom && {
+              top: size + 6,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }),
+            ...(isLeft && {
+              top: "50%",
+              right: size + 6,
+              transform: "translateY(-50%)",
+            }),
+            ...(isRight && {
+              top: "50%",
+              left: size + 6,
+              transform: "translateY(-50%)",
+            }),
             pointerEvents: "none",
             opacity: 0,
             transition: "opacity 0.12s",

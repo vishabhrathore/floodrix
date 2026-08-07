@@ -359,6 +359,7 @@ export const calcExecutionRouter = createTRPCRouter({
             orderBy: { stepNumber: "asc" },
             select: {
               id: true,
+              sessionId: true,
               calcNodeId: true,
               status: true,
               stepNumber: true,
@@ -368,6 +369,12 @@ export const calcExecutionRouter = createTRPCRouter({
               durationMs: true,
               startedAt: true,
               completedAt: true,
+              node: {
+                select: {
+                  type: true,
+                  label: true,
+                },
+              },
             },
           },
         },
@@ -392,19 +399,37 @@ export const calcExecutionRouter = createTRPCRouter({
 
       // Hydrate paused node info if needed
       if (session.status === "PAUSED" && session.currentNodeId) {
-        const wf = await prisma.calcWorkflow.findUnique({
-          where: { id: session.calcWorkflowId },
-          include: { nodes: true },
-        });
-        const node = wf?.nodes.find((n) => n.id === session.currentNodeId);
-        if (node && node.type === "INPUT") {
-          const config = (node.config ?? {}) as any;
-          result.pausedNode = {
-            nodeId: node.id,
-            nodeLabel: node.label,
-            fields: config.fields ?? [],
-            message: config.description ?? "",
-          };
+        if (session.pauseReason === "step_complete") {
+          const exec = session.nodeExecutions.find(
+            (e) => e.calcNodeId === session.currentNodeId
+          );
+          if (exec) {
+            result.stepOutput = {
+              nodeId: exec.calcNodeId,
+              nodeLabel: exec.node?.label ?? "Calculation",
+              nodeType: exec.node?.type ?? "",
+              outputs: exec.outputVars ?? {},
+              result: exec.result ?? {},
+              durationMs: exec.durationMs ?? 0,
+              stepNumber: exec.stepNumber ?? 0,
+              totalSteps: session.executionOrder ? (session.executionOrder as string[]).length : 0,
+            };
+          }
+        } else {
+          const wf = await prisma.calcWorkflow.findUnique({
+            where: { id: session.calcWorkflowId },
+            include: { nodes: true },
+          });
+          const node = wf?.nodes.find((n) => n.id === session.currentNodeId);
+          if (node && node.type === "INPUT") {
+            const config = (node.config ?? {}) as any;
+            result.pausedNode = {
+              nodeId: node.id,
+              nodeLabel: node.label,
+              fields: config.fields ?? [],
+              message: config.description ?? "",
+            };
+          }
         }
       }
 

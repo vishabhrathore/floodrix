@@ -123,7 +123,7 @@ export function PlatformSidebar() {
       </SidebarContent>
 
       {/* Footer / Bespoke Engineering */}
-      <div className="p-3 border-top border-[#e8e8e8]">
+      <div className="p-3 border-t border-[#e8e8e8]">
         <div className="rounded-lg border border-[#e8e8e8] bg-[#fafafa] p-3.5">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="h-1.5 w-1.5 rounded-full bg-[#0070f3]" />

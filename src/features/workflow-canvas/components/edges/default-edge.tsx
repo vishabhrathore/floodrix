@@ -4,7 +4,8 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   type EdgeProps,
-  getSmoothStepPath,
+  type Edge,
+  getBezierPath,
 } from "@xyflow/react";
 
 import { cn } from "@/lib/utils";
@@ -35,15 +36,14 @@ export function DefaultEdge({
   data,
   selected,
   markerEnd,
-}: EdgeProps<DefaultEdgeData>) {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+}: EdgeProps<Edge<DefaultEdgeData>>) {
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 8,
   });
 
   const status = data?.executionStatus ?? "pending";

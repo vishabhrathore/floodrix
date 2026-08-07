@@ -88,6 +88,23 @@ export function useExecution(workflowId: string) {
         if (data.stepOutput) {
           nextOutputs[data.stepOutput.nodeId] = data.stepOutput;
         }
+        if (Array.isArray(data.nodeExecutions)) {
+          for (const exec of data.nodeExecutions) {
+            const nodeId = exec.calcNodeId || exec.nodeId;
+            if (nodeId && exec.result?.markdown) {
+              nextOutputs[nodeId] = {
+                nodeId,
+                nodeLabel: exec.nodeLabel ?? exec.node?.label ?? "Calculation",
+                nodeType: exec.nodeType ?? exec.node?.type ?? "",
+                outputs: exec.outputVars ?? {},
+                result: exec.result ?? {},
+                durationMs: exec.durationMs ?? 0,
+                stepNumber: exec.stepNumber ?? 0,
+                totalSteps: 0,
+              };
+            }
+          }
+        }
         return {
           ...s,
           status: data.status as SessionStatus,
@@ -157,18 +174,17 @@ export function useExecution(workflowId: string) {
     }),
   );
 
-  // Poll the session while it's marked RUNNING. We use a sentinel ref
-  // (not derived from state.status) so TanStack Query doesn't re-register
-  // the interval on every render.
+  // Fetch/poll the session whenever sessionId is set. Polling is active
+  // only when status is RUNNING or PENDING.
   const sessionQuery = useQuery(
     trpc.calcExecution.getSession.queryOptions(
       { sessionId: state.sessionId! },
       {
-        enabled:
-          !!state.sessionId &&
-          (state.status === "RUNNING" || state.status === "PENDING") &&
-          pollingRef.current,
-        refetchInterval: POLL_INTERVAL_MS,
+        enabled: !!state.sessionId,
+        refetchInterval:
+          (state.status === "RUNNING" || state.status === "PENDING") && pollingRef.current
+            ? POLL_INTERVAL_MS
+            : undefined,
       },
     ),
   );

@@ -41,6 +41,7 @@ import {
   type StepOutput,
   type VariableMap,
   type VariableSnapshot,
+  type VariableValue,
   isAsyncNodeType,
   isStructuralNodeType,
 } from "./types";
@@ -252,21 +253,24 @@ export class WorkflowExecutor {
 
     const variables: VariableMap = {};
     for (const v of wf.variables) {
-      if (v.defaultValue !== null)
+      if (v.defaultValue !== null && v.sourceType !== "USER_INPUT")
         variables[v.contextKey] = v.defaultValue as never;
     }
     Object.assign(variables, initialValues);
+
+    const stepMode = options.stepMode ?? false;
+    const liveUpdates = options.liveUpdates || stepMode;
 
     const session = await this.deps.repo.createSession({
       calcWorkflowId,
       actorId,
       executionOrder,
       initialVariables: variables,
-      stepMode: options.stepMode ?? false,
+      stepMode,
       idempotencyKey,
       parentSessionId: options.parentSessionId,
       ancestorWorkflowChain: options.ancestorWorkflowChain,
-      liveUpdates: options.liveUpdates ?? false,
+      liveUpdates,
       runStrategy: options.runStrategy,
     });
 
@@ -284,7 +288,7 @@ export class WorkflowExecutor {
       executionOrder,
     }).catch(() => { });
 
-    return this._continueExecutionWithSession(session, options);
+    return this._continueExecutionWithSession(session, { ...options, liveUpdates, stepMode });
   }
 
   async resumeWithInput(
@@ -309,10 +313,6 @@ export class WorkflowExecutor {
       );
     }
 
-    const variables: VariableSnapshot = {
-      ...session.variables,
-      ...userInput,
-    } as VariableSnapshot;
     const currentIdx = session.executionOrder.indexOf(nodeId);
     if (currentIdx === -1) {
       throw new Error(
@@ -320,6 +320,58 @@ export class WorkflowExecutor {
         `Workflow may have been edited while session was paused.`,
       );
     }
+
+    const wf = await this.deps.repo.loadWorkflow(session.calcWorkflowId);
+    const node = wf.nodes.find((n) => n.id === nodeId);
+    if (!node) {
+      throw new Error(`Node ${nodeId} not found in workflow`);
+    }
+
+    const handler = this.deps.registry.get(node.type);
+    if (!handler) {
+      throw new Error(`No handler found for node type ${node.type}`);
+    }
+
+    const variableStore = new DefaultVariableStore(session.variables);
+    for (const [k, v] of Object.entries(userInput)) {
+      variableStore.set(k, v as VariableValue);
+    }
+
+    const stepMode = session.metadata.stepMode || (options.stepMode ?? false);
+    const liveUpdates = options.liveUpdates || stepMode;
+
+    const registry: RegistryResolver = createRegistryResolver();
+    try {
+      await registry.prefetchForWorkflow(this.deps.db, session.calcWorkflowId);
+    } catch {
+      /* prefetch is optional */
+    }
+
+    const ctx: ExecutionContext = {
+      node,
+      edges: wf.edges,
+      variables: variableStore,
+      db: this.deps.db,
+      registry,
+      sessionId,
+      workflowId: session.calcWorkflowId,
+      actorId: session.actorId,
+      isBackgroundRun: options.isBackgroundRun ?? false,
+      liveUpdates,
+    };
+
+    const outcome = await this.runHandlerWithTimeout(handler, ctx);
+    if (outcome.kind !== "completed") {
+      if (outcome.kind === "errored") {
+        throw outcome.error;
+      }
+      throw new Error(`Node ${nodeId} failed to complete during resume (kind: ${outcome.kind})`);
+    }
+
+    const variables = variableStore.snapshot();
+    const nodeOutputs = outcome.outputs;
+
+    this.enrichOutcomeWithMarkdown(node, outcome, variables);
 
     const inputSnapshot = session.inputSnapshot
       ? { ...session.inputSnapshot, ...userInput }
@@ -342,17 +394,28 @@ export class WorkflowExecutor {
     else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
     await AppCache.setSessionExecutions(sessionId, nodeExecs);
 
+    await this.deps.emitter.emit({
+      type: "node:completed",
+      sessionId,
+      nodeId,
+      nodeLabel: node.label,
+      nodeType: node.type,
+      stepNumber: currentIdx,
+      outputs: nodeOutputs,
+      result: outcome.result,
+      durationMs: 0,
+      cpuUserMs: 0,
+      cpuSystemMs: 0,
+    }).catch(() => { });
+
     // Run slow database updates fully asynchronously in the background
     WriteSerializer.enqueue(sessionId, () =>
       Promise.all([
         this.deps.repo.updateNodeCompleted({
           sessionId,
           nodeId,
-          outputs: userInput as VariableMap,
-          result: {
-            userInput,
-            providedAt: this.deps.clock.nowDate().toISOString(),
-          },
+          outputs: nodeOutputs,
+          result: outcome.result,
           durationMs: 0,
         }),
         this.deps.repo.resumeSession({
@@ -364,7 +427,7 @@ export class WorkflowExecutor {
       ])
     ).catch((err) => logger.error({ sessionId, err }, `[BACKGROUND_WRITE] resumeWithInput failed`));
 
-    return this._continueExecutionWithSession(updatedSession, { ...options, bypassLock: true });
+    return this._continueExecutionWithSession(updatedSession, { ...options, liveUpdates, stepMode, bypassLock: true });
   }
 
   /**
@@ -545,7 +608,10 @@ export class WorkflowExecutor {
       }
     }
 
-    if (options.liveUpdates) {
+    const stepMode = session.metadata.stepMode || (options.stepMode ?? false);
+    const liveUpdates = options.liveUpdates || stepMode;
+
+    if (liveUpdates) {
       WriteBufferManager.register(sessionId, session.currentIndex, session.variables);
     }
 
@@ -558,7 +624,6 @@ export class WorkflowExecutor {
       wf.nodes.forEach((n) => Object.freeze(n));
 
       const skipSet = new Set(session.metadata.skippedNodes);
-      const stepMode = session.metadata.stepMode || (options.stepMode ?? false);
 
       const variableStore = new DefaultVariableStore(session.variables);
       const registry: RegistryResolver = createRegistryResolver();
@@ -618,7 +683,7 @@ export class WorkflowExecutor {
             reason: "decision_branch",
           }).catch(() => { });
 
-          if (options.liveUpdates) {
+          if (liveUpdates) {
             await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
           }
 
@@ -638,7 +703,7 @@ export class WorkflowExecutor {
             reason: "structural",
           }).catch(() => { });
 
-          if (options.liveUpdates) {
+          if (liveUpdates) {
             await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
           }
 
@@ -684,7 +749,7 @@ export class WorkflowExecutor {
             reason: "no_handler",
           }).catch(() => { });
 
-          if (options.liveUpdates) {
+          if (liveUpdates) {
             await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
           }
 
@@ -713,7 +778,7 @@ export class WorkflowExecutor {
           workflowId: session.calcWorkflowId,
           actorId: session.actorId,
           isBackgroundRun: options.isBackgroundRun ?? false,
-          liveUpdates: options.liveUpdates ?? false,
+          liveUpdates,
         };
 
         const startCpu = process.cpuUsage();
@@ -764,7 +829,7 @@ export class WorkflowExecutor {
             reason: "no_handler",
           }).catch(() => { });
 
-          if (options.liveUpdates) {
+          if (liveUpdates) {
             await this.deps.repo.updateNodeSkipped(sessionId, nodeId);
           }
 
@@ -870,7 +935,7 @@ export class WorkflowExecutor {
         if (idx !== -1) nodeExecs[idx].status = "COMPLETED";
         else nodeExecs.push({ calcNodeId: nodeId, status: "COMPLETED" });
 
-        if (options.liveUpdates) {
+        if (liveUpdates) {
           await this.deps.repo.updateNodeCompleted({
             sessionId,
             nodeId,

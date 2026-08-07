@@ -43,6 +43,10 @@ interface InputField {
   data_type?: string;
   required?: boolean;
   constraints?: { min?: number; max?: number; step?: number };
+  mcq_options?: {
+    label: string;
+    variables: { key: string; value: string | number | boolean }[];
+  }[];
 }
 
 interface PausedNode {
@@ -151,7 +155,11 @@ export function WorkflowFormRunner({
     if (data.pausedNode?.fields) {
       const defaults: Record<string, string> = {};
       for (const f of data.pausedNode.fields) {
-        if (f.default !== undefined) defaults[f.key] = String(f.default);
+        if (f.default !== undefined) {
+          defaults[f.key] = typeof f.default === "object" ? JSON.stringify(f.default) : String(f.default);
+        } else if (f.data_type === "mcq" && f.mcq_options && f.mcq_options.length > 0) {
+          defaults[f.key] = f.mcq_options[0].label;
+        }
       }
       setInputValues(defaults);
     }
@@ -214,12 +222,29 @@ export function WorkflowFormRunner({
   const handleSubmit = useCallback(() => {
     if (!state.sessionId) return;
     const parsed: Record<string, unknown> = {};
+    const fields = state.pausedNode?.fields || [];
+
     for (const [key, val] of Object.entries(inputValues)) {
-      const num = parseFloat(val);
-      parsed[key] = isNaN(num) ? val : num;
+      const fieldDef = fields.find((f) => f.key === key);
+      const dataType = fieldDef?.data_type;
+
+      if (dataType === "number") {
+        const num = parseFloat(val);
+        parsed[key] = isNaN(num) ? 0 : num;
+      } else if (dataType === "boolean") {
+        parsed[key] = val === "true";
+      } else if (dataType === "array" || dataType === "object") {
+        try {
+          parsed[key] = typeof val === "string" ? JSON.parse(val) : val;
+        } catch (e) {
+          parsed[key] = val;
+        }
+      } else {
+        parsed[key] = val;
+      }
     }
     submitMutation.mutate({ sessionId: state.sessionId, values: parsed });
-  }, [state.sessionId, inputValues, submitMutation]);
+  }, [state.sessionId, inputValues, state.pausedNode, submitMutation]);
 
   const handleReset = useCallback(() => {
     setIsPolling(false);
@@ -459,59 +484,192 @@ export function WorkflowFormRunner({
                           {field.hint}
                         </div>
                       )}
-                      <div
-                        style={{
-                          display: "flex",
-                          borderRadius: 8,
-                          overflow: "hidden",
-                          border: "1.5px solid #d1d5db",
-                        }}
-                      >
-                        <input
-                          type={field.data_type === "number" ? "number" : "text"}
-                          step={field.constraints?.step ?? "any"}
-                          min={field.constraints?.min}
-                          max={field.constraints?.max}
-                          value={inputValues[field.key] ?? ""}
+                      {field.data_type === "mcq" ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+                          {(field.mcq_options || []).map((opt: any, optIdx: number) => {
+                            const isSelected = inputValues[field.key] === opt.label;
+                            return (
+                              <div
+                                key={optIdx}
+                                onClick={() =>
+                                  setInputValues((p) => ({
+                                    ...p,
+                                    [field.key]: opt.label,
+                                  }))
+                                }
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  padding: "12px 16px",
+                                  borderRadius: 8,
+                                  border: isSelected ? "2px solid #0f766e" : "1.5px solid #e2e8f0",
+                                  backgroundColor: isSelected ? "#f0fdfa" : "#ffffff",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease",
+                                }}
+                                className="hover:border-teal-600 hover:bg-slate-50"
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div
+                                    style={{
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: "50%",
+                                      border: isSelected ? "5px solid #0f766e" : "1.5px solid #94a3b8",
+                                      backgroundColor: "#fff",
+                                      flexShrink: 0,
+                                      transition: "all 0.15s ease",
+                                    }}
+                                  />
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
+                                    {opt.label}
+                                  </span>
+                                </div>
+                                {opt.variables && opt.variables.length > 0 && (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexWrap: "wrap",
+                                      gap: 6,
+                                      marginTop: 8,
+                                      paddingLeft: 26,
+                                    }}
+                                  >
+                                    {opt.variables.map((v: any, vIdx: number) => (
+                                      <span
+                                        key={vIdx}
+                                        style={{
+                                          fontSize: 10,
+                                          fontFamily: "'JetBrains Mono', monospace",
+                                          color: isSelected ? "#0f766e" : "#475569",
+                                          backgroundColor: isSelected ? "#ccfbf1" : "#f1f5f9",
+                                          padding: "2px 6px",
+                                          borderRadius: 4,
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        {v.key} = {v.value}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : field.data_type === "boolean" ? (
+                        <select
+                          value={inputValues[field.key] ?? "false"}
                           onChange={(e) =>
                             setInputValues((p) => ({
                               ...p,
                               [field.key]: e.target.value,
                             }))
                           }
-                          placeholder={
-                            field.default !== undefined ? `${field.default}` : ""
-                          }
                           style={{
-                            flex: 1,
+                            width: "100%",
                             padding: "9px 11px",
-                            border: "none",
+                            borderRadius: 8,
+                            border: "1.5px solid #d1d5db",
                             outline: "none",
                             fontSize: 13,
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontWeight: 600,
-                            color: "#191919",
                             background: "#fff",
+                            color: "#191919",
                           }}
-                        />
-                        {field.unit && field.unit !== "—" && (
-                          <span
+                        >
+                          <option value="true">True</option>
+                          <option value="false">False</option>
+                        </select>
+                      ) : field.data_type === "array" || field.data_type === "object" ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
+                          <textarea
+                            value={inputValues[field.key] ?? ""}
+                            onChange={(e) =>
+                              setInputValues((p) => ({
+                                ...p,
+                                [field.key]: e.target.value,
+                              }))
+                            }
+                            placeholder={
+                              field.default !== undefined
+                                ? typeof field.default === "object"
+                                  ? JSON.stringify(field.default, null, 2)
+                                  : String(field.default)
+                                : ""
+                            }
+                            rows={4}
                             style={{
-                              background: "#f9fafb",
-                              padding: "9px 10px",
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: "#6b7280",
-                              borderLeft: "1px solid #d1d5db",
-                              whiteSpace: "nowrap",
-                              letterSpacing: 0.5,
-                              textTransform: "uppercase",
+                              width: "100%",
+                              padding: "9px 11px",
+                              borderRadius: 8,
+                              border: "1.5px solid #d1d5db",
+                              outline: "none",
+                              fontSize: 12,
+                              fontFamily: "'JetBrains Mono', monospace",
+                              background: "#fff",
+                              color: "#191919",
                             }}
-                          >
-                            {field.unit}
-                          </span>
-                        )}
-                      </div>
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: "flex",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            border: "1.5px solid #d1d5db",
+                          }}
+                        >
+                          <input
+                            type={field.data_type === "number" ? "number" : "text"}
+                            step={field.constraints?.step ?? "any"}
+                            min={field.constraints?.min}
+                            max={field.constraints?.max}
+                            value={inputValues[field.key] ?? ""}
+                            onChange={(e) =>
+                              setInputValues((p) => ({
+                                ...p,
+                                [field.key]: e.target.value,
+                              }))
+                            }
+                            placeholder={
+                              field.default !== undefined
+                                ? typeof field.default === "object"
+                                  ? JSON.stringify(field.default)
+                                  : `${field.default}`
+                                : ""
+                            }
+                            style={{
+                              flex: 1,
+                              padding: "9px 11px",
+                              border: "none",
+                              outline: "none",
+                              fontSize: 13,
+                              fontFamily: "'JetBrains Mono', monospace",
+                              fontWeight: 600,
+                              color: "#191919",
+                              background: "#fff",
+                            }}
+                          />
+                          {field.unit && field.unit !== "—" && (
+                            <span
+                              style={{
+                                background: "#f9fafb",
+                                padding: "9px 10px",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: "#6b7280",
+                                borderLeft: "1px solid #d1d5db",
+                                whiteSpace: "nowrap",
+                                letterSpacing: 0.5,
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {field.unit}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -714,10 +872,17 @@ export function WorkflowFormRunner({
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(state.variables)
-                        .filter(([k]) => !k.startsWith("$"))
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([key, value]) => (
+                      {(() => {
+                        const isDisplayableScalar = (val: any) => {
+                          if (val === null || val === undefined) return false;
+                          if (typeof val === "object") return false;
+                          if (typeof val === "string" && (val.trim().startsWith("<svg") || val.trim().startsWith("["))) return false;
+                          return true;
+                        };
+                        return Object.entries(state.variables)
+                          .filter(([k, v]) => !k.startsWith("$") && isDisplayableScalar(v))
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([key, value]) => (
                           <tr key={key}>
                             <td
                               style={{
@@ -734,7 +899,7 @@ export function WorkflowFormRunner({
                                 : String(value)}
                             </td>
                           </tr>
-                        ))}
+                        ))})()}
                     </tbody>
                   </table>
                 </Card>
@@ -808,7 +973,7 @@ export function WorkflowFormRunner({
                     Calculation Record
                   </span>
                 </div>
-                <SequentialTypewriter executions={executions} speed={2} />
+                <SequentialTypewriter executions={executions} speed={2} immediate={true} />
               </div>
             )}
           </div>
@@ -828,6 +993,7 @@ export function WorkflowFormRunner({
       <WorkflowReport
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
+        workflowId={workflowId}
         workflowName={workflowName}
         workflowDescription={workflowDescription}
         workflowRef={workflowRef}

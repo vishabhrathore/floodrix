@@ -1,0 +1,700 @@
+// ============================================================================
+// SUH workflow — additional/upgraded nodes derived from SUH_S1_19082025.xlsm
+// Drop these into the existing `suh-betwa-s1` workflow in MEMORY.md §12.
+// Naming follows MEMORY.md §10 conventions (snake_case contextKeys).
+// ============================================================================
+
+import { CalcNodeType, VariableDataType, VariableScope, TableType
+} from "./src/types";
+import type { CalcNode, CalcEdge, CalcVariable
+} from "./src/types";
+
+// ─── NEW VARIABLES ─────────────────────────────────────────────────────────────
+// Append these to the workflow.variables array.
+
+export const additionalVariables: CalcVariable[] = [
+    // Subzone selection
+    { contextKey: "sub_zone",        displayLabel: "CWC Sub Zone",     notation: "SZ",  dataType: VariableDataType.STRING, scope: VariableScope.GLOBAL, defaultValue: "3a"
+    },
+    // Subzone coefficients (looked up — linear "a" and power "b" for each SUH parameter)
+    { contextKey: "a_tp",   displayLabel: "tp coefficient (linear)",  dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_tp",   displayLabel: "tp exponent (power)",       dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "a_qp",   displayLabel: "qp coefficient (linear)",  dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_qp",   displayLabel: "qp exponent (power)",       dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "a_TB",   displayLabel: "TB coefficient (linear)",  dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_TB",   displayLabel: "TB exponent (power)",       dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "a_W50",  displayLabel: "W50 coefficient",            dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_W50",  displayLabel: "W50 exponent",               dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "a_W75",  displayLabel: "W75 coefficient",            dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_W75",  displayLabel: "W75 exponent",               dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "a_WR50", displayLabel: "WR50 coefficient",           dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_WR50", displayLabel: "WR50 exponent",              dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "a_WR75", displayLabel: "WR75 coefficient",           dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    { contextKey: "b_WR75", displayLabel: "WR75 exponent",              dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    // Rainfall / PMP chain inputs
+    { contextKey: "isohyet_bands",     displayLabel: "Isohyet Bands",       dataType: VariableDataType.ARRAY,  scope: VariableScope.GLOBAL, description: "[{area_sqkm, iso_min_mm, iso_max_mm}]"
+    },
+    { contextKey: "weighted_rainfall_mm", displayLabel: "Weighted Rainfall", notation: "P̄", dataType: VariableDataType.NUMBER, unit: "mm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "clock_hour_corr",   displayLabel: "Clock-Hour Correction",  notation: "CHC", dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL, defaultValue: 1.15
+    },
+    { contextKey: "mmf",               displayLabel: "Moisture Maximization Factor", notation: "MMF", dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL, defaultValue: 1.12
+    },
+    { contextKey: "areal_reduction",   displayLabel: "Point-to-Areal Reduction", notation: "ARF", dataType: VariableDataType.NUMBER, scope: VariableScope.GLOBAL
+    },
+    // Per-duration outputs
+    { contextKey: "sps_1day_cm",  displayLabel: "SPS 1 Day",   dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "sps_2day_cm",  displayLabel: "SPS 2 Day",   dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "sps_3day_cm",  displayLabel: "SPS 3 Day",   dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "sps_24hr_cm",  displayLabel: "SPS 24 hrs",  dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "pmp_24hr_cm",  displayLabel: "PMP 24 hrs",  dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "pmp_48hr_cm",  displayLabel: "PMP 48 hrs",  dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "pmp_72hr_cm",  displayLabel: "PMP 72 hrs",  dataType: VariableDataType.NUMBER, unit: "cm", scope: VariableScope.GLOBAL
+    },
+    { contextKey: "bell_distribution_pct", displayLabel: "12-hr Bell Distribution (cum %)", dataType: VariableDataType.ARRAY, scope: VariableScope.GLOBAL
+    },
+];
+
+
+// ─── NODE A: Subzone Coefficient Lookup ────────────────────────────────────────
+// Replaces hardcoded 2.195 / 1.331 / 3.917 etc. in the current node-suh-params.
+// Source: SUH sheet A5:R19 (CWC sub-zone regression table).
+
+export const nodeSubzoneLookup: CalcNode = {
+  id: "node-subzone-lookup",
+  type: CalcNodeType.LOOKUP_TABLE,
+  label: "CWC Sub-zone Coefficients",
+  description: "Look up linear (a) and power (b) coefficients for all SUH parameters from sub-zone code",
+  sortOrder: 1, // after inputs, before SUH params
+  config: {
+    tableType: TableType.MULTI_KEY_LOOKUP, // returns a row object
+    inputKeys: [
+            "sub_zone"
+        ],
+    outputKey: "subzone_row",
+    columns: [
+            { key: "sub_zone", label: "Sub Zone", type: "STRING"
+            },
+            // Linear (a) coefficients
+            { key: "a_tp",  label: "tp linear",   type: "NUMBER"
+            },
+            { key: "a_qp",  label: "qp linear",   type: "NUMBER"
+            },
+            { key: "a_TB",  label: "TB linear",   type: "NUMBER"
+            },
+            { key: "a_W50", label: "W50 linear",  type: "NUMBER"
+            },
+            { key: "a_W75", label: "W75 linear",  type: "NUMBER"
+            },
+            { key: "a_WR50",label: "WR50 linear", type: "NUMBER"
+            },
+            { key: "a_WR75",label: "WR75 linear", type: "NUMBER"
+            },
+            // Power (b) exponents
+            { key: "b_tp",  label: "tp power",    type: "NUMBER"
+            },
+            { key: "b_qp",  label: "qp power",    type: "NUMBER"
+            },
+            { key: "b_TB",  label: "TB power",    type: "NUMBER"
+            },
+            { key: "b_W50", label: "W50 power",   type: "NUMBER"
+            },
+            { key: "b_W75", label: "W75 power",   type: "NUMBER"
+            },
+            { key: "b_WR50",label: "WR50 power",  type: "NUMBER"
+            },
+            { key: "b_WR75",label: "WR75 power",  type: "NUMBER"
+            },
+            { key: "loss_rate_default", label: "Loss Rate", type: "NUMBER"
+            },
+        ],
+        // From SUH sheet rows 5..19 (verified against the workbook)
+    data: [
+            { sub_zone: "3a", a_tp: 0.433, a_qp: 1.161, a_TB: 8.375, a_W50: 2.284, a_W75: 1.331, a_WR50: 0.827, a_WR75: 0.561, b_tp: 0.704,  b_qp: 0.635,  b_TB: 0.512, b_W50: 1.000,  b_W75: 0.991,  b_WR50: 1.023,  b_WR75: 1.037,  loss_rate_default: 0.45
+            },
+            { sub_zone: "3b", a_tp: 0.523, a_qp: 1.915, a_TB: 6.908, a_W50: 1.830, a_W75: 0.924, a_WR50: 0.745, a_WR75: 0.434, b_tp: 0.323,  b_qp: -0.780, b_TB: 0.592, b_W50: -0.970, b_W75: -0.792, b_WR50: -0.725, b_WR75: -0.616, loss_rate_default: 0.50
+            },
+            { sub_zone: "3c", a_tp: 0.854, a_qp: 2.009, a_TB: 4.840, a_W50: 2.259, a_W75: 1.519, a_WR50: 0.844, a_WR75: 0.583, b_tp: 0.280,  b_qp: -0.850, b_TB: 0.740, b_W50: -1.080, b_W75: -0.990, b_WR50: -1.240, b_WR75: -1.190, loss_rate_default: 0.30
+            },
+            { sub_zone: "3d", a_tp: 1.757, a_qp: 1.260, a_TB: 5.411, a_W50: 1.974, a_W75: 0.961, a_WR50: 1.150, a_WR75: 0.527, b_tp: 0.261,  b_qp: -0.725, b_TB: 0.826, b_W50: -1.104, b_W75: -1.125, b_WR50: -0.829, b_WR75: -0.932, loss_rate_default: null
+            },
+            { sub_zone: "3e", a_tp: 0.727, a_qp: 2.020, a_TB: 5.485, a_W50: 2.228, a_W75: 1.301, a_WR50: 0.880, a_WR75: 0.540, b_tp: 0.590,  b_qp: 0.880,  b_TB: 0.730, b_W50: 1.040,  b_W75: 0.960,  b_WR50: 1.010,  b_WR75: 0.960,  loss_rate_default: 0.50
+            },
+            { sub_zone: "3f", a_tp: 0.348, a_qp: 1.842, a_TB: 4.589, a_W50: 2.353, a_W75: 1.351, a_WR50: 0.936, a_WR75: 0.579, b_tp: 0.454,  b_qp: -0.804, b_TB: 0.894, b_W50: -1.005, b_W75: -0.992, b_WR50: -1.047, b_WR75: -1.004, loss_rate_default: 0.20
+            },
+            { sub_zone: "3h", a_tp: 0.325, a_qp: 0.996, a_TB: 7.392, a_W50: 2.389, a_W75: 1.415, a_WR50: 0.755, a_WR75: 0.558, b_tp: 0.447,  b_qp: -0.497, b_TB: 0.524, b_W50: -1.065, b_W75: -1.067, b_WR50: -1.229, b_WR75: -1.088, loss_rate_default: 0.10
+            },
+            { sub_zone: "3i", a_tp: 0.553, a_qp: 2.043, a_TB: 5.083, a_W50: 2.197, a_W75: 1.325, a_WR50: 0.799, a_WR75: 0.536, b_tp: 0.405,  b_qp: 0.872,  b_TB: 0.733, b_W50: 1.067,  b_W75: 1.088,  b_WR50: 1.138,  b_WR75: 1.109,  loss_rate_default: 0.50
+            },
+            { sub_zone: "2a", a_tp: 2.164, a_qp: 2.272, a_TB: 5.428, a_W50: 2.084, a_W75: 1.028, a_WR50: 0.856, a_WR75: 0.440, b_tp: -0.940, b_qp: -0.409, b_TB: 0.852, b_W50: -1.065, b_W75: -1.071, b_WR50: -0.865, b_WR75: -0.918, loss_rate_default: 0.24
+            },
+            { sub_zone: "5a", a_tp: 1.5607,a_qp: 0.9178,a_TB: 7.380, a_W50: 1.925, a_W75: 1.019, a_WR50: 0.579, a_WR75: 0.347, b_tp: -1.0814,b_qp: -0.4313,b_TB: 0.734, b_W50: -1.090, b_W75: -1.044, b_WR50: -1.107, b_WR75: -1.054, loss_rate_default: 0.19
+            },
+            { sub_zone: "7",  a_tp: 2.498, a_qp: 1.048, a_TB: 7.845, a_W50: 1.954, a_W75: 0.972, a_WR50: 0.189, a_WR75: 0.419, b_tp: 0.156,  b_qp: -0.178, b_TB: 0.453, b_W50: 0.099,  b_W75: 0.124,  b_WR50: 1.769,  b_WR75: 1.246,  loss_rate_default: 0.25
+            },
+            { sub_zone: "1b", a_tp: 0.339, a_qp: 1.251, a_TB: 6.662, a_W50: 2.215, a_W75: 1.190, a_WR50: 0.834, a_WR75: 0.502, b_tp: 0.826,  b_qp: -0.610, b_TB: 0.613, b_W50: -1.034, b_W75: -1.057, b_WR50: -1.077, b_WR75: -1.065, loss_rate_default: 0.17
+            },
+            { sub_zone: "1c", a_tp: 2.195, a_qp: 1.331, a_TB: 3.917, a_W50: 2.040, a_W75: 1.250, a_WR50: 0.739, a_WR75: 0.500, b_tp: -0.944, b_qp: -0.492, b_TB: 0.990, b_W50: -1.026, b_W75: -0.864, b_WR50: -0.968, b_WR75: -0.813, loss_rate_default: 0.23
+            },
+        ],
+    matchKey: "sub_zone",
+    },
+};
+
+
+// ─── NODE B: Spread Lookup Row into Named Variables ────────────────────────────
+// LOOKUP_TABLE returns one row object; this fans it out so subsequent
+// MULTI_FORMULA expressions can reference a_tp, b_tp, etc. directly.
+
+export const nodeSubzoneSpread: CalcNode = {
+  id: "node-subzone-spread",
+  type: CalcNodeType.CUSTOM_CODE,
+  label: "Apply Sub-zone Coefficients",
+  description: "Spread lookup row into individual named context variables",
+  sortOrder: 2,
+  config: {
+    inputKeys: [
+            "subzone_row"
+        ],
+    outputKeys: [
+            "a_tp",
+            "b_tp",
+            "a_qp",
+            "b_qp",
+            "a_TB",
+            "b_TB",
+            "a_W50",
+            "b_W50",
+            "a_W75",
+            "b_W75",
+            "a_WR50",
+            "b_WR50",
+            "a_WR75",
+            "b_WR75"
+        ],
+    code: `
+      const r = inputs.subzone_row || {};
+      return {
+        a_tp:   r.a_tp,   b_tp:   r.b_tp,
+        a_qp:   r.a_qp,   b_qp:   r.b_qp,
+        a_TB:   r.a_TB,   b_TB:   r.b_TB,
+        a_W50:  r.a_W50,  b_W50:  r.b_W50,
+        a_W75:  r.a_W75,  b_W75:  r.b_W75,
+        a_WR50: r.a_WR50, b_WR50: r.b_WR50,
+        a_WR75: r.a_WR75, b_WR75: r.b_WR75,
+        };
+    `,
+    },
+};
+
+
+// ─── NODE C: Generalized SUH Parameters (replaces hardcoded node-suh-params) ───
+// Uses the looked-up coefficients instead of literal numbers.
+
+export const nodeSuhParamsGeneralized: CalcNode = {
+  id: "node-suh-params",
+  type: CalcNodeType.MULTI_FORMULA,
+  label: "SUH Parameters (regression)",
+  description: "CWC regression: param = a · (L/S)^b   or   param = a · qp^b",
+  sortOrder: 3,
+  config: {
+    expressions: [
+            { outputKey: "tp",   expression: "a_tp   * pow(stream_length / equiv_slope, b_tp)", unit: "hr",         description: "Time to Peak     tp = a_tp · (L/S)^b_tp"
+            },
+            { outputKey: "qp",   expression: "a_qp   * pow(stream_length / equiv_slope, b_qp)", unit: "cumec/sqkm", description: "Peak Unit Discharge   qp = a_qp · (L/S)^b_qp"
+            },
+            { outputKey: "Qp",   expression: "qp * catchment_area",                             unit: "cumec",      description: "Peak Discharge   Qp = qp × A"
+            },
+            { outputKey: "Tm",   expression: "tp + tr / 2",                                     unit: "hr",         description: "Time to Rise   Tm = tp + tr/2"
+            },
+            { outputKey: "W50",  expression: "a_W50  * pow(qp, b_W50)",                         unit: "hr",         description: "Width at 50% Qp   W50 = a_W50 · qp^b_W50"
+            },
+            { outputKey: "W75",  expression: "a_W75  * pow(qp, b_W75)",                         unit: "hr",         description: "Width at 75% Qp"
+            },
+            { outputKey: "WR50", expression: "a_WR50 * pow(qp, b_WR50)",                        unit: "hr",         description: "Rising Limb Width at 50%"
+            },
+            { outputKey: "WR75", expression: "a_WR75 * pow(qp, b_WR75)",                        unit: "hr",         description: "Rising Limb Width at 75%"
+            },
+            { outputKey: "TB",   expression: "a_TB   * pow(tp, b_TB)",                          unit: "hr",         description: "Base Width   TB = a_TB · tp^b_TB"
+            },
+        ],
+    },
+  markdownTemplate: `## 🔢 SUH Parameters — Sub-zone {
+        {sub_zone
+        }
+    }
+
+| # | Parameter | Formula                          | Value             | Unit |
+|---|-----------|----------------------------------|-------------------|------|
+| 1 | tp        | {
+        {a_tp
+        }
+    } × (L/S)^{
+        {b_tp
+        }
+    }        | **{
+        {tp
+        }
+    }**        | hr |
+| 2 | qp        | {
+        {a_qp
+        }
+    } × (L/S)^{
+        {b_qp
+        }
+    }        | **{
+        {qp
+        }
+    }**        | cumec/sqkm |
+| 3 | Qp        | qp × A                           | **{
+        {Qp
+        }
+    }**        | cumec |
+| 4 | Tm        | tp + tr/2                        | **{
+        {Tm
+        }
+    }**        | hr |
+| 5 | W50       | {
+        {a_W50
+        }
+    } × qp^{
+        {b_W50
+        }
+    }         | **{
+        {W50
+        }
+    }**       | hr |
+| 6 | W75       | {
+        {a_W75
+        }
+    } × qp^{
+        {b_W75
+        }
+    }         | **{
+        {W75
+        }
+    }**       | hr |
+| 7 | WR50      | {
+        {a_WR50
+        }
+    } × qp^{
+        {b_WR50
+        }
+    }       | **{
+        {WR50
+        }
+    }**      | hr |
+| 8 | WR75      | {
+        {a_WR75
+        }
+    } × qp^{
+        {b_WR75
+        }
+    }       | **{
+        {WR75
+        }
+    }**      | hr |
+| 9 | TB        | {
+        {a_TB
+        }
+    } × tp^{
+        {b_TB
+        }
+    }           | **{
+        {TB
+        }
+    }**        | hr |
+`,
+};
+
+
+// ─── NODE D: Weighted Rainfall from Isohyetal Bands ────────────────────────────
+// 24hr SPS sheet rows 5..7: Weighted = Σ(area × mean_iso) / total_area
+
+export const nodeWeightedRainfall: CalcNode = {
+  id: "node-weighted-rainfall",
+  type: CalcNodeType.CUSTOM_CODE,
+  label: "Weighted Mean Rainfall (Isohyetal)",
+  description: "Σ(Aᵢ × Pᵢ_mean) / ΣAᵢ across isohyetal bands",
+  sortOrder: 4,
+  config: {
+    inputKeys: [
+            "isohyet_bands"
+        ],
+    outputKeys: [
+            "weighted_rainfall_mm",
+            "sps_1day_cm"
+        ],
+    code: `
+      const bands = inputs.isohyet_bands || [];
+      let sumAreaP = 0, sumArea = 0;
+      const rows = [];
+      for (const b of bands) {
+        const meanP = (b.iso_min_mm + b.iso_max_mm) / 2;
+        const weighted = b.area_sqkm * meanP;
+        sumAreaP += weighted;
+        sumArea  += b.area_sqkm;
+        rows.push({ ...b, mean: meanP, weighted
+            });
+        }
+      const weighted_mm = sumArea > 0 ? (sumAreaP / sumArea) : 0;
+      return {
+        weighted_rainfall_mm: weighted_mm,
+        sps_1day_cm: weighted_mm / 10, // mm → cm  (Excel: I2 = E8/10)
+        };
+    `,
+    },
+  markdownTemplate: `## 🌧️ Weighted Rainfall (Isohyetal Bands)
+
+- **ΣArea·P̄ / ΣArea = {
+        {weighted_rainfall_mm
+        }
+    } mm**
+- **SPS 1-day = {
+        {sps_1day_cm
+        }
+    } cm**
+`,
+};
+
+
+// ─── NODE E: Areal Reduction Factor (LOOKUP) ───────────────────────────────────
+// 24hr SPS N4:O10. Different table per storm duration.
+
+export const nodeArealReduction24hr: CalcNode = {
+  id: "node-arf-24hr",
+  type: CalcNodeType.LOOKUP_TABLE,
+  label: "Areal Reduction Factor (24 hr)",
+  description: "Point-to-areal rainfall reduction by linear interpolation on catchment area (Table 3-84, CWC PMP Atlas Ganga)",
+  sortOrder: 5,
+  config: {
+    tableType: TableType.INTERPOLATION_1D,
+    inputKeys: [
+            "catchment_area"
+        ],
+    outputKey: "areal_reduction",
+    columns: [
+            { key: "area",   label: "Area (sq km)",     type: "NUMBER"
+            },
+            { key: "factor", label: "Reduction Factor", type: "NUMBER"
+            },
+        ],
+    data: [
+            { area: 500, factor: 0.94
+            },
+            { area: 1000, factor: 0.91
+            },
+            { area: 1500, factor: 0.90
+            },
+            { area: 2000, factor: 0.88
+            },
+            { area: 3000, factor: 0.86
+            },
+            { area: 4000, factor: 0.83
+            },
+            { area: 5000, factor: 0.81
+            },
+        ],
+    interpolationConfig: { method: "linear", xColumn: "area", yColumn: "factor"
+        },
+    fallbackMode: "clamp", // clamp to nearest edge outside table range
+    },
+};
+
+// (clone for 48hr / 72hr — same shape, different `data` array)
+export const arf48hrData = [
+    { area: 500, factor: 0.95
+    },
+    { area: 1000, factor: 0.92
+    },
+    { area: 1500, factor: 0.91
+    },
+    { area: 2000, factor: 0.89
+    },
+    { area: 3000, factor: 0.87
+    },
+    { area: 4000, factor: 0.85
+    },
+    { area: 5000, factor: 0.83
+    },
+];
+export const arf72hrData = [
+    { area: 500, factor: 0.96
+    },
+    { area: 1000, factor: 0.94
+    },
+    { area: 1500, factor: 0.93
+    },
+    { area: 2000, factor: 0.92
+    },
+    { area: 3000, factor: 0.90
+    },
+    { area: 4000, factor: 0.88
+    },
+    { area: 5000, factor: 0.86
+    },
+];
+
+
+// ─── NODE F: PMP Chain (24 hr) ─────────────────────────────────────────────────
+// Excel chain:
+//   I2 = E8/10                       (SPS 1 day = weighted_mm / 10)        cm
+//   I5 = ARF                         (point-to-areal interp on area)
+//   I6 = I2 × I3 × I5                (SPS 24 hr = SPS_1day × CHC × ARF)    cm
+//   I7 = I6 × I4                     (PMP 24 hr = SPS × MMF)               cm
+
+export const nodePMPChain24hr: CalcNode = {
+  id: "node-pmp-24hr",
+  type: CalcNodeType.MULTI_FORMULA,
+  label: "PMP 24-hour Chain",
+  description: "SPS → CHC × ARF → MMF",
+  sortOrder: 6,
+  config: {
+    expressions: [
+            { outputKey: "sps_24hr_cm", expression: "sps_1day_cm * clock_hour_corr * areal_reduction", unit: "cm", description: "SPS 24 hr = SPS_1day × CHC × ARF"
+            },
+            { outputKey: "pmp_24hr_cm", expression: "sps_24hr_cm * mmf",                                unit: "cm", description: "PMP 24 hr = SPS × MMF"
+            },
+        ],
+    },
+  markdownTemplate: `## 💧 PMP — 24-hour Storm
+
+| Step                                            | Value             |
+|-------------------------------------------------|-------------------|
+| SPS 1-day (weighted mean)                       | {
+        {sps_1day_cm
+        }
+    } cm |
+| × Clock-Hour Correction                         | × {
+        {clock_hour_corr
+        }
+    } |
+| × Areal Reduction Factor (A = {
+        {catchment_area
+        }
+    } km²) | × {
+        {areal_reduction
+        }
+    } |
+| **SPS 24-hr**                                   | **{
+        {sps_24hr_cm
+        }
+    } cm** |
+| × Moisture Maximization Factor                  | × {
+        {mmf
+        }
+    }         |
+| **PMP 24-hr**                                   | **{
+        {pmp_24hr_cm
+        }
+    } cm** |
+`,
+};
+
+
+// ─── NODE G: 12-hr Bell Split (1st / 2nd bell) ─────────────────────────────────
+// PMP 12hr Bell depth sheet: I3 = E3 × B27%   (B27 = 73% for 408-Betwa)
+// 1st bell = PMP × bellPct,   2nd bell = PMP − 1st bell.
+
+export const nodeBellSplit24hr: CalcNode = {
+  id: "node-bell-split-24hr",
+  type: CalcNodeType.MULTI_FORMULA,
+  label: "12-hr Bell Split (24hr)",
+  description: "Split 24-hr PMP into 1st (heaviest) and 2nd 12-hr bells",
+  sortOrder: 7,
+  config: {
+    expressions: [
+            { outputKey: "bell1_24hr_cm", expression: "pmp_24hr_cm * (bell_pct_1st / 100)",   unit: "cm", description: "1st 12-hr bell depth"
+            },
+            { outputKey: "bell2_24hr_cm", expression: "pmp_24hr_cm - bell1_24hr_cm",          unit: "cm", description: "2nd 12-hr bell depth"
+            },
+        ],
+    },
+};
+
+
+// ─── NODE H: Sub-duration Hyetograph (Sheet3 lookup) ───────────────────────────
+// Sheet3 holds the smoothened cumulative-percentage distribution per catchment,
+// e.g. column 'N' (408-Betwa) = [15.1, 25.5, 31.6, 36.9, 42.2, 47.1, 51.8,
+// 56.4, 60.8, 65.2, 69.3, 73.0] for hours 1..12.
+
+export const nodeSubDurationLookup: CalcNode = {
+  id: "node-sub-duration",
+  type: CalcNodeType.LOOKUP_TABLE,
+  label: "12-hr Sub-duration Distribution",
+  description: "Catchment-specific cumulative % distribution within a 12-hr bell (Sheet3)",
+  sortOrder: 8,
+  config: {
+    tableType: TableType.EXACT_LOOKUP,
+    inputKeys: [
+            "catchment_id"
+        ],
+    outputKey: "bell_distribution_pct",
+    columns: [
+            { key: "catchment_id", label: "Catchment ID", type: "STRING"
+            },
+            { key: "pct",          label: "Cumulative %", type: "ARRAY"
+            },
+        ],
+    data: [
+            // (subset — add others from Sheet3 as needed)
+            { catchment_id: "408-Betwa", pct: [
+                    15.1,
+                    25.5,
+                    31.6,
+                    36.9,
+                    42.2,
+                    47.1,
+                    51.8,
+                    56.4,
+                    60.8,
+                    65.2,
+                    69.3,
+                    73.0
+                ]
+            },
+            // The Sheet3 catchments columns (323, 324, 325, 401A, 401B, 402, 403A, 403B,
+            // 404, 405, 406, 407, 408-Betwa, 408-Ken, 408-Sind, 409, 411, 413, 414) all live here.
+        ],
+    matchKey: "catchment_id",
+    },
+};
+
+
+// ─── NODE I: Rainfall Excess + Critical Sequencing + Convolution → DRH ─────────
+// Replaces the inline 24hr/48hr PMF code in MEMORY.md §12 with a single
+// generic node that works for any duration. Caller passes bell depths.
+
+export const nodeCriticalConvolve: CalcNode = {
+  id: "node-pmf-build",
+  type: CalcNodeType.CUSTOM_CODE,
+  label: "Critical Sequencing & Convolution → PMF",
+  description: "Apply loss → critical (LARGE-by-rank) sequencing → convolve each 12-hr bell with UH → add base flow",
+  sortOrder: 9,
+  config: {
+    inputKeys: [
+            "uh_ordinates",
+            "catchment_area",
+            "loss_rate",
+            "base_flow",
+            "bell_distribution_pct",
+            "bell1_24hr_cm",
+            "bell2_24hr_cm"
+        ],
+    outputKeys: [
+            "pmf_24hr",
+            "pmf_24hr_peak",
+            "rainfall_excess_24hr"
+        ],
+    code: `
+      const uh    = inputs.uh_ordinates;
+      const A     = inputs.catchment_area;
+      const phi   = inputs.loss_rate;
+      const Qb    = inputs.base_flow * A;
+      const cumPct= inputs.bell_distribution_pct; // [15.1, 25.5, ..., 73.0]
+      const bells = [inputs.bell1_24hr_cm, inputs.bell2_24hr_cm
+        ];
+
+      // Cumulative % → incremental % per hour
+      const incr = cumPct.map((v,i) => i===0 ? v : v - cumPct[i-1
+        ]);
+      // Normalize so increments sum to 100 (Excel's bell-coeff convention)
+      const total = incr.reduce((s,v)=>s+v,
+        0);
+      const normIncr = incr.map(v => v * (100/total));
+
+      // Build hourly rainfall, apply loss φ (cm/hr) → excess, then sort desc
+        // (Excel:  =LARGE($..,_xlfn.RANK.AVG(...))  re-arranges to peak-critical)
+      function buildExcess(depthCm) {
+        const hourly = normIncr.map(p => (p/100) * depthCm); // cm/hr
+        const excess = hourly.map(r => Math.max(0, r - phi));
+        return [...excess
+            ].sort((a,b) => b - a); // LARGE descending
+        }
+        // Convolution: discrete sum, dt = 1 hr
+      function conv(uh, rain) {
+        const out = new Array(uh.length + rain.length - 1).fill(0);
+        for (let i = 0; i < rain.length; i++)
+          for (let j = 0; j < uh.length; j++)
+            out[i+j
+            ] += rain[i
+            ] * uh[j
+            ];
+        return out;
+        }
+        // Each bell's DRH starts 12 hr after the previous
+      const drhs = bells.map((d, bi) => ({ drh: conv(uh, buildExcess(d)), offset: bi * 12
+        }));
+      const totalLen = Math.max(...drhs.map(d => d.drh.length + d.offset));
+      const combined = new Array(totalLen).fill(0);
+      drhs.forEach(({ drh, offset
+        }) => drh.forEach((v,i) => { combined[i + offset
+            ] += v;
+        }));
+
+      const pmf  = combined.map(v => v + Qb);
+      const peak = Math.max(...pmf);
+      const excessAll = bells.flatMap(buildExcess);
+
+      return {
+        pmf_24hr: pmf,
+        pmf_24hr_peak: peak,
+        rainfall_excess_24hr: excessAll,
+        };
+    `,
+    },
+};
+
+
+// ─── EDGES TO WIRE THE NEW NODES IN ────────────────────────────────────────────
+
+export const additionalEdges: CalcEdge[] = [
+    { id: "e-inputs-szlookup",   sourceNodeId: "node-inputs",            targetNodeId: "node-subzone-lookup"
+    },
+    { id: "e-szlookup-spread",   sourceNodeId: "node-subzone-lookup",     targetNodeId: "node-subzone-spread"
+    },
+    { id: "e-spread-params",     sourceNodeId: "node-subzone-spread",     targetNodeId: "node-suh-params"
+    },
+    { id: "e-slope-params",      sourceNodeId: "node-equiv-slope",        targetNodeId: "node-suh-params"
+    },
+    { id: "e-inputs-rain",       sourceNodeId: "node-inputs",            targetNodeId: "node-weighted-rainfall"
+    },
+    { id: "e-inputs-arf",        sourceNodeId: "node-inputs",            targetNodeId: "node-arf-24hr"
+    },
+    { id: "e-rain-pmp",          sourceNodeId: "node-weighted-rainfall",  targetNodeId: "node-pmp-24hr"
+    },
+    { id: "e-arf-pmp",           sourceNodeId: "node-arf-24hr",           targetNodeId: "node-pmp-24hr"
+    },
+    { id: "e-pmp-bell",          sourceNodeId: "node-pmp-24hr",           targetNodeId: "node-bell-split-24hr"
+    },
+    { id: "e-inputs-subdur",     sourceNodeId: "node-inputs",            targetNodeId: "node-sub-duration"
+    },
+    { id: "e-uh-pmf",            sourceNodeId: "node-uh-coords",          targetNodeId: "node-pmf-build"
+    },
+    { id: "e-bell-pmf",          sourceNodeId: "node-bell-split-24hr",    targetNodeId: "node-pmf-build"
+    },
+    { id: "e-subdur-pmf",        sourceNodeId: "node-sub-duration",       targetNodeId: "node-pmf-build"
+    },
+    { id: "e-pmf-results",       sourceNodeId: "node-pmf-build",          targetNodeId: "node-results"
+    },
+];

@@ -33,7 +33,7 @@ import { HANDLE_COLORS, HandleDataType } from "@/theme/calc-theme";
 interface VariablePillProps {
   name: string;
   dataType?: HandleDataType;
-  value?: string | number;
+  value?: any;
   unit?: string;
 }
 
@@ -82,7 +82,13 @@ function VariablePillInner({
       </span>
       {value !== undefined && (
         <span style={{ color: "#1e293b", fontWeight: 600, flexShrink: 0 }}>
-          = {typeof value === "number" ? formatNum(value) : value}
+          = {typeof value === "number"
+            ? formatNum(value)
+            : typeof value === "object" && value !== null
+              ? Array.isArray(value)
+                ? `Array(${value.length})`
+                : "Object"
+              : String(value)}
         </span>
       )}
       {unit && (
@@ -366,7 +372,7 @@ export const ConditionDisplay = memo(ConditionDisplayInner);
 
 interface ResultDisplayProps {
   label: string;
-  value: string | number;
+  value: any;
   unit?: string;
   accent?: string;
 }
@@ -409,7 +415,13 @@ function ResultDisplayInner({
           color: accent,
         }}
       >
-        {typeof value === "number" ? formatNum(value) : value}
+        {typeof value === "number"
+          ? formatNum(value)
+          : typeof value === "object" && value !== null
+            ? Array.isArray(value)
+              ? `Array(${value.length})`
+              : "Object"
+            : String(value)}
         {unit && (
           <span
             style={{

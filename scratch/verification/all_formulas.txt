@@ -1,0 +1,828 @@
+Found 33 formulas in registry:
+
+- ID: freg_ryves
+  Slug: ryves-formula
+  Name: Ryves formula
+  Expression: C * M^(2/3)
+  Display Expression: Q = C × M^(2/3)
+  Input Variables: [
+  {
+    "key": "M",
+    "unit": "km2",
+    "label": "Catchment area"
+  },
+  {
+    "key": "C",
+    "unit": null,
+    "label": "Ryves constant"
+  }
+]
+  Output Variable: {
+  "key": "Q_ryves",
+  "unit": "cumecs",
+  "label": "Flood discharge"
+}
+----------------------------------------
+- ID: freg_dicken
+  Slug: dickens-formula__deleted__1780053679665
+  Name: Dicken's formula
+  Expression: C * M^(3/4)
+  Display Expression: Q = C × M^(3/4)
+  Input Variables: [
+  {
+    "key": "M",
+    "unit": "km2",
+    "label": "Catchment area"
+  },
+  {
+    "key": "C",
+    "unit": null,
+    "label": "Dicken's constant"
+  }
+]
+  Output Variable: {
+  "key": "Q_dicken",
+  "unit": "cumecs",
+  "label": "Flood discharge"
+}
+----------------------------------------
+- ID: cmpqu01mj0004rm3ba8b6z9ra
+  Slug: dickens-formula
+  Name: Dickens Formula
+  Expression: Q = C * A^(3/4)
+  Display Expression: Q = C * A^(3/4)
+  Input Variables: [
+  {
+    "unit": "km²",
+    "value": 250,
+    "dataType": "NUMBER",
+    "notation": "A",
+    "description": "Total catchment area",
+    "displayLabel": "Catchment area"
+  },
+  {
+    "unit": "",
+    "value": 11.5,
+    "dataType": "NUMBER",
+    "notation": "C",
+    "description": "Regional coefficient (11-14)",
+    "displayLabel": "Dicken's constant"
+  }
+]
+  Output Variable: {
+  "unit": "",
+  "value": 723.024222,
+  "dataType": "NUMBER",
+  "notation": "Q",
+  "description": "",
+  "displayLabel": "Q"
+}
+----------------------------------------
+- ID: cmptad7xy0000ed3by0ymaxns
+  Slug: heavy__deleted__1780202323001
+  Name: Heavy
+  Expression: C = sum(random([A,A]))
+  Display Expression: C = sum(random([A,A]))
+  Input Variables: [
+  {
+    "unit": "1",
+    "value": 10000,
+    "dataType": "NUMBER",
+    "notation": "A",
+    "description": "heavy math function",
+    "displayLabel": "Matrix No."
+  }
+]
+  Output Variable: {
+  "unit": "",
+  "value": 4000055980.858996,
+  "dataType": "NUMBER",
+  "notation": "D",
+  "useWorker": true,
+  "description": "",
+  "displayLabel": "D"
+}
+----------------------------------------
+- ID: cmptak0sn000ged3baxoc6ya6
+  Slug: heavy
+  Name: Heavy
+  Expression: D = sum(random([A,A]))
+  Display Expression: D = sum(random([A,A]))
+  Input Variables: [
+  {
+    "unit": "km²",
+    "value": 250,
+    "dataType": "NUMBER",
+    "notation": "A",
+    "description": "Total catchment area",
+    "displayLabel": "Catchment area"
+  }
+]
+  Output Variable: {
+  "unit": "",
+  "value": 31148.295973,
+  "dataType": "NUMBER",
+  "notation": "D",
+  "description": "",
+  "displayLabel": "D"
+}
+----------------------------------------
+- ID: freg_equiv_slope
+  Slug: equiv-slope
+  Name: Equivalent Stream Slope
+  Expression: sum_li_di_prev_di / pow(stream_length, 2)
+  Display Expression: S = Σ Lᵢ · (Dᵢ₋₁ + Dᵢ) / L²
+  Input Variables: [
+  {
+    "key": "sum_li_di_prev_di",
+    "unit": "km·m",
+    "label": "Σ Lᵢ(Dᵢ₋₁+Dᵢ)"
+  },
+  {
+    "key": "stream_length",
+    "unit": "km",
+    "label": "Stream Length L"
+  }
+]
+  Output Variable: {
+  "key": "equiv_slope",
+  "unit": "m/km",
+  "label": "Equivalent Slope S"
+}
+----------------------------------------
+- ID: freg_suh_tp
+  Slug: suh-tp
+  Name: Time to Peak
+  Expression: a_tp * pow(stream_length / equiv_slope, b_tp)
+  Display Expression: tp = a_tp · (L/S)^b_tp
+  Input Variables: [
+  {
+    "key": "a_tp",
+    "unit": null,
+    "label": "tp linear coefficient"
+  },
+  {
+    "key": "b_tp",
+    "unit": null,
+    "label": "tp power exponent"
+  },
+  {
+    "key": "stream_length",
+    "unit": "km",
+    "label": "Stream Length L"
+  },
+  {
+    "key": "equiv_slope",
+    "unit": "m/km",
+    "label": "Equivalent Slope S"
+  }
+]
+  Output Variable: {
+  "key": "tp",
+  "unit": "hr",
+  "label": "Time to Peak"
+}
+----------------------------------------
+- ID: freg_suh_qp
+  Slug: suh-qp
+  Name: Peak Unit Discharge
+  Expression: a_qp * pow(stream_length / equiv_slope, b_qp)
+  Display Expression: qp = a_qp · (L/S)^b_qp
+  Input Variables: [
+  {
+    "key": "a_qp",
+    "unit": null,
+    "label": "a_qp"
+  },
+  {
+    "key": "b_qp",
+    "unit": null,
+    "label": "b_qp"
+  },
+  {
+    "key": "stream_length",
+    "unit": "km",
+    "label": "stream_length"
+  },
+  {
+    "key": "equiv_slope",
+    "unit": "m/km",
+    "label": "equiv_slope"
+  }
+]
+  Output Variable: {
+  "key": "qp",
+  "unit": "cumec/sqkm",
+  "label": "Peak Unit Discharge"
+}
+----------------------------------------
+- ID: freg_suh_Qp
+  Slug: suh-Qp
+  Name: Peak Discharge
+  Expression: qp * catchment_area
+  Display Expression: Qp = qp · A
+  Input Variables: [
+  {
+    "key": "qp",
+    "unit": "cumec/sqkm",
+    "label": "qp"
+  },
+  {
+    "key": "catchment_area",
+    "unit": "sq.km",
+    "label": "catchment_area"
+  }
+]
+  Output Variable: {
+  "key": "Qp",
+  "unit": "cumec",
+  "label": "Peak Discharge"
+}
+----------------------------------------
+- ID: freg_suh_Tm
+  Slug: suh-Tm
+  Name: Time to Rise
+  Expression: tp + tr / 2
+  Display Expression: Tm = tp + tr/2
+  Input Variables: [
+  {
+    "key": "tp",
+    "unit": "hr",
+    "label": "tp"
+  },
+  {
+    "key": "tr",
+    "unit": "hr",
+    "label": "Unit rainfall duration"
+  }
+]
+  Output Variable: {
+  "key": "Tm",
+  "unit": "hr",
+  "label": "Time to Rise"
+}
+----------------------------------------
+- ID: freg_suh_W50
+  Slug: suh-W50
+  Name: Width at 50% Qp
+  Expression: a_W50 * pow(qp, b_W50)
+  Display Expression: W50 = a_W50 · qp^b_W50
+  Input Variables: [
+  {
+    "key": "a_W50",
+    "unit": null,
+    "label": "a_W50"
+  },
+  {
+    "key": "b_W50",
+    "unit": null,
+    "label": "b_W50"
+  },
+  {
+    "key": "qp",
+    "unit": null,
+    "label": "qp"
+  }
+]
+  Output Variable: {
+  "key": "W50",
+  "unit": "hr",
+  "label": "W50"
+}
+----------------------------------------
+- ID: freg_suh_W75
+  Slug: suh-W75
+  Name: Width at 75% Qp
+  Expression: a_W75 * pow(qp, b_W75)
+  Display Expression: W75 = a_W75 · qp^b_W75
+  Input Variables: [
+  {
+    "key": "a_W75",
+    "unit": null,
+    "label": "a_W75"
+  },
+  {
+    "key": "b_W75",
+    "unit": null,
+    "label": "b_W75"
+  },
+  {
+    "key": "qp",
+    "unit": null,
+    "label": "qp"
+  }
+]
+  Output Variable: {
+  "key": "W75",
+  "unit": "hr",
+  "label": "W75"
+}
+----------------------------------------
+- ID: freg_suh_WR50
+  Slug: suh-WR50
+  Name: Rising Limb Width at 50%
+  Expression: a_WR50 * pow(qp, b_WR50)
+  Display Expression: WR50 = a_WR50 · qp^b_WR50
+  Input Variables: [
+  {
+    "key": "a_WR50",
+    "unit": null,
+    "label": "a_WR50"
+  },
+  {
+    "key": "b_WR50",
+    "unit": null,
+    "label": "b_WR50"
+  },
+  {
+    "key": "qp",
+    "unit": null,
+    "label": "qp"
+  }
+]
+  Output Variable: {
+  "key": "WR50",
+  "unit": "hr",
+  "label": "WR50"
+}
+----------------------------------------
+- ID: freg_suh_WR75
+  Slug: suh-WR75
+  Name: Rising Limb Width at 75%
+  Expression: a_WR75 * pow(qp, b_WR75)
+  Display Expression: WR75 = a_WR75 · qp^b_WR75
+  Input Variables: [
+  {
+    "key": "a_WR75",
+    "unit": null,
+    "label": "a_WR75"
+  },
+  {
+    "key": "b_WR75",
+    "unit": null,
+    "label": "b_WR75"
+  },
+  {
+    "key": "qp",
+    "unit": null,
+    "label": "qp"
+  }
+]
+  Output Variable: {
+  "key": "WR75",
+  "unit": "hr",
+  "label": "WR75"
+}
+----------------------------------------
+- ID: freg_suh_TB
+  Slug: suh-TB
+  Name: Base Width
+  Expression: a_TB * pow(tp, b_TB)
+  Display Expression: TB = a_TB · tp^b_TB
+  Input Variables: [
+  {
+    "key": "a_TB",
+    "unit": null,
+    "label": "a_TB"
+  },
+  {
+    "key": "b_TB",
+    "unit": null,
+    "label": "b_TB"
+  },
+  {
+    "key": "tp",
+    "unit": null,
+    "label": "tp"
+  }
+]
+  Output Variable: {
+  "key": "TB",
+  "unit": "hr",
+  "label": "TB"
+}
+----------------------------------------
+- ID: freg_weighted_mean_rainfall
+  Slug: weighted-mean-rainfall
+  Name: Weighted Mean Rainfall (Isohyetal)
+  Expression: sum_area_x_mean / sum_area
+  Display Expression: P̄ = Σ(Aᵢ · meanᵢ) / ΣAᵢ
+  Input Variables: [
+  {
+    "key": "sum_area_x_mean",
+    "unit": null,
+    "label": "Σ Area × Mean P"
+  },
+  {
+    "key": "sum_area",
+    "unit": "sq.km",
+    "label": "Σ Area"
+  }
+]
+  Output Variable: {
+  "key": "weighted_rainfall_mm",
+  "unit": "mm",
+  "label": "weighted_rainfall_mm"
+}
+----------------------------------------
+- ID: freg_isohyetal_band_mean
+  Slug: isohyetal-band-mean
+  Name: Isohyetal Band Mean Rainfall
+  Expression: (iso_min_mm + iso_max_mm) / 2
+  Display Expression: meanᵢ = (P_min + P_max) / 2
+  Input Variables: [
+  {
+    "key": "iso_min_mm",
+    "unit": "mm",
+    "label": "iso_min_mm"
+  },
+  {
+    "key": "iso_max_mm",
+    "unit": "mm",
+    "label": "iso_max_mm"
+  }
+]
+  Output Variable: {
+  "key": "iso_band_mean_mm",
+  "unit": "mm",
+  "label": "iso_band_mean_mm"
+}
+----------------------------------------
+- ID: freg_mm_to_cm
+  Slug: mm-to-cm
+  Name: mm → cm
+  Expression: depth_mm / 10
+  Display Expression: P_cm = P_mm / 10
+  Input Variables: [
+  {
+    "key": "depth_mm",
+    "unit": "mm",
+    "label": "depth_mm"
+  }
+]
+  Output Variable: {
+  "key": "depth_cm",
+  "unit": "cm",
+  "label": "depth_cm"
+}
+----------------------------------------
+- ID: freg_cm_to_mm
+  Slug: cm-to-mm
+  Name: cm → mm
+  Expression: depth_cm * 10
+  Display Expression: P_mm = P_cm · 10
+  Input Variables: [
+  {
+    "key": "depth_cm",
+    "unit": "cm",
+    "label": "depth_cm"
+  }
+]
+  Output Variable: {
+  "key": "depth_mm",
+  "unit": "mm",
+  "label": "depth_mm"
+}
+----------------------------------------
+- ID: freg_sps_corrected
+  Slug: sps-corrected
+  Name: SPS with Corrections
+  Expression: sps_point_cm * clock_hour_corr * areal_reduction
+  Display Expression: SPS_dur = SPS_point · CHC · ARF
+  Input Variables: [
+  {
+    "key": "sps_point_cm",
+    "unit": "cm",
+    "label": "Point SPS"
+  },
+  {
+    "key": "clock_hour_corr",
+    "unit": null,
+    "label": "Clock-Hour Correction"
+  },
+  {
+    "key": "areal_reduction",
+    "unit": null,
+    "label": "Areal Reduction Factor"
+  }
+]
+  Output Variable: {
+  "key": "sps_dur_cm",
+  "unit": "cm",
+  "label": "Storm-duration SPS"
+}
+----------------------------------------
+- ID: freg_pmp_from_sps
+  Slug: pmp-from-sps
+  Name: PMP from SPS
+  Expression: sps_dur_cm * mmf
+  Display Expression: PMP = SPS · MMF
+  Input Variables: [
+  {
+    "key": "sps_dur_cm",
+    "unit": "cm",
+    "label": "sps_dur_cm"
+  },
+  {
+    "key": "mmf",
+    "unit": null,
+    "label": "Moisture Maximization Factor"
+  }
+]
+  Output Variable: {
+  "key": "pmp_cm",
+  "unit": "cm",
+  "label": "PMP Depth"
+}
+----------------------------------------
+- ID: freg_bell_depth
+  Slug: bell-depth
+  Name: Bell Depth from PMP
+  Expression: pmp_total_cm * bell_pct / 100
+  Display Expression: bell_n = PMP · bell% / 100
+  Input Variables: [
+  {
+    "key": "pmp_total_cm",
+    "unit": "cm",
+    "label": "pmp_total_cm"
+  },
+  {
+    "key": "bell_pct",
+    "unit": null,
+    "label": "Bell percentage (e.g. 73 for 1st bell)"
+  }
+]
+  Output Variable: {
+  "key": "bell_depth_cm",
+  "unit": "cm",
+  "label": "bell_depth_cm"
+}
+----------------------------------------
+- ID: freg_bell_residual
+  Slug: bell-residual
+  Name: Bell Residual
+  Expression: pmp_total_cm - bell_depth_cm
+  Display Expression: bell_remainder = PMP_total − bell_assigned
+  Input Variables: [
+  {
+    "key": "pmp_total_cm",
+    "unit": "cm",
+    "label": "pmp_total_cm"
+  },
+  {
+    "key": "bell_depth_cm",
+    "unit": "cm",
+    "label": "bell_depth_cm"
+  }
+]
+  Output Variable: {
+  "key": "bell_remainder_cm",
+  "unit": "cm",
+  "label": "bell_remainder_cm"
+}
+----------------------------------------
+- ID: freg_excess_rainfall
+  Slug: excess-rainfall
+  Name: Hourly Rainfall Excess
+  Expression: max(0, rainfall_cm_hr - loss_rate)
+  Display Expression: excess = max(0, P − φ)
+  Input Variables: [
+  {
+    "key": "rainfall_cm_hr",
+    "unit": "cm/hr",
+    "label": "Hourly rainfall"
+  },
+  {
+    "key": "loss_rate",
+    "unit": "cm/hr",
+    "label": "Uniform loss φ"
+  }
+]
+  Output Variable: {
+  "key": "rainfall_excess",
+  "unit": "cm/hr",
+  "label": "rainfall_excess"
+}
+----------------------------------------
+- ID: freg_hourly_from_cum_pct
+  Slug: hourly-from-cum-pct
+  Name: Hourly Increment from Cumulative %
+  Expression: i == 0 ? cum_pct[0] : cum_pct[i] - cum_pct[i-1]
+  Display Expression: incrᵢ = cumᵢ − cumᵢ₋₁  (incr₀ = cum₀)
+  Input Variables: [
+  {
+    "key": "cum_pct",
+    "unit": null,
+    "label": "Cumulative % array (Sheet3)"
+  },
+  {
+    "key": "i",
+    "unit": null,
+    "label": "Hour index"
+  }
+]
+  Output Variable: {
+  "key": "hourly_pct",
+  "unit": null,
+  "label": "Hourly percentage"
+}
+----------------------------------------
+- ID: freg_hourly_depth_from_pct
+  Slug: hourly-depth-from-pct
+  Name: Hourly Depth from %
+  Expression: hourly_pct / 100 * bell_depth_cm
+  Display Expression: Pᵢ = (incrᵢ/100) · bell_depth
+  Input Variables: [
+  {
+    "key": "hourly_pct",
+    "unit": null,
+    "label": "hourly_pct"
+  },
+  {
+    "key": "bell_depth_cm",
+    "unit": "cm",
+    "label": "bell_depth_cm"
+  }
+]
+  Output Variable: {
+  "key": "hourly_rainfall_cm",
+  "unit": "cm/hr",
+  "label": "hourly_rainfall_cm"
+}
+----------------------------------------
+- ID: freg_trapezoidal_area
+  Slug: trapezoidal-area
+  Name: Trapezoidal Strip Area
+  Expression: (y1 + y0) / 2 * (x1 - x0)
+  Display Expression: A = ((yᵢ + yᵢ₋₁)/2) · (xᵢ − xᵢ₋₁)
+  Input Variables: [
+  {
+    "key": "x0",
+    "unit": null,
+    "label": "x0"
+  },
+  {
+    "key": "x1",
+    "unit": null,
+    "label": "x1"
+  },
+  {
+    "key": "y0",
+    "unit": null,
+    "label": "y0"
+  },
+  {
+    "key": "y1",
+    "unit": null,
+    "label": "y1"
+  }
+]
+  Output Variable: {
+  "key": "trap_area",
+  "unit": null,
+  "label": "trap_area"
+}
+----------------------------------------
+- ID: freg_uh_volume_check_cm
+  Slug: uh-volume-check-cm
+  Name: UH Volume → Depth (cm)
+  Expression: trapzXY(uh_times, uh_ordinates) * 3600 / (catchment_area * 1e6) * 100
+  Display Expression: depth = ∫Q dt · 3600 / (A · 10⁶) · 100
+  Input Variables: [
+  {
+    "key": "uh_times",
+    "unit": "hr",
+    "label": "UH time array"
+  },
+  {
+    "key": "uh_ordinates",
+    "unit": "cumec",
+    "label": "UH discharge array"
+  },
+  {
+    "key": "catchment_area",
+    "unit": "sq.km",
+    "label": "catchment_area"
+  }
+]
+  Output Variable: {
+  "key": "uh_depth_cm",
+  "unit": "cm",
+  "label": "UH net volume as depth"
+}
+----------------------------------------
+- ID: freg_base_flow_discharge
+  Slug: base-flow-discharge
+  Name: Base Flow Discharge
+  Expression: base_flow_unit * catchment_area
+  Display Expression: Qb = qb · A
+  Input Variables: [
+  {
+    "key": "base_flow_unit",
+    "unit": "cumec/sqkm",
+    "label": "Unit base flow"
+  },
+  {
+    "key": "catchment_area",
+    "unit": "sq.km",
+    "label": "catchment_area"
+  }
+]
+  Output Variable: {
+  "key": "base_flow_total",
+  "unit": "cumec",
+  "label": "base_flow_total"
+}
+----------------------------------------
+- ID: freg_pmf_from_drh
+  Slug: pmf-from-drh
+  Name: PMF = DRH + Base Flow
+  Expression: drh_ordinates + base_flow_total
+  Display Expression: PMF(t) = DRH(t) + Qb
+  Input Variables: [
+  {
+    "key": "drh_ordinates",
+    "unit": "cumec",
+    "label": "DRH array"
+  },
+  {
+    "key": "base_flow_total",
+    "unit": "cumec",
+    "label": "base_flow_total"
+  }
+]
+  Output Variable: {
+  "key": "pmf_ordinates",
+  "unit": "cumec",
+  "label": "pmf_ordinates"
+}
+----------------------------------------
+- ID: freg_uh_convolution
+  Slug: uh-convolution
+  Name: UH × Rainfall Excess Convolution
+  Expression: convolve(uh_ordinates, rainfall_excess, 1)
+  Display Expression: DRH[t] = Σᵢ rain[i] · UH[t−i]
+  Input Variables: [
+  {
+    "key": "uh_ordinates",
+    "unit": "cumec/cm",
+    "label": "UH array"
+  },
+  {
+    "key": "rainfall_excess",
+    "unit": "cm/hr",
+    "label": "Rainfall excess array"
+  }
+]
+  Output Variable: {
+  "key": "drh_ordinates",
+  "unit": "cumec",
+  "label": "drh_ordinates"
+}
+----------------------------------------
+- ID: freg_critical_sequencing_desc
+  Slug: critical-sequencing-desc
+  Name: Critical Storm Sequencing (descending)
+  Expression: sort(rainfall_excess, 'desc')
+  Display Expression: rain_sorted = LARGE(rain, k) for k = 1..n
+  Input Variables: [
+  {
+    "key": "rainfall_excess",
+    "unit": null,
+    "label": "rainfall_excess"
+  }
+]
+  Output Variable: {
+  "key": "rainfall_excess_critical",
+  "unit": null,
+  "label": "rainfall_excess_critical"
+}
+----------------------------------------
+- ID: freg_areal_reduction_interp
+  Slug: areal-reduction-interp
+  Name: Areal Reduction Factor (interpolated)
+  Expression: interp1d(arf_table_area, arf_table_factor, catchment_area)
+  Display Expression: ARF = piecewise-linear(area, factor) at A
+  Input Variables: [
+  {
+    "key": "arf_table_area",
+    "unit": null,
+    "label": "ARF table — area column"
+  },
+  {
+    "key": "arf_table_factor",
+    "unit": null,
+    "label": "ARF table — factor column"
+  },
+  {
+    "key": "catchment_area",
+    "unit": "sq.km",
+    "label": "catchment_area"
+  }
+]
+  Output Variable: {
+  "key": "areal_reduction",
+  "unit": null,
+  "label": "areal_reduction"
+}
+----------------------------------------

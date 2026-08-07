@@ -111,14 +111,6 @@ export function PlatformHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <div className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00b341] opacity-75"></span>
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00b341]"></span>
-            </div>
-            <span className="text-[12px] text-[#525252]">Engine active</span>
-          </div>
-
           <button className="ml-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#0a0a0a] text-[10px] font-semibold text-white">
             AK
           </button>

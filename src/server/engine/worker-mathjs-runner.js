@@ -107,6 +107,39 @@ const safeRange = function (start, end, step = 1) {
   return origRange.apply(math, arguments);
 };
 
+const convolve = function (rain, uh) {
+  const r = Array.isArray(rain) ? rain : (rain && typeof rain.toArray === "function" ? rain.toArray() : [rain]);
+  const u = Array.isArray(uh) ? uh : (uh && typeof uh.toArray === "function" ? uh.toArray() : [uh]);
+  const out = new Array(u.length + r.length - 1).fill(0);
+  for (let i = 0; i < r.length; i++) {
+    for (let j = 0; j < u.length; j++) {
+      out[i+j] += r[i] * u[j];
+    }
+  }
+  return out;
+};
+
+const forecastLinear = function (targetX, yValues, xValues) {
+  const y = Array.isArray(yValues) ? yValues : (yValues && typeof yValues.toArray === "function" ? yValues.toArray() : [yValues]);
+  const x = Array.isArray(xValues) ? xValues : (xValues && typeof xValues.toArray === "function" ? xValues.toArray() : [xValues]);
+  if (x.length !== y.length) throw new Error("x and y arrays must have same length");
+  const n = x.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += x[i];
+    sumY += y[i];
+    sumXY += x[i] * y[i];
+    sumXX += x[i] * x[i];
+  }
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+  const num = sumXY - n * meanX * meanY;
+  const den = sumXX - n * meanX * meanX;
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+  return slope * targetX + intercept;
+};
+
 math.import(
   {
     import: function () {
@@ -132,6 +165,8 @@ math.import(
     zeros: safeZeros,
     identity: safeIdentity,
     range: safeRange,
+    convolve: convolve,
+    forecastLinear: forecastLinear,
   },
   { override: true },
 );
@@ -146,16 +181,75 @@ module.exports = function (req) {
   // Shallow copy scope to isolate from input mutations
   const scope = { ...req.scope };
 
+  if (req.isJS) {
+    const vm = require("vm");
+    const sandbox = {
+      inputs: scope.inputs || {},
+      Math,
+      Array,
+      Object,
+      String,
+      Number,
+      Boolean,
+      RegExp,
+      Date,
+      JSON,
+      Map,
+      Set,
+    };
+    if (scope.inputs) {
+      for (const [k, v] of Object.entries(scope.inputs)) {
+        sandbox[k] = v;
+      }
+    }
+    vm.createContext(sandbox);
+    const scriptCode = `(function() {
+      ${req.code}
+    })()`;
+
+    const startCpu = process.cpuUsage();
+    const outputs = vm.runInContext(scriptCode, sandbox, {
+      timeout: req.timeoutMs || 30000,
+    });
+    const diffCpu = process.cpuUsage(startCpu);
+
+    const filteredOutputs = {};
+    if (outputs && typeof outputs === "object") {
+      for (const [k, v] of Object.entries(outputs)) {
+        if (
+          v === null ||
+          typeof v === "number" ||
+          typeof v === "boolean" ||
+          typeof v === "string" ||
+          Array.isArray(v) ||
+          (v && typeof v === "object")
+        ) {
+          filteredOutputs[k] = v;
+        }
+      }
+    }
+
+    return {
+      outputs: filteredOutputs,
+      cpuUserMs: Math.round(diffCpu.user / 1000),
+      cpuSystemMs: Math.round(diffCpu.system / 1000),
+    };
+  }
+
   const startCpu = process.cpuUsage();
   internalEvaluate.call(math, req.code, scope);
   const diffCpu = process.cpuUsage(startCpu);
 
   const outputScope = {};
   for (const [k, v] of Object.entries(scope)) {
-    if (typeof v === "number" || typeof v === "boolean") {
+    if (typeof v === "number" || typeof v === "boolean" || typeof v === "string") {
       outputScope[k] = v;
     } else if (v && typeof v === "object" && v.isBigNumber) {
       outputScope[k] = v.toNumber();
+    } else if (Array.isArray(v)) {
+      outputScope[k] = v;
+    } else if (v && typeof v === "object" && typeof v.toArray === "function") {
+      outputScope[k] = v.toArray();
     }
   }
 
